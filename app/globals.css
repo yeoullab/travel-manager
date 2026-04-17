@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/**
+ * DESIGN.md 토큰 Phase 0 기본셋.
+ * 본격 토큰 이식은 Step 2에서 수행. 여기서는 부트스트랩 최소값만.
+ */
+
+:root {
+  /* Safe area (iOS notch, home indicator) */
+  --safe-top: env(safe-area-inset-top);
+  --safe-right: env(safe-area-inset-right);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+
+  /* Surface scale — warm cream (DESIGN.md §2) */
+  --color-surface-100: #f7f7f4;
+  --color-surface-200: #f2f1ed;
+  --color-surface-300: #ebeae5;
+  --color-surface-400: #e6e5e0;
+  --color-surface-500: #e1e0db;
+
+  /* Ink (text) */
+  --color-ink-900: #26251e;
+  --color-ink-600: rgba(38, 37, 30, 0.6);
+  --color-ink-400: rgba(38, 37, 30, 0.4);
+
+  /* Accents */
+  --color-accent-orange: #f54e00;
+  --color-accent-gold: #c08532;
+  --color-error: #cf2d56;
+  --color-success: #1f8a65;
+
+  /* Borders */
+  --border-primary: rgba(38, 37, 30, 0.1);
+  --border-medium: rgba(38, 37, 30, 0.2);
+  --border-strong: rgba(38, 37, 30, 0.55);
+}
+
+@theme inline {
+  --color-surface-100: var(--color-surface-100);
+  --color-surface-200: var(--color-surface-200);
+  --color-surface-300: var(--color-surface-300);
+  --color-surface-400: var(--color-surface-400);
+  --color-surface-500: var(--color-surface-500);
+
+  --color-ink-900: var(--color-ink-900);
+  --color-ink-600: var(--color-ink-600);
+  --color-ink-400: var(--color-ink-400);
+
+  --color-accent-orange: var(--color-accent-orange);
+  --color-accent-gold: var(--color-accent-gold);
+  --color-error: var(--color-error);
+  --color-success: var(--color-success);
+
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background-color: var(--color-surface-200);
+  color: var(--color-ink-900);
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  padding-top: var(--safe-top);
+  padding-right: var(--safe-right);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+}
