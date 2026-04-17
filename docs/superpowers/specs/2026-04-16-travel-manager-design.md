@@ -325,6 +325,7 @@ UNIQUE (trip_id, day_number);
 | place_lng | double precision | nullable | 경도 |
 | map_provider | text | nullable, CHECK (map_provider IN ('google', 'naver')) | trip.is_domestic 기반 자동 설정 |
 | memo | text | nullable | |
+| url | text | nullable | 관련 링크 (예매·리뷰·블로그). https?:// 스킴만 허용, 앱 UI에서 검증 |
 | created_at | timestamptz | NOT NULL, default now() | |
 | updated_at | timestamptz | NOT NULL, default now() | |
 
@@ -353,6 +354,7 @@ trip_days와 독립. 실제 지출 날짜를 직접 기록.
 | currency | text | NOT NULL, default 'KRW' | |
 | category_id | uuid | FK → categories, nullable | |
 | paid_by | uuid | FK → profiles, nullable | 결제자 (앱에서 trip 접근 가능자만 표시) |
+| schedule_item_id | uuid | FK → schedule_items ON DELETE SET NULL, nullable | 일정 연동 (선택). 일정 삭제 시 경비는 유지. |
 | memo | text | nullable | |
 | created_at | timestamptz | NOT NULL, default now() | |
 | updated_at | timestamptz | NOT NULL, default now() | |
@@ -360,12 +362,19 @@ trip_days와 독립. 실제 지출 날짜를 직접 기록.
 Aggregation (쿼리 레벨):
 - 일별 합계: GROUP BY expense_date
 - 통화별 합계: GROUP BY currency
+- 카테고리별 합계 (통화별 중첩): GROUP BY category_id, currency — 앱 UI에서 경비 총계 카드 하단에 표시
 - 전체 합계: SUM(amount) GROUP BY currency
 - 카테고리별 필터/집계 지원
+
+일정 ↔ 경비 연동:
+- 일정 상세에서 "경비 연동" 버튼 → 기존 경비 선택(해당 trip 내 schedule_item_id=null 또는 동일 일정) 또는 신규 경비 생성
+- 경비 상세에서 연결된 일정명 노출 + 해제 가능
+- schedule_items 삭제 시 expenses.schedule_item_id → NULL (경비는 유지)
 
 ```sql
 CREATE INDEX idx_expenses_trip ON expenses(trip_id);
 CREATE INDEX idx_expenses_date ON expenses(trip_id, expense_date);
+CREATE INDEX idx_expenses_schedule ON expenses(schedule_item_id) WHERE schedule_item_id IS NOT NULL;
 ```
 
 #### todos
@@ -564,6 +573,7 @@ Flow:
 
 편집: 생성 항목과 동일. 날짜 변경 시 `resize_trip_days` RPC 호출.
 - 축소 시: 확인 다이얼로그 ("Day N의 일정 M개가 마지막 Day로 이동됩니다")
+- **편집 UI 패턴**: 관리 탭의 여행 정보 섹션은 제목/목적지/기간을 **읽기 전용 행**으로 나열하고, 섹션 하단의 단일 "여행 정보 수정" 버튼을 통해 전체 필드를 함께 편집한다 (행별 인라인 편집 금지). 필드 간 의존성(기간 축소 → 일정 이동 경고)이 있어 모달 안에서 상태를 함께 보여주어야 일관된다.
 
 삭제: 생성자만 가능. CASCADE로 모든 하위 데이터 삭제.
 - 확인 다이얼로그: "파트너의 데이터도 함께 삭제됩니다" 경고 표시
