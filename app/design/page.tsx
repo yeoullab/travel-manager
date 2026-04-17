@@ -1,9 +1,14 @@
 /**
- * /design — 디자인 시스템 팔레트 (Phase 0 Step 2)
+ * /design — 디자인 시스템 팔레트 (Phase 0 Step 2~3)
  *
- * 목적: 현재 이식된 DESIGN.md 토큰을 시각적으로 확인하고, 유저/팀이 톤을 검증하는 기준 페이지.
- * 본격 컴포넌트 카탈로그는 Step 3에서 추가.
+ * 목적: 이식된 DESIGN.md 토큰과 구현된 UI 컴포넌트를 한 페이지에서 검증.
+ * 유저/팀이 전체 톤과 컴포넌트 상태를 확인하는 기준 페이지.
  */
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { TextField, TextArea } from "@/components/ui/text-field";
+import { SectionHeader } from "@/components/ui/section-header";
 
 type ColorChipProps = {
   name: string;
@@ -16,11 +21,11 @@ function ColorChip({ name, value, className, textColor = "text-ink-900" }: Color
   return (
     <div className="flex flex-col gap-1">
       <div
-        className={`${className} flex h-20 items-end rounded-[8px] border border-border-primary p-3`}
+        className={`${className} border-border-primary flex h-20 items-end rounded-[8px] border p-3`}
       >
         <span className={`text-xs font-medium ${textColor}`}>{name}</span>
       </div>
-      <code className="text-[11px] text-ink-600">{value}</code>
+      <code className="text-ink-600 text-[11px]">{value}</code>
     </div>
   );
 }
@@ -37,8 +42,8 @@ function Section({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-[1.375rem] font-semibold text-ink-900">{title}</h2>
-        {description && <p className="mt-1 text-sm text-ink-600">{description}</p>}
+        <h2 className="text-ink-900 text-[1.375rem] font-semibold">{title}</h2>
+        {description && <p className="text-ink-600 mt-1 text-sm">{description}</p>}
       </div>
       <div>{children}</div>
     </section>
@@ -47,15 +52,15 @@ function Section({
 
 export default function DesignPage() {
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12 space-y-16">
+    <main className="mx-auto max-w-5xl space-y-16 px-6 py-12">
       <header className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-ink-600">
+        <p className="text-ink-600 text-[11px] font-medium tracking-wider uppercase">
           Phase 0 · Step 2
         </p>
-        <h1 className="text-4xl font-semibold tracking-tight text-ink-900">
+        <h1 className="text-ink-900 text-4xl font-semibold tracking-tight">
           travel-manager Design System
         </h1>
-        <p className="text-base text-ink-700">
+        <p className="text-ink-700 text-base">
           DESIGN.md 토큰 이식본. 유저/팀이 전체 톤을 한 페이지에서 검증하기 위한 내부 라우트입니다.
         </p>
       </header>
@@ -80,12 +85,7 @@ export default function DesignPage() {
         description="warm near-black 기반. 900=본문, 600=보조, 400=비활성."
       >
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <ColorChip
-            name="ink-900"
-            value="#26251e"
-            className="bg-ink-900"
-            textColor="text-cream"
-          />
+          <ColorChip name="ink-900" value="#26251e" className="bg-ink-900" textColor="text-cream" />
           <ColorChip
             name="ink-800"
             value="rgba(38,37,30,.75)"
@@ -120,18 +120,8 @@ export default function DesignPage() {
             className="bg-accent-gold"
             textColor="text-cream"
           />
-          <ColorChip
-            name="error"
-            value="#cf2d56"
-            className="bg-error"
-            textColor="text-cream"
-          />
-          <ColorChip
-            name="success"
-            value="#1f8a65"
-            className="bg-success"
-            textColor="text-cream"
-          />
+          <ColorChip name="error" value="#cf2d56" className="bg-error" textColor="text-cream" />
+          <ColorChip name="success" value="#1f8a65" className="bg-success" textColor="text-cream" />
         </div>
       </Section>
 
@@ -153,9 +143,9 @@ export default function DesignPage() {
         title="Typography Scale"
         description="Pretendard primary. CursorGothic/jjannon/berkeleyMono은 Phase 1 이후 라이선스 확보 시 교체 예정."
       >
-        <div className="space-y-4 rounded-[8px] border border-border-primary bg-surface-100 p-6">
+        <div className="border-border-primary bg-surface-100 space-y-4 rounded-[8px] border p-6">
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Display · 72px
             </p>
             <p style={{ fontSize: "4.5rem", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
@@ -163,7 +153,7 @@ export default function DesignPage() {
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Section · 36px
             </p>
             <p
@@ -174,34 +164,34 @@ export default function DesignPage() {
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Sub · 26px
             </p>
             <p style={{ fontSize: "1.625rem", lineHeight: 1.25 }}>도쿄 3박 4일</p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Title · 22px
             </p>
             <p style={{ fontSize: "1.375rem", lineHeight: 1.3 }}>첫째 날 일정</p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Body · 17px
             </p>
             <p style={{ fontSize: "1.08rem", lineHeight: 1.35 }}>
-              아침 9시에 호텔에서 출발하여 아사쿠사로 이동합니다. 센소지에서 약 1시간 정도
-              둘러본 뒤 근처 카페에서 커피 한 잔 마시고 다음 장소로 향합니다.
+              아침 9시에 호텔에서 출발하여 아사쿠사로 이동합니다. 센소지에서 약 1시간 정도 둘러본 뒤
+              근처 카페에서 커피 한 잔 마시고 다음 장소로 향합니다.
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Label · 14px
             </p>
             <p style={{ fontSize: "0.875rem", lineHeight: 1 }}>저장하기</p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Caption · 13px
             </p>
             <p style={{ fontSize: "0.8125rem", lineHeight: 1.33 }}>
@@ -209,7 +199,7 @@ export default function DesignPage() {
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-ink-600">
+            <p className="text-ink-600 mb-1 text-[11px] font-medium tracking-wider uppercase">
               Micro · 11px
             </p>
             <p style={{ fontSize: "0.6875rem", lineHeight: 1.5 }}>2026-04-17 기준</p>
@@ -232,9 +222,9 @@ export default function DesignPage() {
           ].map((r) => (
             <div key={r.label} className="flex flex-col items-center gap-2">
               <div
-                className={`${r.className} h-16 w-16 border border-border-primary bg-surface-400`}
+                className={`${r.className} border-border-primary bg-surface-400 h-16 w-16 border`}
               />
-              <code className="text-[11px] text-ink-600">{r.label}</code>
+              <code className="text-ink-600 text-[11px]">{r.label}</code>
             </div>
           ))}
         </div>
@@ -245,37 +235,39 @@ export default function DesignPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <div className="flex flex-col items-center gap-2">
             <div
-              className="h-24 w-full rounded-[8px] bg-surface-100"
+              className="bg-surface-100 h-24 w-full rounded-[8px]"
               style={{ boxShadow: "0 0 0 1px rgba(38,37,30,0.1)" }}
             />
-            <code className="text-[11px] text-ink-600">border (L1)</code>
+            <code className="text-ink-600 text-[11px]">border (L1)</code>
           </div>
           <div className="flex flex-col items-center gap-2">
             <div
-              className="h-24 w-full rounded-[8px] bg-surface-100"
+              className="bg-surface-100 h-24 w-full rounded-[8px]"
               style={{
-                boxShadow:
-                  "0 0 16px rgba(0,0,0,0.02), 0 0 8px rgba(0,0,0,0.008)",
+                boxShadow: "0 0 16px rgba(0,0,0,0.02), 0 0 8px rgba(0,0,0,0.008)",
               }}
             />
-            <code className="text-[11px] text-ink-600">ambient (L2)</code>
+            <code className="text-ink-600 text-[11px]">ambient (L2)</code>
           </div>
           <div className="flex flex-col items-center gap-2">
             <div
-              className="h-24 w-full rounded-[8px] bg-surface-100"
+              className="bg-surface-100 h-24 w-full rounded-[8px]"
               style={{
                 boxShadow:
                   "0 28px 70px rgba(0,0,0,0.14), 0 14px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(38,37,30,0.1)",
               }}
             />
-            <code className="text-[11px] text-ink-600">elevated (L3)</code>
+            <code className="text-ink-600 text-[11px]">elevated (L3)</code>
           </div>
         </div>
       </Section>
 
       {/* Motion preview */}
-      <Section title="Motion Tokens (Preview)" description="값만 표시. 실제 인터랙션은 Step 3 컴포넌트에서.">
-        <div className="space-y-2 rounded-[8px] border border-border-primary bg-surface-100 p-4 font-mono text-xs text-ink-700">
+      <Section
+        title="Motion Tokens (Preview)"
+        description="값만 표시. 실제 인터랙션은 Step 3 컴포넌트에서."
+      >
+        <div className="border-border-primary bg-surface-100 text-ink-700 space-y-2 rounded-[8px] border p-4 font-mono text-xs">
           <div>press-scale: transform scale(0.97); 100ms ease-out</div>
           <div>drag-lift: scale(1.03) rotate(-1.5deg); opacity 0.95</div>
           <div>slide-up-enter: translateY(20px → 0) + fade; 250ms ease-out</div>
@@ -286,10 +278,92 @@ export default function DesignPage() {
         </div>
       </Section>
 
-      <footer className="border-t border-border-primary pt-6 text-xs text-ink-600">
+      {/* Components — Batch 1 primitives */}
+      <Section
+        title="Components · Primitives (Batch 1)"
+        description="Button / Card / TextField / SectionHeader"
+      >
+        <div className="space-y-8">
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              Button variants
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="primary">Primary</Button>
+              <Button variant="secondary">Secondary</Button>
+              <Button variant="tertiary">Tertiary</Button>
+              <Button variant="ghost">Ghost</Button>
+              <Button variant="light">Light</Button>
+              <Button variant="primary" disabled>
+                Disabled
+              </Button>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button size="sm">Small</Button>
+              <Button size="md">Medium (44pt)</Button>
+              <Button size="lg">Large</Button>
+              <Button fullWidth>Full width</Button>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              Card
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Card>
+                <p className="text-ink-900 text-[15px] font-medium">Standard</p>
+                <p className="text-ink-600 mt-1 text-sm">bg surface-400, border, 8px radius.</p>
+              </Card>
+              <Card compact>
+                <p className="text-ink-900 text-[14px] font-medium">Compact</p>
+                <p className="text-ink-600 mt-1 text-[12px]">p-3, 4px radius.</p>
+              </Card>
+              <Card elevated>
+                <p className="text-ink-900 text-[15px] font-medium">Elevated</p>
+                <p className="text-ink-600 mt-1 text-sm">Level 3 atmospheric shadow.</p>
+              </Card>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              Text field / Textarea
+            </p>
+            <div className="grid max-w-md grid-cols-1 gap-4">
+              <TextField label="여행 제목" placeholder="예: 도쿄 3박 4일" />
+              <TextField
+                label="목적지"
+                placeholder="도시를 입력하세요"
+                hint="국내/해외 모두 가능합니다."
+              />
+              <TextField
+                label="이메일"
+                placeholder="user@example.com"
+                error="이메일 형식이 올바르지 않습니다."
+              />
+              <TextArea label="메모" placeholder="자유롭게 메모하세요" />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              Section header
+            </p>
+            <div className="border-border-primary bg-surface-100 rounded-[8px] border p-6">
+              <SectionHeader>진행 중</SectionHeader>
+              <p className="text-ink-700 text-sm">여행 그룹 헤더 스타일.</p>
+              <SectionHeader>다가오는 여행</SectionHeader>
+              <p className="text-ink-700 text-sm">14px semibold, uppercase, 60% ink.</p>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <footer className="border-border-primary text-ink-600 border-t pt-6 text-xs">
         <p>
-          이 페이지는 내부 검증용입니다. 프로덕션에는 노출되지 않아야 하며,
-          Phase 1 이후에도 토큰 변경 시 이 페이지로 회귀 검증합니다.
+          이 페이지는 내부 검증용입니다. 프로덕션에는 노출되지 않아야 하며, Phase 1 이후에도 토큰
+          변경 시 이 페이지로 회귀 검증합니다.
         </p>
       </footer>
     </main>
