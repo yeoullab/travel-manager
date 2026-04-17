@@ -20,6 +20,9 @@ import { Toast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
+import { SwipeAction } from "@/components/ui/swipe-action";
 
 const demoTabs: BottomTab[] = [
   { key: "schedule", label: "일정", icon: Calendar },
@@ -71,6 +74,7 @@ function Section({
 
 export default function DesignPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <main className="mx-auto max-w-5xl space-y-16 px-6 py-12">
       <header className="space-y-2">
@@ -485,6 +489,75 @@ export default function DesignPage() {
                 <Skeleton variant="rect" className="h-20 flex-1" />
               </div>
             </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* Components — Batch 4 mobile gestures */}
+      <Section
+        title="Components · Mobile Gestures (Batch 4)"
+        description="BottomSheet(실동작) / PullToRefresh(정적) / SwipeAction(정적 프리뷰)"
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              BottomSheet (open 토글)
+            </p>
+            <div className="border-border-primary bg-surface-100 flex h-32 items-center justify-center rounded-[16px] border">
+              <Button variant="primary" onClick={() => setSheetOpen(true)}>
+                시트 열기
+              </Button>
+            </div>
+            <BottomSheet
+              open={sheetOpen}
+              onClose={() => setSheetOpen(false)}
+              title="경비 추가"
+              footer={
+                <Button fullWidth variant="primary" onClick={() => setSheetOpen(false)}>
+                  저장
+                </Button>
+              }
+            >
+              <div className="space-y-4">
+                <p className="text-ink-700 text-[14px]">
+                  BottomSheet 예시. drag handle, 85vh max, safe-area-bottom 적용.
+                </p>
+                <TextField label="제목" placeholder="예: 점심 식사" />
+                <TextField label="금액" placeholder="0" inputMode="numeric" />
+                <TextField label="날짜" type="date" />
+              </div>
+            </BottomSheet>
+          </div>
+
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              PullToRefresh (4 states)
+            </p>
+            <div className="border-border-primary bg-surface-100 space-y-1 overflow-hidden rounded-[16px] border py-2">
+              <PullToRefreshIndicator state="idle" />
+              <PullToRefreshIndicator state="pulling" progress={0.4} />
+              <PullToRefreshIndicator state="ready" progress={1} />
+              <PullToRefreshIndicator state="refreshing" />
+              <PullToRefreshIndicator state="done" />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+            SwipeAction (offset=0 / 40 / 80 프리뷰)
+          </p>
+          <div className="space-y-3">
+            {[0, 40, 80].map((off) => (
+              <SwipeAction key={off} offset={off}>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-ink-900 text-[15px] font-medium">
+                    일정 항목 (offset {off}px)
+                  </span>
+                  <span className="text-ink-600 text-[12px]">10:00</span>
+                </div>
+              </SwipeAction>
+            ))}
           </div>
         </div>
       </Section>
