@@ -193,7 +193,16 @@ Auth 회원가입 시 trigger로 자동 생성.
 | email | text | NOT NULL | |
 | display_name | text | nullable | 표시명 (없으면 이메일) |
 | avatar_url | text | nullable | Google 프로필 사진 |
+| color | text | NOT NULL, CHECK (color IN ('orange','blue','gold','violet','green','rose')), default 'orange' | 결제자·담당자 칩 배경색. 가입 시 기본 오렌지, 설정 화면에서 팔레트 중 선택 가능 (6색). |
 | created_at | timestamptz | NOT NULL, default now() | |
+
+색상 팔레트는 DESIGN.md 토큰과 1:1 매핑:
+- orange → `--color-accent-orange` (#F54E00)
+- blue → `--color-ti-read` (#9FBBE0)
+- gold → `--color-accent-gold` (#C08532)
+- violet → `--color-ti-edit` (#C0A8DD)
+- green → `--color-ti-grep` (#9FC9A2)
+- rose → `--color-ti-thinking` (#DFA88F)
 
 #### groups
 

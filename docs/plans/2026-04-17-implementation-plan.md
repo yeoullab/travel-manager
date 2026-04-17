@@ -243,6 +243,8 @@ DESIGN.md(410줄, §10 Mobile App Patterns 포함), 5관점 스펙 리뷰까지 
 - Supabase 프로젝트 생성, 환경 변수 설정
 - Google GIS + `signInWithIdToken` (ADR: Supabase OAuth rate limit 회피)
 - `profiles` 테이블 + auto-create trigger, RLS
+  - `color` 컬럼(6색 팔레트, default 'orange') 포함 — `/settings` 프로필 편집에서 선택 (Step 7 피드백 #5 V1 구현본)
+  - `lib/profile-colors.ts` 하드코딩 매핑을 `profile.color` 조회로 교체
 - TanStack Query provider, Zustand store, Realtime client scaffold
 - 로그인 → `/trips` 진입 flow 실동작
 - **관점별 체크:** 🧑‍💻 auth 토큰 세션 관리 안정성 / 📊 rate limit monitoring / 🎨 로그인 화면 목업 그대로 유지 / ✏️ 로그인 실패 시 에러 흐름 확인 / 🧪 GIS 모킹(msw)으로 로그인 성공·실패·취소 3케이스 자동 테스트 / 🔒 JWT 저장 위치(httpOnly cookie 우선, localStorage 금지), CSRF 방어, GIS client ID·Supabase key 환경변수 관리
