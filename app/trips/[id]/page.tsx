@@ -11,27 +11,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TripLayout, type TripTabKey } from "@/components/trip/trip-layout";
 import { ScheduleTab } from "@/components/trip/schedule-tab";
 import { ExpensesTab } from "@/components/trip/expenses-tab";
+import { TodosTab } from "@/components/trip/todos-tab";
+import { RecordsTab } from "@/components/trip/records-tab";
+import { ManageTab } from "@/components/trip/manage-tab";
 import { useSimulatedLoad } from "@/lib/use-simulated-load";
 import { getTripById } from "@/lib/mocks";
 
-const VALID_TABS: TripTabKey[] = [
-  "schedule",
-  "expenses",
-  "todos",
-  "records",
-  "manage",
-];
+const VALID_TABS: TripTabKey[] = ["schedule", "expenses", "todos", "records", "manage"];
 
 /**
  * 06~11 `/trips/[id]` — 여행 상세 (5탭 디스패처).
  * `?tab=` 쿼리로 schedule/expenses/todos/records/manage 전환.
- * 기본 탭은 schedule. Batch 2에서는 schedule·expenses 구현, 나머지는 placeholder.
+ * 기본 탭은 schedule.
  */
-export default function TripDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function TripDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
     <Suspense fallback={<TripDetailFallback />}>
@@ -44,9 +37,7 @@ function TripDetailInner({ id }: { id: string }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const tab: TripTabKey =
-    tabParam && (VALID_TABS as string[]).includes(tabParam)
-      ? (tabParam as TripTabKey)
-      : "schedule";
+    tabParam && (VALID_TABS as string[]).includes(tabParam) ? (tabParam as TripTabKey) : "schedule";
   const loaded = useSimulatedLoad(500);
   const trip = getTripById(id);
 
@@ -76,22 +67,10 @@ function TripDetailInner({ id }: { id: string }) {
     <TripLayout trip={trip} activeTab={tab}>
       {tab === "schedule" && <ScheduleTab tripId={id} />}
       {tab === "expenses" && <ExpensesTab tripId={id} />}
-      {(tab === "todos" || tab === "records" || tab === "manage") && (
-        <TabPlaceholder tab={tab} />
-      )}
+      {tab === "todos" && <TodosTab tripId={id} />}
+      {tab === "records" && <RecordsTab tripId={id} />}
+      {tab === "manage" && <ManageTab tripId={id} />}
     </TripLayout>
-  );
-}
-
-function TabPlaceholder({ tab }: { tab: TripTabKey }) {
-  const label =
-    tab === "todos" ? "할 일" : tab === "records" ? "기록" : "여행 관리";
-  return (
-    <EmptyState
-      className="py-20"
-      title={`${label} 탭`}
-      description={`Batch 3에서 구현됩니다. 지금은 일정·경비 탭만 탐색 가능합니다.`}
-    />
   );
 }
 
