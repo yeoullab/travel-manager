@@ -8,12 +8,9 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Fab } from "@/components/ui/fab";
-import {
-  getExpensesByTripId,
-  getProfileName,
-  aggregateExpensesByCurrency,
-} from "@/lib/mocks";
+import { getExpensesByTripId, getProfileName, aggregateExpensesByCurrency } from "@/lib/mocks";
 import type { Expense, ExpenseCategory } from "@/lib/types";
+import { chipClassForProfile } from "@/lib/profile-colors";
 import { cn } from "@/lib/cn";
 
 const CATEGORIES: { key: ExpenseCategory | "all"; label: string }[] = [
@@ -25,6 +22,15 @@ const CATEGORIES: { key: ExpenseCategory | "all"; label: string }[] = [
   { key: "activity", label: "액티비티" },
   { key: "other", label: "기타" },
 ];
+
+const CATEGORY_LABEL: Record<ExpenseCategory, string> = {
+  food: "식비",
+  transport: "교통",
+  lodging: "숙박",
+  shopping: "쇼핑",
+  activity: "액티비티",
+  other: "기타",
+};
 
 const CURRENCY_SYMBOL: Record<string, string> = {
   KRW: "₩",
@@ -50,9 +56,9 @@ export function ExpensesTab({ tripId }: Props) {
   const all = useMemo(() => getExpensesByTripId(tripId), [tripId]);
   const totals = useMemo(() => aggregateExpensesByCurrency(tripId), [tripId]);
 
-  const filtered =
-    filter === "all" ? all : all.filter((e) => e.category === filter);
+  const filtered = filter === "all" ? all : all.filter((e) => e.category === filter);
   const byDate = useMemo(() => groupByDate(filtered), [filtered]);
+  const categoryTotals = useMemo(() => aggregateByCategory(all), [all]);
 
   return (
     <div className="px-4 pt-3 pb-28">
@@ -70,13 +76,32 @@ export function ExpensesTab({ tripId }: Props) {
                 <p className="text-ink-900 font-mono text-[22px] font-semibold tracking-[-0.01em]">
                   {formatAmount(amount, currency)}
                 </p>
-                <p className="text-ink-600 text-[11px] tracking-wider uppercase">
-                  {currency}
-                </p>
+                <p className="text-ink-600 text-[11px] tracking-wider uppercase">{currency}</p>
               </div>
             ))
           )}
         </div>
+        {Object.keys(categoryTotals).length > 0 && (
+          <div className="border-border-primary mt-4 border-t pt-3">
+            <p className="text-ink-600 mb-2 text-[11px] font-medium tracking-wider uppercase">
+              카테고리별
+            </p>
+            <ul className="flex flex-col gap-1">
+              {Object.entries(categoryTotals).map(([cat, byCurr]) => (
+                <li key={cat} className="flex items-baseline justify-between gap-3">
+                  <span className="text-ink-800 text-[13px]">
+                    {CATEGORY_LABEL[cat as ExpenseCategory]}
+                  </span>
+                  <span className="text-ink-700 font-mono text-[12px] tabular-nums">
+                    {Object.entries(byCurr)
+                      .map(([c, a]) => formatAmount(a, c))
+                      .join("  ·  ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Category filter */}
@@ -92,9 +117,7 @@ export function ExpensesTab({ tripId }: Props) {
               aria-pressed={active}
               className={cn(
                 "h-8 shrink-0 rounded-full px-3 text-[12px] font-medium transition-colors",
-                active
-                  ? "bg-ink-900 text-cream"
-                  : "bg-surface-400 text-ink-700 hover:text-ink-900",
+                active ? "bg-ink-900 text-cream" : "bg-surface-400 text-ink-700 hover:text-ink-900",
               )}
             >
               {c.label}
@@ -124,26 +147,37 @@ export function ExpensesTab({ tripId }: Props) {
         />
       ) : (
         <div className="mt-6 flex flex-col gap-4">
-          {Object.entries(byDate).map(([date, expenses]) => (
-            <section key={date}>
-              <h3 className="text-ink-600 mb-2 text-[11px] font-semibold tracking-wider uppercase">
-                {formatDateHeading(date)}
-              </h3>
-              <div className="bg-surface-100 border-border-primary overflow-hidden rounded-[12px] border">
-                {expenses.map((e) => (
-                  <ExpenseRow
-                    key={e.id}
-                    category={e.category}
-                    title={e.title}
-                    amount={e.amount}
-                    currency={e.currency}
-                    paidByName={getProfileName(e.paidBy)}
-                    memo={e.memo ?? undefined}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
+          {Object.entries(byDate).map(([date, expenses]) => {
+            const daySum = sumByCurrency(expenses);
+            return (
+              <section key={date}>
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <h3 className="text-ink-600 text-[11px] font-semibold tracking-wider uppercase">
+                    {formatDateHeading(date)}
+                  </h3>
+                  <p className="text-ink-700 font-mono text-[11px] tabular-nums">
+                    {Object.entries(daySum)
+                      .map(([c, a]) => formatAmount(a, c))
+                      .join("  ·  ")}
+                  </p>
+                </div>
+                <div className="bg-surface-100 border-border-primary overflow-hidden rounded-[12px] border">
+                  {expenses.map((e) => (
+                    <ExpenseRow
+                      key={e.id}
+                      category={e.category}
+                      title={e.title}
+                      amount={e.amount}
+                      currency={e.currency}
+                      paidByName={getProfileName(e.paidBy)}
+                      paidByChip={chipClassForProfile(e.paidBy)}
+                      memo={e.memo ?? undefined}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
 
@@ -163,9 +197,7 @@ export function ExpensesTab({ tripId }: Props) {
           <TextField label="제목" placeholder="예: 점심 식사" />
           <TextField label="금액" placeholder="0" inputMode="numeric" />
           <TextField label="날짜" type="date" />
-          <p className="text-ink-500 text-[12px]">
-            Phase 0 목업 — 입력은 저장되지 않습니다.
-          </p>
+          <p className="text-ink-500 text-[12px]">Phase 0 목업 — 입력은 저장되지 않습니다.</p>
         </div>
       </BottomSheet>
     </div>
@@ -176,6 +208,23 @@ function groupByDate(items: Expense[]): Record<string, Expense[]> {
   const out: Record<string, Expense[]> = {};
   for (const e of items) {
     (out[e.expenseDate] ??= []).push(e);
+  }
+  return out;
+}
+
+function sumByCurrency(items: Expense[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const e of items) {
+    out[e.currency] = (out[e.currency] ?? 0) + e.amount;
+  }
+  return out;
+}
+
+function aggregateByCategory(items: Expense[]): Record<ExpenseCategory, Record<string, number>> {
+  const out = {} as Record<ExpenseCategory, Record<string, number>>;
+  for (const e of items) {
+    out[e.category] ??= {};
+    out[e.category][e.currency] = (out[e.category][e.currency] ?? 0) + e.amount;
   }
   return out;
 }

@@ -46,6 +46,10 @@ next-env.d.ts
 .superpowers/
 .claude/settings.local.json
 
+# IDE
+.idea/
+.vscode/
+
 # tests / coverage artifacts
 /playwright-report/
 /test-results/

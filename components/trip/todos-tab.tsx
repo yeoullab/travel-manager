@@ -8,6 +8,7 @@ import { TextField, TextArea } from "@/components/ui/text-field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Fab } from "@/components/ui/fab";
 import { getTodosByTripId, getProfileName } from "@/lib/mocks";
+import { chipClassForProfile } from "@/lib/profile-colors";
 import { cn } from "@/lib/cn";
 
 type Props = { tripId: string };
@@ -20,8 +21,8 @@ type Props = { tripId: string };
  */
 export function TodosTab({ tripId }: Props) {
   const initial = useMemo(() => getTodosByTripId(tripId), [tripId]);
-  const [checked, setChecked] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(initial.map((t) => [t.id, t.isCompleted])),
+  const [checked, setChecked] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(initial.map((t) => [t.id, t.isCompleted])),
   );
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -98,9 +99,7 @@ function TodoProgress({ incomplete, total }: { incomplete: number; total: number
   return (
     <div className="bg-surface-100 border-border-primary rounded-[12px] border p-4">
       <div className="flex items-baseline justify-between">
-        <p className="text-ink-600 text-[11px] font-medium tracking-wider uppercase">
-          진행도
-        </p>
+        <p className="text-ink-600 text-[11px] font-medium tracking-wider uppercase">진행도</p>
         <p className="text-ink-900 font-mono text-[18px] font-semibold">
           {done}
           <span className="text-ink-500 text-[12px] font-normal"> / {total}</span>
@@ -116,13 +115,7 @@ function TodoProgress({ incomplete, total }: { incomplete: number; total: number
   );
 }
 
-function TodoSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function TodoSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="mt-6">
       <h3 className="text-ink-600 mb-2 text-[11px] font-semibold tracking-wider uppercase">
@@ -173,18 +166,22 @@ function TodoRow({
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "text-[15px] font-medium truncate transition-colors",
+              "truncate text-[15px] font-medium transition-colors",
               checked ? "text-ink-500 line-through" : "text-ink-900",
             )}
           >
             {title}
           </p>
-          {memo && (
-            <p className="text-ink-600 mt-0.5 truncate text-[12px]">{memo}</p>
-          )}
+          {memo && <p className="text-ink-600 mt-0.5 truncate text-[12px]">{memo}</p>}
         </div>
         {assigneeName ? (
-          <span className="bg-surface-400 text-ink-700 flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px]">
+          <span
+            className={cn(
+              "flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium",
+              chipClassForProfile(assignedTo).bg,
+              chipClassForProfile(assignedTo).text,
+            )}
+          >
             <User size={10} />
             {assigneeName}
           </span>
@@ -214,9 +211,7 @@ function AddSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
       <div className="space-y-4">
         <TextField label="제목" placeholder="예: 환전하기" />
         <TextArea label="메모" placeholder="세부 내용 (선택)" />
-        <p className="text-ink-500 text-[12px]">
-          Phase 0 목업 — 입력은 저장되지 않습니다.
-        </p>
+        <p className="text-ink-500 text-[12px]">Phase 0 목업 — 입력은 저장되지 않습니다.</p>
       </div>
     </BottomSheet>
   );

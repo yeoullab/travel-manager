@@ -1,13 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
-export type ExpenseCategory =
-  | "food"
-  | "transport"
-  | "lodging"
-  | "shopping"
-  | "activity"
-  | "other";
+export type ExpenseCategory = "food" | "transport" | "lodging" | "shopping" | "activity" | "other";
 
 const categoryLabel: Record<ExpenseCategory, string> = {
   food: "식비",
@@ -24,6 +18,8 @@ type ExpenseRowProps = {
   amount: number;
   currency: string; // "KRW", "JPY", "USD" 등
   paidByName?: string;
+  /** 결제자 칩 배경·글자 색 클래스. 생략 시 중립(회색) 톤. */
+  paidByChip?: { bg: string; text: string };
   memo?: string;
   onClick?: () => void;
   className?: string;
@@ -41,9 +37,7 @@ const currencySymbol: Record<string, string> = {
 function formatAmount(amount: number, currency: string): string {
   const symbol = currencySymbol[currency] ?? currency;
   const needsDecimal = currency === "USD" || currency === "EUR";
-  const formatted = needsDecimal
-    ? amount.toFixed(2)
-    : amount.toLocaleString("ko-KR");
+  const formatted = needsDecimal ? amount.toFixed(2) : amount.toLocaleString("ko-KR");
   return `${symbol}${formatted}`;
 }
 
@@ -57,10 +51,13 @@ export function ExpenseRow({
   amount,
   currency,
   paidByName,
+  paidByChip,
   memo,
   onClick,
   className,
 }: ExpenseRowProps) {
+  const chipBg = paidByChip?.bg ?? "bg-surface-500";
+  const chipText = paidByChip?.text ?? "text-ink-700";
   return (
     <div
       onClick={onClick}
@@ -79,11 +76,20 @@ export function ExpenseRow({
           <p className="text-ink-900 truncate text-[15px] font-medium">{title}</p>
         </div>
         {(paidByName || memo) && (
-          <p className="text-ink-600 mt-1 truncate text-[12px]">
-            {paidByName && <span>결제: {paidByName}</span>}
-            {paidByName && memo && <span> · </span>}
-            {memo && <span>{memo}</span>}
-          </p>
+          <div className="mt-1 flex items-center gap-1.5">
+            {paidByName && (
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+                  chipBg,
+                  chipText,
+                )}
+              >
+                {paidByName}
+              </span>
+            )}
+            {memo && <p className="text-ink-600 min-w-0 flex-1 truncate text-[12px]">{memo}</p>}
+          </div>
         )}
       </div>
       <div className="shrink-0 text-right">

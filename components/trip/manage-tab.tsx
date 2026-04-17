@@ -3,28 +3,23 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Pencil,
   Copy,
   Check,
   Heart,
-  Globe,
   Trash2,
   UserMinus,
   Link as LinkIcon,
   CalendarDays,
   MapPin,
   Type,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { TextField } from "@/components/ui/text-field";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
-import {
-  getTripById,
-  getGuestShareByTripId,
-  getProfileName,
-} from "@/lib/mocks";
+import { getTripById, getGuestShareByTripId, getProfileName } from "@/lib/mocks";
 import type { Trip } from "@/lib/types";
 import { PROFILE_PARTNER_ID } from "@/lib/mocks/profiles";
 import { cn } from "@/lib/cn";
@@ -95,21 +90,23 @@ export function ManageTab({ tripId }: Props) {
           icon={<Type size={18} className="text-ink-600" />}
           label="제목"
           value={trip.title}
-          onEdit={() => setSheet("info")}
         />
         <InfoRow
           icon={<MapPin size={18} className="text-ink-600" />}
           label="목적지"
           value={trip.destination}
-          onEdit={() => setSheet("info")}
         />
         <InfoRow
           icon={<CalendarDays size={18} className="text-ink-600" />}
           label="기간"
           value={formatRange(trip.startDate, trip.endDate)}
-          onEdit={() => setSheet("info")}
         />
       </ManageSection>
+      <div className="mt-3">
+        <Button fullWidth variant="secondary" onClick={() => setSheet("info")}>
+          여행 정보 수정
+        </Button>
+      </div>
 
       {/* 파트너 공유 */}
       <ManageSection label="파트너 공유">
@@ -132,7 +129,7 @@ export function ManageTab({ tripId }: Props) {
       {/* 게스트 링크 */}
       <ManageSection label="게스트 링크">
         <ToggleRow
-          icon={<Globe size={18} className="text-ink-600" />}
+          icon={<Share2 size={18} className="text-ink-600" />}
           label="링크로 공유"
           description={
             guestActive
@@ -149,7 +146,7 @@ export function ManageTab({ tripId }: Props) {
           <div className="border-border-primary border-t px-4 py-3">
             <div className="flex items-center gap-2">
               <LinkIcon size={14} className="text-ink-500 shrink-0" />
-              <code className="text-ink-800 flex-1 truncate text-[12px] font-mono">
+              <code className="text-ink-800 flex-1 truncate font-mono text-[12px]">
                 /share/{guestShare.token}
               </code>
               <button
@@ -236,13 +233,7 @@ export function ManageTab({ tripId }: Props) {
   );
 }
 
-function ManageSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function ManageSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="mt-6 first:mt-0">
       <h3 className="text-ink-600 mb-2 text-[11px] font-semibold tracking-wider uppercase">
@@ -255,17 +246,7 @@ function ManageSection({
   );
 }
 
-function InfoRow({
-  icon,
-  label,
-  value,
-  onEdit,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  onEdit: () => void;
-}) {
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <div aria-hidden className="shrink-0">
@@ -275,14 +256,6 @@ function InfoRow({
         <p className="text-ink-600 text-[11px] tracking-wider uppercase">{label}</p>
         <p className="text-ink-900 mt-0.5 truncate text-[15px] font-medium">{value}</p>
       </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        aria-label={`${label} 편집`}
-        className="text-ink-600 hover:text-error flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors"
-      >
-        <Pencil size={16} />
-      </button>
     </div>
   );
 }
@@ -398,9 +371,7 @@ function EditInfoSheet({
           <TextField label="시작일" type="date" defaultValue={trip.startDate} />
           <TextField label="종료일" type="date" defaultValue={trip.endDate} />
         </div>
-        <p className="text-ink-500 text-[12px]">
-          Phase 0 목업 — 입력은 저장되지 않습니다.
-        </p>
+        <p className="text-ink-500 text-[12px]">Phase 0 목업 — 입력은 저장되지 않습니다.</p>
       </div>
     </BottomSheet>
   );

@@ -8,7 +8,8 @@ import {
   CheckSquare,
   FileText,
   Settings as SettingsIcon,
-  Share2,
+  SlidersHorizontal,
+  Home,
 } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
 import { BottomTabBar, type BottomTab } from "@/components/ui/bottom-tab-bar";
@@ -48,15 +49,24 @@ export function TripLayout({ trip, activeTab, children }: TripLayoutProps) {
     <div className="flex min-h-dvh flex-col pb-20" style={{ minHeight: "100dvh" }}>
       <AppBar
         title={trip.title}
-        onBack={() => router.push("/trips")}
+        leading={
+          <button
+            type="button"
+            aria-label="여행 목록으로"
+            onClick={() => router.push("/trips")}
+            className="text-ink-900 hover:text-error flex h-11 w-11 items-center justify-center rounded-full transition-colors"
+          >
+            <Home size={20} strokeWidth={1.75} />
+          </button>
+        }
         trailing={
           <button
             type="button"
-            aria-label="여행 공유"
+            aria-label="여행 관리"
             onClick={() => router.push(`/trips/${trip.id}?tab=manage`)}
             className="text-ink-700 hover:text-error flex h-11 w-11 items-center justify-center rounded-full transition-colors"
           >
-            <Share2 size={20} strokeWidth={1.75} />
+            <SlidersHorizontal size={20} strokeWidth={1.75} />
           </button>
         }
       />
