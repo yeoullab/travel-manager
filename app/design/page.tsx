@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * /design — 디자인 시스템 팔레트 (Phase 0 Step 2~3)
  *
@@ -9,6 +11,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextField, TextArea } from "@/components/ui/text-field";
 import { SectionHeader } from "@/components/ui/section-header";
+import { AppBar } from "@/components/ui/app-bar";
+import { BottomTabBar, type BottomTab } from "@/components/ui/bottom-tab-bar";
+import { Fab } from "@/components/ui/fab";
+import { Calendar, Wallet, CheckSquare, FileText, Settings } from "lucide-react";
+
+const demoTabs: BottomTab[] = [
+  { key: "schedule", label: "일정", icon: Calendar },
+  { key: "expenses", label: "경비", icon: Wallet },
+  { key: "todos", label: "할 일", icon: CheckSquare },
+  { key: "records", label: "기록", icon: FileText },
+  { key: "manage", label: "관리", icon: Settings },
+];
 
 type ColorChipProps = {
   name: string;
@@ -356,6 +370,44 @@ export default function DesignPage() {
               <SectionHeader>다가오는 여행</SectionHeader>
               <p className="text-ink-700 text-sm">14px semibold, uppercase, 60% ink.</p>
             </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* Components — Batch 2 navigation */}
+      <Section
+        title="Components · Navigation (Batch 2)"
+        description="AppBar / BottomTabBar / FAB — 실제 포지션(fixed/sticky)은 해제한 프리뷰 프레임"
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              AppBar (scrolled=false)
+            </p>
+            <div className="bg-surface-100 border-border-primary relative overflow-hidden rounded-[16px] border [&_header]:!static">
+              <AppBar title="도쿄 3박 4일" onBack={() => {}} scrolled={false} />
+              <div className="text-ink-600 h-24 p-4 text-sm">콘텐츠 영역</div>
+            </div>
+          </div>
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              AppBar (scrolled=true)
+            </p>
+            <div className="bg-surface-100 border-border-primary relative overflow-hidden rounded-[16px] border [&_header]:!static">
+              <AppBar title="여행 목록" scrolled />
+              <div className="text-ink-600 h-24 p-4 text-sm">스크롤 시 하단 보더 페이드 인</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+            BottomTabBar + FAB (5 tabs, active=일정)
+          </p>
+          <div className="bg-surface-100 border-border-primary relative mx-auto h-[240px] w-full max-w-[375px] overflow-hidden rounded-[24px] border [&>button]:!absolute [&>nav]:!absolute">
+            <div className="text-ink-500 p-4 text-xs">프리뷰 영역 (실제 fixed 해제)</div>
+            <Fab aria-label="일정 추가" style={{ right: "16px", bottom: "72px" }} />
+            <BottomTabBar tabs={demoTabs} activeKey="schedule" />
           </div>
         </div>
       </Section>
