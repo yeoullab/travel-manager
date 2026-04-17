@@ -23,6 +23,10 @@ import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh";
 import { SwipeAction } from "@/components/ui/swipe-action";
+import { ListRow } from "@/components/ui/list-row";
+import { ScheduleItem } from "@/components/ui/schedule-item";
+import { ExpenseRow } from "@/components/ui/expense-row";
+import { User, Heart, Tag } from "lucide-react";
 
 const demoTabs: BottomTab[] = [
   { key: "schedule", label: "일정", icon: Calendar },
@@ -558,6 +562,108 @@ export default function DesignPage() {
                 </div>
               </SwipeAction>
             ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* Components — Batch 5 domain rows */}
+      <Section
+        title="Components · Domain Rows (Batch 5)"
+        description="ListRow / ScheduleItem / ExpenseRow"
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              ListRow
+            </p>
+            <div className="bg-surface-100 border-border-primary overflow-hidden rounded-[16px] border">
+              <ListRow
+                leading={<User size={20} className="text-ink-600" />}
+                title="프로필"
+                subtitle="이름, 아바타 편집"
+                chevron
+              />
+              <ListRow
+                leading={<Heart size={20} className="text-error" />}
+                title="파트너 연결"
+                subtitle="초대 코드로 연결"
+                trailing="미연결"
+                chevron
+              />
+              <ListRow
+                leading={<Tag size={20} className="text-ink-600" />}
+                title="카테고리 관리"
+                chevron
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              ScheduleItem (drag handle)
+            </p>
+            <div className="space-y-2">
+              <ScheduleItem
+                category="sightseeing"
+                title="센소지 방문"
+                time="10:00"
+                placeName="도쿄도 다이토구 아사쿠사"
+                memo="가이드 투어 사전 예약"
+                draggable
+              />
+              <ScheduleItem
+                category="food"
+                title="우나기 점심"
+                time="12:30"
+                placeName="이마한 아사쿠사점"
+                draggable
+              />
+              <ScheduleItem category="transport" title="긴자선 이동" time="14:00" draggable />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+            ExpenseRow (6 카테고리 · 통화 3종)
+          </p>
+          <div className="bg-surface-100 border-border-primary overflow-hidden rounded-[16px] border">
+            <ExpenseRow
+              category="food"
+              title="우나기 점심"
+              amount={4800}
+              currency="JPY"
+              paidByName="나"
+              memo="이마한 아사쿠사점"
+            />
+            <ExpenseRow
+              category="transport"
+              title="긴자선 왕복"
+              amount={420}
+              currency="JPY"
+              paidByName="파트너"
+            />
+            <ExpenseRow
+              category="lodging"
+              title="호텔 1박"
+              amount={28500}
+              currency="JPY"
+              paidByName="나"
+            />
+            <ExpenseRow
+              category="shopping"
+              title="기념품"
+              amount={32.5}
+              currency="USD"
+              memo="가족 선물"
+            />
+            <ExpenseRow
+              category="activity"
+              title="공항철도"
+              amount={9300}
+              currency="KRW"
+              paidByName="나"
+            />
           </div>
         </div>
       </Section>
