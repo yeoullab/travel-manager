@@ -14,7 +14,12 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { AppBar } from "@/components/ui/app-bar";
 import { BottomTabBar, type BottomTab } from "@/components/ui/bottom-tab-bar";
 import { Fab } from "@/components/ui/fab";
-import { Calendar, Wallet, CheckSquare, FileText, Settings } from "lucide-react";
+import { Calendar, Wallet, CheckSquare, FileText, Settings, Luggage } from "lucide-react";
+import { useState } from "react";
+import { Toast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 
 const demoTabs: BottomTab[] = [
   { key: "schedule", label: "일정", icon: Calendar },
@@ -65,6 +70,7 @@ function Section({
 }
 
 export default function DesignPage() {
+  const [dialogOpen, setDialogOpen] = useState(false);
   return (
     <main className="mx-auto max-w-5xl space-y-16 px-6 py-12">
       <header className="space-y-2">
@@ -408,6 +414,77 @@ export default function DesignPage() {
             <div className="text-ink-500 p-4 text-xs">프리뷰 영역 (실제 fixed 해제)</div>
             <Fab aria-label="일정 추가" style={{ right: "16px", bottom: "72px" }} />
             <BottomTabBar tabs={demoTabs} activeKey="schedule" />
+          </div>
+        </div>
+      </Section>
+
+      {/* Components — Batch 3 feedback */}
+      <Section
+        title="Components · Feedback (Batch 3)"
+        description="Toast / Dialog / EmptyState / Skeleton"
+      >
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              Toast variants (position overridden to relative)
+            </p>
+            <div className="border-border-primary bg-surface-100 relative flex h-32 items-end justify-center overflow-hidden rounded-[16px] border [&>div]:!static [&>div]:!translate-x-0">
+              <Toast message="변경 사항이 저장되었습니다" tone="success" />
+            </div>
+            <div className="border-border-primary bg-surface-100 relative mt-3 flex h-32 items-end justify-center overflow-hidden rounded-[16px] border [&>div]:!static [&>div]:!translate-x-0">
+              <Toast message="변경 사항을 저장하지 못했습니다" tone="error" />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              ConfirmDialog (open 토글)
+            </p>
+            <div className="border-border-primary bg-surface-100 flex h-32 items-center justify-center rounded-[16px] border">
+              <Button variant="primary" onClick={() => setDialogOpen(true)}>
+                다이얼로그 열기
+              </Button>
+            </div>
+            <ConfirmDialog
+              open={dialogOpen}
+              onClose={() => setDialogOpen(false)}
+              title="여행을 삭제하시겠어요?"
+              description="파트너의 데이터도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+              primaryLabel="삭제"
+              secondaryLabel="취소"
+              destructive
+              onPrimary={() => setDialogOpen(false)}
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              EmptyState
+            </p>
+            <div className="border-border-primary bg-surface-100 overflow-hidden rounded-[16px] border">
+              <EmptyState
+                icon={<Luggage size={48} strokeWidth={1.5} />}
+                title="아직 여행이 없어요"
+                description="첫 여행을 만들어 파트너와 함께 계획해보세요."
+                cta={<Button variant="primary">+ 새 여행 만들기</Button>}
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
+              Skeleton
+            </p>
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+              <div className="flex gap-3">
+                <Skeleton variant="rect" className="h-20 flex-1" />
+                <Skeleton variant="rect" className="h-20 flex-1" />
+              </div>
+            </div>
           </div>
         </div>
       </Section>
