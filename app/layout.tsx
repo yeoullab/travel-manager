@@ -4,6 +4,7 @@ import "@fontsource/pretendard/500.css";
 import "@fontsource/pretendard/600.css";
 import "@fontsource/pretendard/700.css";
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "travel-manager (mockup)",
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-surface-200 text-ink-900">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
