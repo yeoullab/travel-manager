@@ -1,17 +1,34 @@
 import { z } from "zod";
 
-export const envSchema = z.object({
+const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().min(1),
 });
 
+const serverOnlySchema = z.object({
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+});
+
+export const envSchema = publicSchema.extend(serverOnlySchema.shape);
 export type Env = z.infer<typeof envSchema>;
 
-export const env: Env = envSchema.parse({
+export const env = publicSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
 });
+
+let cachedServerEnv: z.infer<typeof serverOnlySchema> | null = null;
+
+export function getServerEnv() {
+  if (typeof window !== "undefined") {
+    throw new Error("getServerEnv()는 서버에서만 호출해야 합니다");
+  }
+  if (!cachedServerEnv) {
+    cachedServerEnv = serverOnlySchema.parse({
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+  }
+  return cachedServerEnv;
+}

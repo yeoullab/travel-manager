@@ -8,6 +8,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: false,
     setupFiles: [],
+    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
