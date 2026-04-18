@@ -4,14 +4,16 @@ import { createBrowserClient } from "@supabase/ssr";
 import { env } from "@/lib/env";
 import type { Database } from "@/types/database";
 
-let client: ReturnType<typeof createBrowserClient<Database>> | null = null;
+export type SupabaseClient = ReturnType<typeof createBrowserClient<Database>>;
 
-export function getBrowserClient() {
+let client: SupabaseClient | null = null;
+
+export function getBrowserClient(): SupabaseClient {
   if (!client) {
     client = createBrowserClient<Database>(
       env.NEXT_PUBLIC_SUPABASE_URL,
       env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    );
+    ) as SupabaseClient;
   }
   return client;
 }

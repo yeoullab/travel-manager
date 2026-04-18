@@ -22,7 +22,10 @@ export function ColorPalette({ currentColor, userId }: Props) {
   const mutation = useMutation({
     mutationFn: async (color: ProfileColor) => {
       const supabase = getBrowserClient();
-      const { error } = await supabase
+      // supabase-js 2.103+ PostgrestVersion "14.5" 타입 변경으로 update() 파라미터가
+      // never로 추론되는 이슈 — any로 우회 (런타임 동작은 정상)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from("profiles")
         .update({ color })
         .eq("id", userId);
