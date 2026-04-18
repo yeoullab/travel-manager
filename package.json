@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:types": "supabase gen types typescript --linked --schema public > types/database.ts"
   },
   "dependencies": {
     "@fontsource/pretendard": "^5.2.5",
