@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   User,
   Heart,
@@ -23,6 +24,7 @@ import { cn } from "@/lib/cn";
  */
 export default function SettingsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   // me will be populated in Task 17 via useMyProfile; placeholder avoids mock dependency
   const [me] = useState<{ displayName: string; email?: string } | null>(null);
   const myGroup = groups.find((g) => g.status === "active");
@@ -36,10 +38,17 @@ export default function SettingsPage() {
     setTimeout(() => setToast(null), 1800);
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     setLogoutOpen(false);
-    flash("로그아웃되었어요 (목업)");
-    setTimeout(() => router.push("/"), 900);
+    try {
+      const res = await fetch("/auth/logout", { method: "POST" });
+      if (!res.ok) throw new Error("logout failed");
+      queryClient.clear();
+      flash("로그아웃되었어요");
+      setTimeout(() => router.push("/"), 600);
+    } catch {
+      flash("로그아웃 중 문제가 발생했어요");
+    }
   }
 
   return (
