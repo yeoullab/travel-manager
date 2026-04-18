@@ -8,9 +8,10 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Fab } from "@/components/ui/fab";
-import { getExpensesByTripId, getProfileName, aggregateExpensesByCurrency } from "@/lib/mocks";
+import { getExpensesByTripId, aggregateExpensesByCurrency } from "@/lib/mocks";
 import type { Expense, ExpenseCategory } from "@/lib/types";
-import { chipClassForProfile } from "@/lib/profile-colors";
+import { chipClassForColor } from "@/lib/profile/colors";
+import { useTripMembers } from "@/lib/profile/use-trip-members";
 import { cn } from "@/lib/cn";
 
 const CATEGORIES: { key: ExpenseCategory | "all"; label: string }[] = [
@@ -53,6 +54,7 @@ export function ExpensesTab({ tripId }: Props) {
   const [filter, setFilter] = useState<ExpenseCategory | "all">("all");
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  const { lookup: lookupMember } = useTripMembers(tripId);
   const all = useMemo(() => getExpensesByTripId(tripId), [tripId]);
   const totals = useMemo(() => aggregateExpensesByCurrency(tripId), [tripId]);
 
@@ -162,18 +164,21 @@ export function ExpensesTab({ tripId }: Props) {
                   </p>
                 </div>
                 <div className="bg-surface-100 border-border-primary overflow-hidden rounded-[12px] border">
-                  {expenses.map((e) => (
-                    <ExpenseRow
-                      key={e.id}
-                      category={e.category}
-                      title={e.title}
-                      amount={e.amount}
-                      currency={e.currency}
-                      paidByName={getProfileName(e.paidBy)}
-                      paidByChip={chipClassForProfile(e.paidBy)}
-                      memo={e.memo ?? undefined}
-                    />
-                  ))}
+                  {expenses.map((e) => {
+                    const payer = lookupMember(e.paidBy);
+                    return (
+                      <ExpenseRow
+                        key={e.id}
+                        category={e.category}
+                        title={e.title}
+                        amount={e.amount}
+                        currency={e.currency}
+                        paidByName={payer?.display_name ?? e.paidBy ?? ""}
+                        paidByChip={chipClassForColor(payer?.color as Parameters<typeof chipClassForColor>[0])}
+                        memo={e.memo ?? undefined}
+                      />
+                    );
+                  })}
                 </div>
               </section>
             );

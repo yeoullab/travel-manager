@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   User,
   Heart,
@@ -14,7 +14,6 @@ import {
 import { AppBar } from "@/components/ui/app-bar";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
-import { profiles, currentUserId } from "@/lib/mocks/profiles";
 import { groups } from "@/lib/mocks/groups";
 import { cn } from "@/lib/cn";
 
@@ -24,7 +23,8 @@ import { cn } from "@/lib/cn";
  */
 export default function SettingsPage() {
   const router = useRouter();
-  const me = profiles.find((p) => p.id === currentUserId);
+  // me will be populated in Task 17 via useMyProfile; placeholder avoids mock dependency
+  const [me] = useState<{ displayName: string; email?: string } | null>(null);
   const myGroup = groups.find((g) => g.status === "active");
   const partnerConnected = Boolean(myGroup);
 

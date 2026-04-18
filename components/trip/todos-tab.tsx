@@ -7,8 +7,9 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { TextField, TextArea } from "@/components/ui/text-field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Fab } from "@/components/ui/fab";
-import { getTodosByTripId, getProfileName } from "@/lib/mocks";
-import { chipClassForProfile } from "@/lib/profile-colors";
+import { getTodosByTripId } from "@/lib/mocks";
+import { chipClassForColor } from "@/lib/profile/colors";
+import { useTripMembers } from "@/lib/profile/use-trip-members";
 import { cn } from "@/lib/cn";
 
 type Props = { tripId: string };
@@ -25,6 +26,7 @@ export function TodosTab({ tripId }: Props) {
     Object.fromEntries(initial.map((t) => [t.id, t.isCompleted])),
   );
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { lookup: lookupMember } = useTripMembers(tripId);
 
   function toggle(id: string) {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -65,6 +67,8 @@ export function TodosTab({ tripId }: Props) {
               title={t.title}
               memo={t.memo}
               assignedTo={t.assignedTo}
+              assigneeName={lookupMember(t.assignedTo)?.display_name ?? null}
+              chipClass={chipClassForColor(lookupMember(t.assignedTo)?.color as Parameters<typeof chipClassForColor>[0])}
               checked={false}
               onToggle={() => toggle(t.id)}
             />
@@ -80,6 +84,8 @@ export function TodosTab({ tripId }: Props) {
               title={t.title}
               memo={t.memo}
               assignedTo={t.assignedTo}
+              assigneeName={lookupMember(t.assignedTo)?.display_name ?? null}
+              chipClass={chipClassForColor(lookupMember(t.assignedTo)?.color as Parameters<typeof chipClassForColor>[0])}
               checked
               onToggle={() => toggle(t.id)}
             />
@@ -132,16 +138,19 @@ function TodoRow({
   title,
   memo,
   assignedTo,
+  assigneeName,
+  chipClass,
   checked,
   onToggle,
 }: {
   title: string;
   memo: string | null;
   assignedTo: string | null;
+  assigneeName: string | null;
+  chipClass: ReturnType<typeof chipClassForColor>;
   checked: boolean;
   onToggle: () => void;
 }) {
-  const assigneeName = getProfileName(assignedTo);
   return (
     <li>
       <button
@@ -178,8 +187,8 @@ function TodoRow({
           <span
             className={cn(
               "flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium",
-              chipClassForProfile(assignedTo).bg,
-              chipClassForProfile(assignedTo).text,
+              chipClass.bg,
+              chipClass.text,
             )}
           >
             <User size={10} />

@@ -21,7 +21,6 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
 import { getTripById, getGuestShareByTripId, getProfileName } from "@/lib/mocks";
 import type { Trip } from "@/lib/types";
-import { PROFILE_PARTNER_ID } from "@/lib/mocks/profiles";
 import { cn } from "@/lib/cn";
 
 type Props = { tripId: string };
@@ -49,7 +48,7 @@ export function ManageTab({ tripId }: Props) {
 
   if (!trip) return null;
 
-  const partnerName = getProfileName(PROFILE_PARTNER_ID);
+  const partnerName = getProfileName(null);
   const shareUrl = guestShare
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/share/${guestShare.token}`
     : "";
