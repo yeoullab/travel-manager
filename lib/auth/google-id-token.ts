@@ -1,7 +1,7 @@
 "use client";
 
 import { env } from "@/lib/env";
-import { generateNonce, sha256Base64Url } from "@/lib/auth/nonce";
+import { generateNonce, sha256Hex } from "@/lib/auth/nonce";
 
 declare global {
   interface Window {
@@ -76,7 +76,7 @@ export async function requestGoogleIdToken(
   if (!window.google) throw new Error("GIS 미로드");
 
   const rawNonce = generateNonce();
-  const hashedNonce = await sha256Base64Url(rawNonce);
+  const hashedNonce = await sha256Hex(rawNonce);
 
   return new Promise<GoogleSignInResult>((resolve, reject) => {
     try {

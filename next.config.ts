@@ -6,6 +6,20 @@ import type { NextConfig } from "next";
  *  - CSP: default-src 'self' 기반. 폰트/이미지 예외. Phase 1 이후 Supabase·Maps 도메인 추가
  *  - 기타 기본 방어 헤더 (HSTS는 prod 도메인 적용 후 활성화)
  */
+const isDev = process.env.NODE_ENV !== "production";
+
+// Next.js dev 모드의 React Refresh와 Turbopack HMR이 eval을 사용하므로
+// dev 에서만 'unsafe-eval' 허용. production 빌드는 그대로 차단.
+const scriptSrc = [
+  "'self'",
+  "'unsafe-inline'",
+  isDev ? "'unsafe-eval'" : "",
+  "https://accounts.google.com",
+  "https://accounts.google.com/gsi/client",
+]
+  .filter(Boolean)
+  .join(" ");
+
 const securityHeaders = [
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -16,7 +30,7 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://accounts.google.com https://accounts.google.com/gsi/client",
+      `script-src ${scriptSrc}`,
       "style-src 'self' 'unsafe-inline' https://accounts.google.com",
       "img-src 'self' data: blob: https://lh3.googleusercontent.com",
       "font-src 'self' data:",
