@@ -9,7 +9,8 @@ type TextFieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
 
 export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
   function TextField({ label, hint, error, id, className, ...props }, ref) {
-    const inputId = id ?? React.useId();
+    const reactId = React.useId();
+    const inputId = id ?? reactId;
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
@@ -52,7 +53,8 @@ type TextAreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
 
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   function TextArea({ label, hint, error, id, className, ...props }, ref) {
-    const inputId = id ?? React.useId();
+    const reactId = React.useId();
+    const inputId = id ?? reactId;
     return (
       <div className="flex flex-col gap-1.5">
         {label && (

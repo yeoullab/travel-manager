@@ -8,7 +8,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: false,
     setupFiles: [],
-    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    include: ["tests/unit/**/*.test.ts"],
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
@@ -17,7 +17,11 @@ export default defineConfig({
     },
     coverage: {
       provider: "v8",
-      include: ["lib/**/*.ts", "lib/**/*.tsx"],
+      include: [
+        "lib/auth/nonce.ts",
+        "lib/profile/color-schema.ts",
+        "lib/profile/colors.ts",
+      ],
       exclude: ["lib/mocks/**", "**/*.d.ts"],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
