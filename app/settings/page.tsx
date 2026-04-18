@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMyProfile } from "@/lib/profile/use-profile";
+import { ColorPalette } from "@/components/settings/color-palette";
+import { profileColorSchema } from "@/lib/profile/color-schema";
+import { getBrowserClient } from "@/lib/supabase/browser-client";
 import {
   User,
   Heart,
@@ -25,8 +29,11 @@ import { cn } from "@/lib/cn";
 export default function SettingsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  // me will be populated in Task 17 via useMyProfile; placeholder avoids mock dependency
-  const [me] = useState<{ displayName: string; email?: string } | null>(null);
+  const { data: me } = useMyProfile();
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => {
+    void getBrowserClient().auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, []);
   const myGroup = groups.find((g) => g.status === "active");
   const partnerConnected = Boolean(myGroup);
 
@@ -56,22 +63,30 @@ export default function SettingsPage() {
       <AppBar title="설정" onBack={() => router.push("/trips")} />
       <main className="mx-auto w-full max-w-[560px] flex-1 px-4 pt-4 pb-16">
         {/* Profile card */}
-        <section className="bg-surface-100 border-border-primary flex items-center gap-4 rounded-[12px] border p-4">
-          <div
-            aria-hidden
-            className="bg-surface-400 text-ink-800 flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[22px] font-semibold"
-          >
-            {me?.displayName.slice(0, 1) ?? "?"}
+        <section className="bg-surface-100 border-border-primary overflow-hidden rounded-[12px] border">
+          <div className="flex items-center gap-4 p-4">
+            <div
+              aria-hidden
+              className="bg-surface-400 text-ink-800 flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[22px] font-semibold"
+            >
+              {me?.display_name?.slice(0, 1) ?? "?"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-ink-900 truncate text-[17px] font-semibold">
+                {me?.display_name ?? "Guest"}
+              </p>
+              <p className="text-ink-600 mt-1 flex items-center gap-1 truncate text-[12px]">
+                <Mail size={12} />
+                {email ?? "—"}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-ink-900 truncate text-[17px] font-semibold">
-              {me?.displayName ?? "Guest"}
-            </p>
-            <p className="text-ink-600 mt-1 flex items-center gap-1 truncate text-[12px]">
-              <Mail size={12} />
-              {me?.email ?? "—"}
-            </p>
-          </div>
+          {me && (
+            <ColorPalette
+              currentColor={profileColorSchema.parse(me.color)}
+              userId={me.id}
+            />
+          )}
         </section>
 
         <SettingsGroup>
