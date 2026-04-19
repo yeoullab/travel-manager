@@ -7,11 +7,108 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_with_invite"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          invite_code: string
+          max_members: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          invite_code?: string
+          max_members?: number
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          invite_code?: string
+          max_members?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -39,8 +136,129 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_days: {
+        Row: {
+          date: string
+          day_number: number
+          id: string
+          trip_id: string
+        }
+        Insert: {
+          date: string
+          day_number: number
+          id?: string
+          trip_id: string
+        }
+        Update: {
+          date?: string
+          day_number?: number
+          id?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_days_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          created_at: string
+          created_by: string
+          currencies: string[]
+          destination: string
+          end_date: string
+          group_id: string | null
+          id: string
+          is_domestic: boolean
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          currencies?: string[]
+          destination: string
+          end_date: string
+          group_id?: string | null
+          id?: string
+          is_domestic?: boolean
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          currencies?: string[]
+          destination?: string
+          end_date?: string
+          group_id?: string | null
+          id?: string
+          is_domestic?: boolean
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_with_invite"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
+      groups_with_invite: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          invite_code: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          invite_code?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          invite_code?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       profiles_public: {
         Row: {
           avatar_url: string | null
@@ -67,7 +285,26 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      accept_invite: { Args: { p_invite_code: string }; Returns: Json }
+      can_access_trip: { Args: { p_trip_id: string }; Returns: boolean }
+      cancel_invite: { Args: never; Returns: undefined }
+      create_invite: { Args: never; Returns: Json }
+      create_trip: {
+        Args: {
+          p_currencies: string[]
+          p_destination: string
+          p_end_date: string
+          p_is_domestic: boolean
+          p_start_date: string
+          p_title: string
+        }
+        Returns: string
+      }
+      dissolve_group: { Args: never; Returns: undefined }
+      resize_trip_days: {
+        Args: { p_new_end: string; p_new_start: string; p_trip_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
