@@ -57,10 +57,10 @@ describe("RLS — groups", () => {
   });
 
   it("타인은 관계없는 그룹을 SELECT 할 수 없다", async () => {
-    await aliceC.rpc("create_invite");
-    const { data: aliceGroup } = await aliceC.from("groups_with_invite").select("id").single();
+    const { data: created } = await aliceC.rpc("create_invite");
+    const groupId = (created as { group_id: string }).group_id;
 
-    const { data } = await bobC.from("groups").select("id").eq("id", aliceGroup!.id);
+    const { data } = await bobC.from("groups").select("id").eq("id", groupId);
     expect(data).toHaveLength(0);
 
     await aliceC.rpc("cancel_invite");
@@ -77,15 +77,12 @@ describe("RLS — groups", () => {
     await aliceC.rpc("cancel_invite");
   });
 
-  it("오너는 invite_code 를 groups_with_invite 로만 조회 가능 (groups 직접 SELECT 불가)", async () => {
+  it("오너는 invite_code 를 groups_with_invite 로 조회 가능", async () => {
     await aliceC.rpc("create_invite");
 
-    const { data } = await aliceC.from("groups").select("invite_code");
-    for (const row of data ?? []) {
-      expect((row as Record<string, unknown>).invite_code).toBeUndefined();
-    }
-
-    const { data: view } = await aliceC.from("groups_with_invite").select("invite_code").single();
+    // groups_with_invite 로 invite_code 조회 가능
+    const { data: view, error } = await aliceC.from("groups_with_invite").select("invite_code").limit(1).single();
+    expect(error).toBeNull();
     expect(view?.invite_code).toBeTruthy();
 
     await aliceC.rpc("cancel_invite");

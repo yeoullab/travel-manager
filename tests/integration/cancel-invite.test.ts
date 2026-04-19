@@ -41,12 +41,13 @@ describe("cancel_invite", () => {
   });
 
   it("cancelled 상태 그룹은 active 로 전이 불가 (트리거 차단)", async () => {
-    await aliceC.rpc("create_invite");
+    const { data: inv } = await aliceC.rpc("create_invite");
+    const groupId = (inv as { group_id: string }).group_id;
     await aliceC.rpc("cancel_invite");
 
-    const { data: grp } = await aliceC.from("groups").select("id").eq("created_by", aliceId).eq("status", "cancelled").single();
+    // admin으로 직접 active 전이 시도 → 트리거 차단
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (admin as any).from("groups").update({ status: "active" }).eq("id", grp!.id);
+    const { error } = await (admin as any).from("groups").update({ status: "active" }).eq("id", groupId);
     expect(error).not.toBeNull();
   });
 });

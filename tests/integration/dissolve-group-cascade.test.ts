@@ -58,13 +58,14 @@ describe("dissolve_group 캐스케이드", () => {
 
   it("dissolved → active 전이 차단 (트리거)", async () => {
     const { data: inv } = await aliceC.rpc("create_invite");
+    const groupId = (inv as { group_id: string }).group_id;
     const code = (inv as { invite_code: string }).invite_code;
     await bobC.rpc("accept_invite", { p_invite_code: code });
     await aliceC.rpc("dissolve_group");
 
-    const { data: grp } = await admin.from("groups").select("id").eq("created_by", aliceId).eq("status", "dissolved").single();
+    // admin으로 직접 active 전이 시도 → 트리거 차단
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (admin as any).from("groups").update({ status: "active" }).eq("id", grp!.id);
+    const { error } = await (admin as any).from("groups").update({ status: "active" }).eq("id", groupId);
     expect(error).not.toBeNull();
   });
 });
