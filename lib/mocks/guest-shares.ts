@@ -1,5 +1,6 @@
 import type { GuestShare } from "@/lib/types";
-import { TRIP_TOKYO_ID } from "./trips";
+// Inlined legacy trip ID (previously imported from ./trips, removed in Task 9).
+const TRIP_TOKYO_ID = "trip_tokyo";
 
 /**
  * 게스트 공유 — 도쿄 여행에만 활성 링크 1개.

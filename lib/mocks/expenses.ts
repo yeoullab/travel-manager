@@ -1,6 +1,8 @@
 import type { Expense } from "@/lib/types";
 import { PROFILE_ME_ID, PROFILE_PARTNER_ID } from "./profiles";
-import { TRIP_TOKYO_ID, TRIP_OSAKA_ID } from "./trips";
+// Inlined legacy trip IDs (previously imported from ./trips, removed in Task 9).
+const TRIP_TOKYO_ID = "trip_tokyo";
+const TRIP_OSAKA_ID = "trip_osaka";
 
 const TS = "2026-04-15T21:00:00Z";
 

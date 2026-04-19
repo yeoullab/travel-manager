@@ -9,8 +9,11 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
-import { groups } from "@/lib/mocks/groups";
 import { getProfileById } from "@/lib/mocks";
+import type { Group } from "@/lib/types";
+
+// Phase 2 Task 9: mock groups 데이터 삭제. Task 17이 이 페이지를 `useGroupByInviteCode`로 재작성하기 전까지 빈 리스트 스텁을 사용한다.
+const groups: Group[] = [];
 
 /**
  * 13 `/invite/[code]` — 초대 수락.

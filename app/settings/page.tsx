@@ -19,8 +19,11 @@ import {
 import { AppBar } from "@/components/ui/app-bar";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
-import { groups } from "@/lib/mocks/groups";
 import { cn } from "@/lib/cn";
+import type { Group } from "@/lib/types";
+
+// Phase 2 Task 9: mock groups 데이터 삭제. Task 16이 이 페이지를 `useMyGroup`으로 재작성하기 전까지 빈 리스트 스텁을 사용한다.
+const groups: Group[] = [];
 
 /**
  * 12 `/settings` — 설정 메뉴.

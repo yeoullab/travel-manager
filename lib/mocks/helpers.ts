@@ -9,7 +9,6 @@ import type {
   GuestShare,
   Profile,
 } from "@/lib/types";
-import { trips, tripDays } from "./trips";
 import { scheduleItems } from "./schedule-items";
 import { expenses } from "./expenses";
 import { todos } from "./todos";
@@ -19,28 +18,68 @@ import { profiles, currentUserId } from "./profiles";
 
 /**
  * Mock 데이터 조회 헬퍼.
- * Phase 1에서 Supabase 쿼리로 교체 예정 — 같은 시그니처 유지.
+ * Phase 2 Task 9에서 trips/groups mock 데이터는 삭제됨.
+ * 남은 헬퍼는 Phase 3에서 Supabase 쿼리로 교체 예정 — 같은 시그니처 유지.
  */
 
-export function getTripById(id: string): Trip | undefined {
-  return trips.find((t) => t.id === id);
+// ── Phase 2 Task 9 deprecated placeholders ──────────────────────────
+// trips/groups mock 데이터는 Task 9에서 삭제되었으나, 다음 호출부가
+// Phase 3 (Task 11~14)에서 재작성되기 전까지 import를 유지해야 빌드가
+// 깨지지 않아 빈 결과를 돌려주는 스텁을 남겨둔다. 해당 Task에서 이 스텁도
+// 완전히 제거된다.
+
+const warned = new Set<string>();
+function devWarn(name: string) {
+  if (process.env.NODE_ENV !== "production" && !warned.has(name)) {
+    warned.add(name);
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[mocks] ${name} is a deprecated Phase 2 placeholder returning empty data; migrate call sites to real-DB hooks.`,
+    );
+  }
 }
 
-export function getTripDaysByTripId(tripId: string): TripDay[] {
-  return tripDays
-    .filter((d) => d.tripId === tripId)
-    .sort((a, b) => a.dayNumber - b.dayNumber);
+/** @deprecated Phase 2 placeholder — removed by Task 11/12. */
+export function getTripById(_id: string): Trip | undefined {
+  devWarn("getTripById");
+  return undefined;
 }
+
+/** @deprecated Phase 2 placeholder — removed by Task 11/12. */
+export function getTripDaysByTripId(_tripId: string): TripDay[] {
+  devWarn("getTripDaysByTripId");
+  return [];
+}
+
+/** @deprecated Phase 2 placeholder — removed by Task 11/12. */
+export function getScheduleItemsByTripId(_tripId: string): ScheduleItem[] {
+  devWarn("getScheduleItemsByTripId");
+  return [];
+}
+
+/** @deprecated Phase 2 placeholder — use groupTripsByStatus from @/lib/trip/trip-grouping (Task 11). */
+export function groupTripsByStatus(
+  allTrips: Trip[] = [],
+  today: Date = new Date(),
+): { ongoing: Trip[]; upcoming: Trip[]; past: Trip[] } {
+  devWarn("groupTripsByStatus");
+  const result = { ongoing: [] as Trip[], upcoming: [] as Trip[], past: [] as Trip[] };
+  for (const trip of allTrips) {
+    const status = computeTripStatus(trip, today);
+    result[status].push(trip);
+  }
+  result.ongoing.sort((a, b) => a.endDate.localeCompare(b.endDate));
+  result.upcoming.sort((a, b) => a.startDate.localeCompare(b.startDate));
+  result.past.sort((a, b) => b.endDate.localeCompare(a.endDate));
+  return result;
+}
+
+// ── Active helpers ──────────────────────────────────────────────────
 
 export function getScheduleItemsByTripDayId(tripDayId: string): ScheduleItem[] {
   return scheduleItems
     .filter((s) => s.tripDayId === tripDayId)
     .sort((a, b) => a.order - b.order);
-}
-
-export function getScheduleItemsByTripId(tripId: string): ScheduleItem[] {
-  const days = getTripDaysByTripId(tripId).map((d) => d.id);
-  return scheduleItems.filter((s) => days.includes(s.tripDayId));
 }
 
 export function getExpensesByTripId(tripId: string): Expense[] {
@@ -95,21 +134,6 @@ export function computeTripStatus(trip: Trip, today: Date = new Date()): TripSta
   if (trip.startDate <= t && t <= trip.endDate) return "ongoing";
   if (trip.startDate > t) return "upcoming";
   return "past";
-}
-
-export function groupTripsByStatus(
-  allTrips: Trip[] = trips,
-  today: Date = new Date(),
-): { ongoing: Trip[]; upcoming: Trip[]; past: Trip[] } {
-  const result = { ongoing: [] as Trip[], upcoming: [] as Trip[], past: [] as Trip[] };
-  for (const trip of allTrips) {
-    const status = computeTripStatus(trip, today);
-    result[status].push(trip);
-  }
-  result.ongoing.sort((a, b) => a.endDate.localeCompare(b.endDate));
-  result.upcoming.sort((a, b) => a.startDate.localeCompare(b.startDate));
-  result.past.sort((a, b) => b.endDate.localeCompare(a.endDate));
-  return result;
 }
 
 // ── Expense aggregation ──────────────────────────────────────────────

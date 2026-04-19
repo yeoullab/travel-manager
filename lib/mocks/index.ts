@@ -1,11 +1,9 @@
 /**
  * Mock data barrel — Phase 0 전용.
- * Phase 1 이후 Supabase 쿼리로 교체하며, 함수 시그니처는 그대로 유지.
+ * Phase 2 Task 9에서 trips/groups mock 데이터 제거. 남은 mock은 Phase 3에서 Supabase 쿼리로 교체 예정.
  */
 
 export * from "./profiles";
-export * from "./groups";
-export * from "./trips";
 export * from "./schedule-items";
 export * from "./expenses";
 export * from "./todos";
