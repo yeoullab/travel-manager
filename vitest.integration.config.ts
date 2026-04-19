@@ -10,6 +10,7 @@ export default defineConfig({
     globals: false,
     include: ["tests/integration/**/*.test.ts"],
     testTimeout: 20_000,
+    fileParallelism: false,
     env: {
       NEXT_PUBLIC_SUPABASE_URL: localEnv.NEXT_PUBLIC_SUPABASE_URL ?? "",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: localEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
