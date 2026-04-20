@@ -9,10 +9,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Fab } from "@/components/ui/fab";
-import {
-  getTripDaysByTripId,
-  getScheduleItemsByTripDayId,
-} from "@/lib/mocks";
+import { getTripDaysByTripId, getScheduleItemsByTripDayId } from "@/lib/mocks";
 import type { ScheduleItem as ScheduleItemT } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -48,6 +45,9 @@ export function ScheduleTab({ tripId }: Props) {
 
   return (
     <div className="px-4 pb-28">
+      <div className="bg-surface-300/50 border-border-primary mb-4 rounded-lg border px-3 py-2">
+        <p className="text-ink-700 text-[12px]">이 탭은 다음 단계에서 실 데이터로 연결됩니다</p>
+      </div>
       {/* Day tabs (sticky) */}
       <div className="bg-surface-200/90 sticky top-14 z-20 -mx-4 overflow-x-auto px-4 pt-3 pb-2 backdrop-blur-md">
         <ul className="flex gap-2">
@@ -158,9 +158,7 @@ export function ScheduleTab({ tripId }: Props) {
           <TextField label="제목" placeholder="예: 센소지 방문" />
           <TextField label="시간" type="time" />
           <TextField label="장소" placeholder="장소 검색" />
-          <p className="text-ink-500 text-[12px]">
-            Phase 0 목업 — 입력은 저장되지 않습니다.
-          </p>
+          <p className="text-ink-500 text-[12px]">Phase 0 목업 — 입력은 저장되지 않습니다.</p>
         </div>
       </BottomSheet>
     </div>
@@ -207,9 +205,7 @@ function MapPlaceholder({ items }: { items: ScheduleItemT[] }) {
       </div>
 
       <div className="bg-surface-100/80 border-border-primary relative rounded-[8px] border px-3 py-2 backdrop-blur-sm">
-        <p className="text-ink-600 text-[10px] tracking-wider uppercase">
-          Map placeholder
-        </p>
+        <p className="text-ink-600 text-[10px] tracking-wider uppercase">Map placeholder</p>
         <p className="text-ink-800 text-[13px] font-medium">
           {pinned.length}개 위치 · Phase 4에서 실 SDK 연동
         </p>

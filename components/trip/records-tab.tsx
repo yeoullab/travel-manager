@@ -29,6 +29,9 @@ export function RecordsTab({ tripId }: Props) {
 
   return (
     <div className="px-4 pt-4 pb-28">
+      <div className="bg-surface-300/50 border-border-primary mb-4 rounded-lg border px-3 py-2">
+        <p className="text-ink-700 text-[12px]">이 탭은 다음 단계에서 실 데이터로 연결됩니다</p>
+      </div>
       {records.length === 0 ? (
         <EmptyState
           className="py-16"
@@ -73,10 +76,7 @@ export function RecordsTab({ tripId }: Props) {
                     {isOpen ? "접기" : "펼쳐 보기"}
                     <ChevronDown
                       size={14}
-                      className={cn(
-                        "transition-transform duration-200",
-                        isOpen && "rotate-180",
-                      )}
+                      className={cn("transition-transform duration-200", isOpen && "rotate-180")}
                     />
                   </button>
                 </article>
@@ -102,9 +102,7 @@ export function RecordsTab({ tripId }: Props) {
           <TextField label="제목" placeholder="예: 첫날 후기" />
           <TextField label="날짜" type="date" />
           <TextArea label="내용" placeholder="오늘 있었던 일을 자유롭게 적어보세요." />
-          <p className="text-ink-500 text-[12px]">
-            Phase 0 목업 — 입력은 저장되지 않습니다.
-          </p>
+          <p className="text-ink-500 text-[12px]">Phase 0 목업 — 입력은 저장되지 않습니다.</p>
         </div>
       </BottomSheet>
     </div>

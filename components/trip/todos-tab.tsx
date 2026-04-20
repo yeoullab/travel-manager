@@ -57,6 +57,9 @@ export function TodosTab({ tripId }: Props) {
 
   return (
     <div className="px-4 pt-4 pb-28">
+      <div className="bg-surface-300/50 border-border-primary mb-4 rounded-lg border px-3 py-2">
+        <p className="text-ink-700 text-[12px]">이 탭은 다음 단계에서 실 데이터로 연결됩니다</p>
+      </div>
       <TodoProgress incomplete={incomplete.length} total={initial.length} />
 
       {incomplete.length > 0 && (
@@ -68,7 +71,9 @@ export function TodosTab({ tripId }: Props) {
               memo={t.memo}
               assignedTo={t.assignedTo}
               assigneeName={lookupMember(t.assignedTo)?.display_name ?? null}
-              chipClass={chipClassForColor(lookupMember(t.assignedTo)?.color as Parameters<typeof chipClassForColor>[0])}
+              chipClass={chipClassForColor(
+                lookupMember(t.assignedTo)?.color as Parameters<typeof chipClassForColor>[0],
+              )}
               checked={false}
               onToggle={() => toggle(t.id)}
             />
@@ -85,7 +90,9 @@ export function TodosTab({ tripId }: Props) {
               memo={t.memo}
               assignedTo={t.assignedTo}
               assigneeName={lookupMember(t.assignedTo)?.display_name ?? null}
-              chipClass={chipClassForColor(lookupMember(t.assignedTo)?.color as Parameters<typeof chipClassForColor>[0])}
+              chipClass={chipClassForColor(
+                lookupMember(t.assignedTo)?.color as Parameters<typeof chipClassForColor>[0],
+              )}
               checked
               onToggle={() => toggle(t.id)}
             />
