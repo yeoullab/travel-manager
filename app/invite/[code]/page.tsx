@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppBar } from "@/components/ui/app-bar";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,7 @@ type InviteState =
   | { type: "success" }
   | { type: "own_invite"; inviteUrl: string }
   | { type: "already_connected" }
-  | { type: "invalid" }
-  | { type: "error"; message: string };
+  | { type: "invalid" };
 
 export default function InvitePage() {
   const params = useParams<{ code: string }>();
@@ -26,16 +25,19 @@ export default function InvitePage() {
     validCode ? { type: "loading" } : { type: "invalid" },
   );
   const [toast, setToast] = useState<string | null>(null);
+  const hasRun = useRef(false);
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!validCode) return;
+    if (!validCode || hasRun.current) return;
+    hasRun.current = true;
 
     acceptInvite
       .mutateAsync(validCode)
       .then(() => {
         setState({ type: "success" });
         setToast("파트너와 연결되었어요");
-        setTimeout(() => router.push("/trips"), 1500);
+        redirectTimer.current = setTimeout(() => router.push("/trips"), 1500);
       })
       .catch((err: Error) => {
         if (err.message === "cannot_accept_own_invite") {
@@ -49,6 +51,9 @@ export default function InvitePage() {
           setState({ type: "invalid" });
         }
       });
+    return () => {
+      if (redirectTimer.current) clearTimeout(redirectTimer.current);
+    };
     // 마운트 시 1회만 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -88,7 +93,7 @@ export default function InvitePage() {
           </div>
         )}
       </main>
-      {toast && <Toast message={toast} />}
+      {toast && <Toast message={toast} tone="success" />}
     </div>
   );
 }
