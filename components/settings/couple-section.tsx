@@ -18,7 +18,10 @@ export function CoupleSection() {
 
   const [dissolveOpen, setDissolveOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [toast, setToast] = useState<{ message: string; tone: "info" | "error" | "success" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    tone: "info" | "error" | "success";
+  } | null>(null);
 
   function flash(message: string, tone: "info" | "error" | "success" = "info") {
     setToast({ message, tone });
@@ -63,9 +66,7 @@ export function CoupleSection() {
   }
 
   if (isLoading) {
-    return (
-      <div className="text-ink-500 py-8 text-center text-[14px]">불러오는 중…</div>
-    );
+    return <div className="bg-surface-200 h-20 animate-pulse rounded-xl" />;
   }
 
   const status = groupData?.group.status;
@@ -75,8 +76,7 @@ export function CoupleSection() {
     return (
       <div className="flex flex-col gap-4">
         <div className="border-border-primary bg-surface-100 rounded-[12px] border px-4 py-6 text-center">
-          <p className="text-ink-700 text-[15px] font-medium">파트너가 연결되지 않았어요</p>
-          <p className="text-ink-500 mt-1 text-[13px]">초대 링크를 생성해 파트너와 함께 여행을 계획해보세요.</p>
+          <p className="text-ink-700 text-[15px] font-medium">파트너와 함께 여행을 계획해보세요</p>
         </div>
         <button
           type="button"
@@ -84,7 +84,7 @@ export function CoupleSection() {
           disabled={createInvite.isPending}
           className="bg-ink-900 text-cream w-full rounded-[12px] py-3.5 text-[15px] font-medium transition-opacity active:opacity-70 disabled:opacity-50"
         >
-          {createInvite.isPending ? "생성 중…" : "초대 링크 만들기"}
+          {createInvite.isPending ? "생성 중…" : "파트너 초대하기"}
         </button>
         {toast && <Toast message={toast.message} tone={toast.tone} />}
       </div>
