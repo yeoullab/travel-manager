@@ -13,8 +13,6 @@ import {
 } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
 import { BottomTabBar, type BottomTab } from "@/components/ui/bottom-tab-bar";
-import type { Trip } from "@/lib/types";
-
 export type TripTabKey = "schedule" | "expenses" | "todos" | "records" | "manage";
 
 const TAB_DEFS: { key: TripTabKey; label: string; icon: BottomTab["icon"] }[] = [
@@ -26,7 +24,7 @@ const TAB_DEFS: { key: TripTabKey; label: string; icon: BottomTab["icon"] }[] = 
 ];
 
 type TripLayoutProps = {
-  trip: Trip;
+  trip: { id: string; title: string };
   activeTab: TripTabKey;
   children: ReactNode;
 };

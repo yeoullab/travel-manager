@@ -7,6 +7,8 @@ import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
+import { useCreateTrip } from "@/lib/trip/use-create-trip";
+import { validateTripDates } from "@/lib/trip/trip-date-validation";
 
 const CURRENCIES = ["KRW", "JPY", "USD", "EUR", "CNY", "THB"];
 
@@ -14,7 +16,6 @@ const CURRENCIES = ["KRW", "JPY", "USD", "EUR", "CNY", "THB"];
  * 05 `/trips/new` — 여행 만들기.
  *
  * 필드: 제목 / 목적지 / 시작일 / 종료일 / 국내·해외 / 통화.
- * Phase 0 목업: 저장 없이 1.1초 후 토스트 + /trips 이동.
  */
 export default function NewTripPage() {
   const router = useRouter();
@@ -24,8 +25,11 @@ export default function NewTripPage() {
   const [end, setEnd] = useState("");
   const [isDomestic, setIsDomestic] = useState(false);
   const [currencies, setCurrencies] = useState<string[]>(["KRW"]);
-  const [submitting, setSubmitting] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+
+  const createTrip = useCreateTrip();
 
   const valid =
     title.trim().length >= 2 &&
@@ -39,21 +43,37 @@ export default function NewTripPage() {
     setCurrencies((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!valid || submitting) return;
-    setSubmitting(true);
-    setShowToast(true);
-    setTimeout(() => router.push("/trips"), 1100);
+    const dateErr = validateTripDates(start, end);
+    if (dateErr) {
+      setDateError(dateErr);
+      return;
+    }
+    setDateError(null);
+    if (!valid || createTrip.isPending) return;
+    try {
+      const tripId = await createTrip.mutateAsync({
+        title: title.trim(),
+        destination: destination.trim(),
+        startDate: start,
+        endDate: end,
+        isDomestic,
+        currencies,
+      });
+      router.push(`/trips/${tripId}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "오류가 발생했어요";
+      setToastMessage(msg);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    }
   }
 
   return (
     <div className="flex min-h-dvh flex-col" style={{ minHeight: "100dvh" }}>
       <AppBar title="새 여행" onBack={() => router.push("/trips")} />
-      <form
-        className="mx-auto w-full max-w-[560px] flex-1 px-4 pt-4 pb-24"
-        onSubmit={handleSubmit}
-      >
+      <form className="mx-auto w-full max-w-[560px] flex-1 px-4 pt-4 pb-24" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-5">
           <TextField
             label="여행 제목"
@@ -88,6 +108,7 @@ export default function NewTripPage() {
               error={start && end && start > end ? "종료일이 시작일보다 빨라요" : undefined}
             />
           </div>
+          {dateError && <p className="text-error text-[12px]">{dateError}</p>}
 
           <div>
             <p className="text-ink-700 mb-2 text-[13px] font-medium">여행 종류</p>
@@ -126,22 +147,15 @@ export default function NewTripPage() {
             </div>
             <p className="text-ink-600 mt-2 text-[12px]">최소 1개 이상 선택해주세요.</p>
           </div>
-
-          <div className="bg-surface-300/50 border-border-primary rounded-[8px] border p-4">
-            <p className="text-ink-600 text-[12px] leading-[1.5]">
-              Phase 0 목업 — 저장되지 않으며 생성 버튼은 여행 목록으로 이동하는 연출만
-              수행합니다.
-            </p>
-          </div>
         </div>
 
         <div className="mt-8">
-          <Button type="submit" fullWidth size="lg" disabled={!valid || submitting}>
-            {submitting ? "만드는 중..." : "여행 만들기"}
+          <Button type="submit" fullWidth size="lg" disabled={!valid || createTrip.isPending}>
+            {createTrip.isPending ? "만드는 중..." : "여행 만들기"}
           </Button>
         </div>
       </form>
-      {showToast && <Toast message="여행이 생성되었어요 (목업)" tone="success" />}
+      {showToast && toastMessage && <Toast message={toastMessage} tone="error" />}
     </div>
   );
 }
