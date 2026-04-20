@@ -1,85 +1,94 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Copy,
-  Check,
   Heart,
   Trash2,
-  UserMinus,
-  Link as LinkIcon,
   CalendarDays,
   MapPin,
   Type,
-  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { TextField } from "@/components/ui/text-field";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
-import { getTripById, getGuestShareByTripId, getProfileName } from "@/lib/mocks";
-import type { Trip } from "@/lib/types";
+import { useTripDetail } from "@/lib/trip/use-trip-detail";
+import { useMyGroup } from "@/lib/group/use-my-group";
+import { usePartnerShareToggle } from "@/lib/trip/use-partner-share-toggle";
+import { useDeleteTrip } from "@/lib/trip/use-delete-trip";
+import { EditTripModal } from "@/components/trip/edit-trip-modal";
+import { DeleteTripDialog } from "@/components/trip/delete-trip-dialog";
 import { cn } from "@/lib/cn";
 
 type Props = { tripId: string };
 
-type DialogKind = "delete" | "disconnect" | null;
-type SheetKind = "info" | null;
+type DialogKind = "delete" | "share-off" | null;
+type SheetKind = "edit" | null;
 
 /**
  * 11 /trips/[id]?tab=manage
  *
- * 여행 정보 편집 / 파트너 공유 토글 / 게스트 링크 / 위험 영역(삭제·커플 해제).
- * Phase 0 목업: 모든 변경은 토스트 연출만.
+ * 여행 정보 편집 / 파트너 공유 토글 / 여행 삭제.
+ * 게스트 링크는 Phase 6으로 이관(placeholder 배너).
  */
 export function ManageTab({ tripId }: Props) {
   const router = useRouter();
-  const trip = useMemo(() => getTripById(tripId), [tripId]);
-  const guestShare = useMemo(() => getGuestShareByTripId(tripId), [tripId]);
+  const { data: trip } = useTripDetail(tripId);
+  const { data: myGroup } = useMyGroup();
+  const partnerShareToggle = usePartnerShareToggle();
+  const deleteTrip = useDeleteTrip();
 
-  const [partnerShared, setPartnerShared] = useState(true);
-  const [guestActive, setGuestActive] = useState(Boolean(guestShare?.isActive));
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   if (!trip) return null;
 
-  const partnerName = getProfileName(null);
-  const shareUrl = guestShare
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/share/${guestShare.token}`
-    : "";
+  const myGroupId = myGroup?.group.id ?? null;
+  const isShared = trip.group_id !== null;
 
   function flash(message: string) {
     setToast(message);
     setTimeout(() => setToast(null), 2200);
   }
 
-  async function copyShareUrl() {
-    if (!shareUrl) return;
+  async function setShareOn() {
+    if (!myGroupId) {
+      flash("파트너 연결이 필요해요");
+      return;
+    }
     try {
-      await navigator.clipboard?.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-      flash("링크가 복사되었어요");
+      await partnerShareToggle.mutateAsync({ tripId, groupId: myGroupId });
+      flash("파트너 공유가 켜졌어요");
     } catch {
-      flash("복사할 수 없어요");
+      flash("공유 변경에 실패했어요");
     }
   }
 
-  function handleDelete() {
-    setDialog(null);
-    flash("여행이 삭제되었어요 (목업)");
-    setTimeout(() => router.push("/trips"), 900);
+  async function confirmShareOff() {
+    try {
+      await partnerShareToggle.mutateAsync({ tripId, groupId: null });
+      setDialog(null);
+      flash("파트너 공유가 꺼졌어요");
+    } catch {
+      setDialog(null);
+      flash("공유 변경에 실패했어요");
+    }
   }
 
-  function handleDisconnect() {
-    setDialog(null);
-    flash("커플 연결이 해제되었어요 (목업)");
+  async function confirmDelete() {
+    try {
+      await deleteTrip.mutateAsync(tripId);
+      setDialog(null);
+      router.push("/trips");
+    } catch {
+      setDialog(null);
+      flash("삭제에 실패했어요");
+    }
   }
+
+  const canShare = Boolean(myGroupId);
 
   return (
     <div className="px-4 pt-4 pb-28">
@@ -98,95 +107,48 @@ export function ManageTab({ tripId }: Props) {
         <InfoRow
           icon={<CalendarDays size={18} className="text-ink-600" />}
           label="기간"
-          value={formatRange(trip.startDate, trip.endDate)}
+          value={formatRange(trip.start_date, trip.end_date)}
         />
       </ManageSection>
       <div className="mt-3">
-        <Button fullWidth variant="secondary" onClick={() => setSheet("info")}>
+        <Button fullWidth variant="secondary" onClick={() => setSheet("edit")}>
           여행 정보 수정
         </Button>
       </div>
 
       {/* 파트너 공유 */}
-      <ManageSection label="파트너 공유">
-        <ToggleRow
-          icon={<Heart size={18} className="text-error" />}
-          label={`${partnerName}와 실시간 공유`}
-          description={
-            partnerShared
-              ? "변경 사항이 파트너에게 즉시 반영돼요."
-              : "파트너는 현재 이 여행을 볼 수 없어요."
-          }
-          value={partnerShared}
-          onChange={(v) => {
-            setPartnerShared(v);
-            flash(v ? "파트너 공유가 켜졌어요" : "파트너 공유가 꺼졌어요");
-          }}
-        />
-      </ManageSection>
+      {canShare && (
+        <ManageSection label="파트너 공유">
+          <ToggleRow
+            icon={<Heart size={18} className="text-error" />}
+            label="파트너와 실시간 공유"
+            description={
+              isShared
+                ? "변경 사항이 파트너에게 즉시 반영돼요."
+                : "파트너는 현재 이 여행을 볼 수 없어요."
+            }
+            value={isShared}
+            disabled={partnerShareToggle.isPending}
+            onChange={(next) => {
+              if (!next) {
+                setDialog("share-off");
+              } else {
+                void setShareOn();
+              }
+            }}
+          />
+        </ManageSection>
+      )}
 
-      {/* 게스트 링크 */}
+      {/* 게스트 링크 — Phase 6 이관 */}
       <ManageSection label="게스트 링크">
-        <ToggleRow
-          icon={<Share2 size={18} className="text-ink-600" />}
-          label="링크로 공유"
-          description={
-            guestActive
-              ? "링크가 있는 누구나 읽기 전용으로 볼 수 있어요."
-              : "링크를 꺼서 아무도 접근할 수 없어요."
-          }
-          value={guestActive}
-          onChange={(v) => {
-            setGuestActive(v);
-            flash(v ? "링크가 활성화되었어요" : "링크가 비활성화되었어요");
-          }}
-        />
-        {guestActive && guestShare && (
-          <div className="border-border-primary border-t px-4 py-3">
-            <div className="flex items-center gap-2">
-              <LinkIcon size={14} className="text-ink-500 shrink-0" />
-              <code className="text-ink-800 flex-1 truncate font-mono text-[12px]">
-                /share/{guestShare.token}
-              </code>
-              <button
-                type="button"
-                onClick={copyShareUrl}
-                aria-label="링크 복사"
-                className={cn(
-                  "flex h-9 shrink-0 items-center gap-1 rounded-full px-3 text-[12px] font-medium transition-colors",
-                  copied
-                    ? "bg-success text-cream"
-                    : "bg-surface-400 text-ink-700 hover:text-ink-900",
-                )}
-              >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? "복사됨" : "복사"}
-              </button>
-            </div>
-            <p className="text-ink-600 mt-2 text-[12px]">
-              공개 항목: 일정
-              {guestShare.showExpenses && " · 경비"}
-              {guestShare.showTodos && " · 할 일"}
-              {guestShare.showRecords && " · 기록"}
-              {guestShare.expiresAt && (
-                <>
-                  {" · 만료 "}
-                  {guestShare.expiresAt.slice(0, 10)}
-                </>
-              )}
-            </p>
-          </div>
-        )}
+        <div className="bg-surface-300/50 text-ink-700 px-4 py-3 text-[13px]">
+          게스트 링크 공유는 다음 단계에서 추가됩니다.
+        </div>
       </ManageSection>
 
       {/* 위험 영역 */}
       <ManageSection label="위험 영역">
-        <DangerRow
-          icon={<UserMinus size={18} />}
-          label="커플 해제"
-          description="파트너가 더 이상 이 여행에 접근할 수 없어요."
-          onClick={() => setDialog("disconnect")}
-        />
         <DangerRow
           icon={<Trash2 size={18} />}
           label="여행 삭제"
@@ -195,37 +157,38 @@ export function ManageTab({ tripId }: Props) {
         />
       </ManageSection>
 
-      <ConfirmDialog
+      <DeleteTripDialog
         open={dialog === "delete"}
-        onClose={() => setDialog(null)}
-        title="여행을 삭제하시겠어요?"
-        description="파트너의 데이터도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
-        primaryLabel="삭제"
-        secondaryLabel="취소"
-        destructive
-        onPrimary={handleDelete}
+        tripTitle={trip.title}
+        isShared={isShared}
+        onConfirm={confirmDelete}
+        onCancel={() => setDialog(null)}
       />
 
       <ConfirmDialog
-        open={dialog === "disconnect"}
+        open={dialog === "share-off"}
         onClose={() => setDialog(null)}
-        title="커플 연결을 해제하시겠어요?"
-        description="파트너가 더 이상 이 여행에 접근할 수 없어요. 생성자의 데이터는 유지됩니다."
-        primaryLabel="해제"
+        title="파트너 공유를 끌까요?"
+        description="파트너가 이 여행을 더 이상 볼 수 없게 됩니다."
+        primaryLabel="확인"
         secondaryLabel="취소"
         destructive
-        onPrimary={handleDisconnect}
+        onPrimary={confirmShareOff}
       />
 
-      <EditInfoSheet
-        open={sheet === "info"}
+      <BottomSheet
+        open={sheet === "edit"}
         onClose={() => setSheet(null)}
-        trip={trip}
-        onSaved={() => {
-          setSheet(null);
-          flash("저장되었어요 (목업)");
-        }}
-      />
+        title="여행 정보 수정"
+      >
+        {sheet === "edit" && (
+          <EditTripModal
+            trip={trip}
+            onClose={() => setSheet(null)}
+            onSaved={() => flash("저장되었어요")}
+          />
+        )}
+      </BottomSheet>
 
       {toast && <Toast message={toast} tone="success" />}
     </div>
@@ -245,7 +208,15 @@ function ManageSection({ label, children }: { label: string; children: React.Rea
   );
 }
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <div aria-hidden className="shrink-0">
@@ -264,12 +235,14 @@ function ToggleRow({
   label,
   description,
   value,
+  disabled,
   onChange,
 }: {
   icon: React.ReactNode;
   label: string;
   description?: string;
   value: boolean;
+  disabled?: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
@@ -283,21 +256,31 @@ function ToggleRow({
           <p className="text-ink-600 mt-0.5 text-[12px] leading-[1.4]">{description}</p>
         )}
       </div>
-      <Switch value={value} onChange={onChange} />
+      <Switch value={value} disabled={disabled} onChange={onChange} />
     </div>
   );
 }
 
-function Switch({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+function Switch({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={value}
+      disabled={disabled}
       onClick={() => onChange(!value)}
       className={cn(
         "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200",
         value ? "bg-accent-orange" : "bg-surface-500",
+        disabled && "opacity-50",
       )}
     >
       <span
@@ -338,41 +321,6 @@ function DangerRow({
         )}
       </div>
     </button>
-  );
-}
-
-function EditInfoSheet({
-  open,
-  onClose,
-  trip,
-  onSaved,
-}: {
-  open: boolean;
-  onClose: () => void;
-  trip: Trip;
-  onSaved: () => void;
-}) {
-  return (
-    <BottomSheet
-      open={open}
-      onClose={onClose}
-      title="여행 정보 수정"
-      footer={
-        <Button fullWidth variant="primary" onClick={onSaved}>
-          저장
-        </Button>
-      }
-    >
-      <div className="space-y-4">
-        <TextField label="제목" defaultValue={trip.title} />
-        <TextField label="목적지" defaultValue={trip.destination} />
-        <div className="grid grid-cols-2 gap-3">
-          <TextField label="시작일" type="date" defaultValue={trip.startDate} />
-          <TextField label="종료일" type="date" defaultValue={trip.endDate} />
-        </div>
-        <p className="text-ink-500 text-[12px]">Phase 0 목업 — 입력은 저장되지 않습니다.</p>
-      </div>
-    </BottomSheet>
   );
 }
 
