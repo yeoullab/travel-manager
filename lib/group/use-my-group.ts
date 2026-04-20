@@ -20,20 +20,26 @@ export function useMyGroup() {
   return useQuery({
     queryKey: queryKeys.group.me,
     queryFn: async (): Promise<MyGroupData> => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // 본인이 속한 active 또는 pending 그룹
+      // 본인이 속한 active 또는 pending 그룹.
+      // `groups!inner` 로 inner join 하여 dissolved/cancelled 그룹의 group_members
+      // 잔존 row 가 함께 딸려오는 현상(groups=null) 을 차단한다.
       const { data: memberRows } = await supabase
         .from("group_members")
-        .select("*, groups(*)")
+        .select("*, groups!inner(*)")
         .eq("user_id", user.id)
         .in("groups.status", ["pending", "active"])
+        .order("joined_at", { ascending: false })
         .limit(1);
 
       const memberRow = memberRows?.[0];
       if (!memberRow) return null;
       const group = (memberRow as { groups: GroupRow }).groups;
+      if (!group) return null;
 
       // 오너이면 invite_code 도 조회
       let inviteCode: string | undefined;
@@ -54,7 +60,9 @@ export function useMyGroup() {
         .select("*, profiles_public(*)")
         .eq("group_id", group.id);
 
-      const members = ((allMembers ?? []) as Array<GroupMemberRow & { profiles_public: PublicProfile | null }>).map((m) => ({
+      const members = (
+        (allMembers ?? []) as Array<GroupMemberRow & { profiles_public: PublicProfile | null }>
+      ).map((m) => ({
         ...m,
         profile: m.profiles_public,
       }));

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { useMyGroup } from "@/lib/group/use-my-group";
+import { useMyProfile } from "@/lib/profile/use-profile";
 import { useCreateInvite } from "@/lib/group/use-create-invite";
 import { useCancelInvite } from "@/lib/group/use-cancel-invite";
 import { useDissolveGroup } from "@/lib/group/use-dissolve-group";
@@ -12,6 +13,7 @@ import { Toast } from "@/components/ui/toast";
 
 export function CoupleSection() {
   const { data: groupData, isLoading } = useMyGroup();
+  const { data: me } = useMyProfile();
   const createInvite = useCreateInvite();
   const cancelInvite = useCancelInvite();
   const dissolveGroup = useDissolveGroup();
@@ -135,8 +137,10 @@ export function CoupleSection() {
     );
   }
 
-  // Active — partner connected
-  const partner = groupData.members.find((m) => m.role === "member");
+  // Active — partner connected. "파트너" = 나 아닌 멤버.
+  const partner = me
+    ? groupData.members.find((m) => m.user_id !== me.id)
+    : groupData.members.find((m) => m.role === "member");
   const partnerName = partner?.profile?.display_name ?? "파트너";
 
   return (
