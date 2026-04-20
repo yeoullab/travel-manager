@@ -8,22 +8,12 @@ import { useMyProfile } from "@/lib/profile/use-profile";
 import { ColorPalette } from "@/components/settings/color-palette";
 import { profileColorSchema } from "@/lib/profile/color-schema";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
-import {
-  User,
-  Heart,
-  Tag,
-  LogOut,
-  ChevronRight,
-  Mail,
-} from "lucide-react";
+import { User, Heart, Tag, LogOut, ChevronRight, Mail } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
+import { useMyGroup } from "@/lib/group/use-my-group";
 import { cn } from "@/lib/cn";
-import type { Group } from "@/lib/types";
-
-// Phase 2 Task 9: mock groups 데이터 삭제. Task 16이 이 페이지를 `useMyGroup`으로 재작성하기 전까지 빈 리스트 스텁을 사용한다.
-const groups: Group[] = [];
 
 /**
  * 12 `/settings` — 설정 메뉴.
@@ -35,10 +25,12 @@ export default function SettingsPage() {
   const { data: me } = useMyProfile();
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
-    void getBrowserClient().auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    void getBrowserClient()
+      .auth.getUser()
+      .then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
-  const myGroup = groups.find((g) => g.status === "active");
-  const partnerConnected = Boolean(myGroup);
+  const { data: groupData } = useMyGroup();
+  const partnerConnected = groupData?.group.status === "active";
 
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -84,42 +76,31 @@ export default function SettingsPage() {
               </p>
             </div>
           </div>
-          {me && (
-            <ColorPalette
-              currentColor={profileColorSchema.parse(me.color)}
-              userId={me.id}
-            />
-          )}
+          {me && <ColorPalette currentColor={profileColorSchema.parse(me.color)} userId={me.id} />}
         </section>
 
         <SettingsGroup>
           <SettingsRow
             icon={<User size={20} className="text-ink-600" />}
             title="프로필"
-            subtitle="이름, 아바타 편집"
-            onClick={() => flash("프로필 편집은 Phase 1에서 연결됩니다")}
+            subtitle="이름, 아바타, 색상 편집"
+            onClick={() => router.push("/settings/profile")}
           />
           <SettingsRow
             icon={<Heart size={20} className="text-error" />}
             title="파트너 연결"
-            subtitle={
-              partnerConnected
-                ? `${myGroup?.name} · 연결됨`
-                : "초대 코드로 파트너와 연결해보세요"
-            }
+            subtitle={partnerConnected ? "파트너와 연결됨" : "초대 코드로 파트너와 연결해보세요"}
             trailing={
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-[11px] font-medium",
-                  partnerConnected
-                    ? "bg-success/15 text-success"
-                    : "bg-surface-400 text-ink-700",
+                  partnerConnected ? "bg-success/15 text-success" : "bg-surface-400 text-ink-700",
                 )}
               >
                 {partnerConnected ? "연결됨" : "미연결"}
               </span>
             }
-            onClick={() => flash("파트너 연결 관리는 Phase 6에서 연결됩니다")}
+            onClick={() => router.push("/settings/couple")}
           />
           <SettingsRow
             icon={<Tag size={20} className="text-ink-600" />}
@@ -137,13 +118,6 @@ export default function SettingsPage() {
             onClick={() => setLogoutOpen(true)}
           />
         </SettingsGroup>
-
-        <div className="bg-surface-300/50 border-border-primary mt-6 rounded-[8px] border px-4 py-3">
-          <p className="text-ink-600 text-[12px] leading-[1.5]">
-            Phase 0 목업 — 설정 변경은 저장되지 않습니다. 실제 연결은 Phase 1 이후에
-            활성화됩니다.
-          </p>
-        </div>
 
         <p className="text-ink-500 mt-8 text-center text-[11px]">
           travel-manager · Phase 0 preview · v0.1.0
@@ -208,22 +182,13 @@ function SettingsRow({
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "text-[15px] font-medium",
-            danger ? "text-error" : "text-ink-900",
-          )}
-        >
+        <p className={cn("text-[15px] font-medium", danger ? "text-error" : "text-ink-900")}>
           {title}
         </p>
-        {subtitle && (
-          <p className="text-ink-600 mt-0.5 truncate text-[12px]">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-ink-600 mt-0.5 truncate text-[12px]">{subtitle}</p>}
       </div>
       {trailing}
-      {!danger && (
-        <ChevronRight size={18} className="text-ink-500 shrink-0" aria-hidden />
-      )}
+      {!danger && <ChevronRight size={18} className="text-ink-500 shrink-0" aria-hidden />}
     </button>
   );
 }
