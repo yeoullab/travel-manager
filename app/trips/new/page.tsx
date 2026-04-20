@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import { useCreateTrip } from "@/lib/trip/use-create-trip";
+import { TRIP_CURRENCIES } from "@/lib/trip/constants";
 import { validateTripDates } from "@/lib/trip/trip-date-validation";
-
-const CURRENCIES = ["KRW", "JPY", "USD", "EUR", "CNY", "THB"];
 
 /**
  * 05 `/trips/new` — 여행 만들기.
@@ -125,7 +124,7 @@ export default function NewTripPage() {
           <div>
             <p className="text-ink-700 mb-2 text-[13px] font-medium">사용 통화</p>
             <div className="flex flex-wrap gap-2">
-              {CURRENCIES.map((c) => {
+              {TRIP_CURRENCIES.map((c) => {
                 const selected = currencies.includes(c);
                 return (
                   <button

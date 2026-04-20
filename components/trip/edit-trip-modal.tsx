@@ -8,9 +8,8 @@ import { DateShrinkConfirm } from "@/components/trip/date-shrink-confirm";
 import { useUpdateTrip } from "@/lib/trip/use-update-trip";
 import { useResizeTripDays } from "@/lib/trip/use-resize-trip-days";
 import { validateTripDates } from "@/lib/trip/trip-date-validation";
+import { TRIP_CURRENCIES } from "@/lib/trip/constants";
 import type { TripRow } from "@/lib/trip/use-trips-list";
-
-const CURRENCIES = ["KRW", "JPY", "USD", "EUR", "CNY", "THB"];
 
 type Props = {
   trip: TripRow;
@@ -26,6 +25,7 @@ export function EditTripModal({ trip, onClose, onSaved }: Props) {
   const [isDomestic, setIsDomestic] = useState(trip.is_domestic);
   const [currencies, setCurrencies] = useState<string[]>(trip.currencies);
   const [dateError, setDateError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showShrinkConfirm, setShowShrinkConfirm] = useState(false);
 
   const updateTrip = useUpdateTrip();
@@ -40,23 +40,27 @@ export function EditTripModal({ trip, onClose, onSaved }: Props) {
       return;
     }
     setDateError(null);
+    setSaveError(null);
 
     const dateChanged = start !== trip.start_date || end !== trip.end_date;
 
-    if (dateChanged) {
-      await resizeTripDays.mutateAsync({ tripId: trip.id, newStart: start, newEnd: end });
+    try {
+      if (dateChanged) {
+        await resizeTripDays.mutateAsync({ tripId: trip.id, newStart: start, newEnd: end });
+      }
+      await updateTrip.mutateAsync({
+        id: trip.id,
+        title,
+        destination,
+        isDomestic,
+        currencies,
+      });
+      onSaved();
+      onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "저장 중 오류가 발생했어요";
+      setSaveError(msg);
     }
-
-    await updateTrip.mutateAsync({
-      id: trip.id,
-      title,
-      destination,
-      isDomestic,
-      currencies,
-    });
-
-    onSaved();
-    onClose();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -129,7 +133,7 @@ export function EditTripModal({ trip, onClose, onSaved }: Props) {
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
-        {CURRENCIES.map((c) => (
+        {TRIP_CURRENCIES.map((c) => (
           <button
             key={c}
             type="button"
@@ -150,6 +154,7 @@ export function EditTripModal({ trip, onClose, onSaved }: Props) {
           </button>
         ))}
       </div>
+      {saveError && <p className="text-error text-[12px]">{saveError}</p>}
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="ghost" fullWidth onClick={onClose}>
           취소

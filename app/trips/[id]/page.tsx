@@ -41,7 +41,7 @@ function TripDetailInner({ id }: { id: string }) {
     return <TripDetailFallback />;
   }
 
-  if (!trip || (error as { code?: string } | null)?.code === "PGRST116") {
+  if (error || !trip) {
     return <TripUnavailable />;
   }
 
