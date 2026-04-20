@@ -16,6 +16,9 @@ const scriptSrc = [
   isDev ? "'unsafe-eval'" : "",
   "https://accounts.google.com",
   "https://accounts.google.com/gsi/client",
+  // Phase 3 (ADR-009) — Maps SDK
+  "https://oapi.map.naver.com", // Naver Maps SDK
+  "https://maps.googleapis.com", // Google Maps JS loader
 ]
   .filter(Boolean)
   .join(" ");
@@ -23,6 +26,27 @@ const scriptSrc = [
 // Supabase REST + Realtime 모두 허용. Realtime은 wss:// 스킴을 쓰므로 별도 항목 필요.
 const supabaseHttp = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseWs = supabaseHttp.replace(/^https:\/\//i, "wss://");
+
+const imgSrc = [
+  "img-src 'self' data: blob:",
+  "https://lh3.googleusercontent.com",
+  // Phase 3 Maps 타일/정적 이미지
+  "https://*.naver.net", // Naver 타일
+  "https://*.pstatic.net", // Naver 정적
+  "https://maps.googleapis.com", // Google Static Maps
+  "https://maps.gstatic.com", // Google 아이콘
+  "https://*.googleusercontent.com", // Google Places photos
+].join(" ");
+
+const connectSrc = [
+  "connect-src 'self'",
+  supabaseHttp,
+  supabaseWs,
+  "https://accounts.google.com",
+  // Phase 3 — Maps/Search API (client 에서 직접 호출하는 도메인 + SDK 가 fetch 하는 도메인)
+  "https://naveropenapi.apigw.ntruss.com",
+  "https://maps.googleapis.com",
+].join(" ");
 
 const securityHeaders = [
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
@@ -35,10 +59,11 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       `script-src ${scriptSrc}`,
+      // Google Maps SDK 가 inline style 대량 주입 → 'unsafe-inline' 유지 (nonce 지원 없음)
       "style-src 'self' 'unsafe-inline' https://accounts.google.com",
-      "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+      imgSrc,
       "font-src 'self' data:",
-      `connect-src 'self' ${supabaseHttp} ${supabaseWs} https://accounts.google.com`,
+      connectSrc,
       "frame-src https://accounts.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
