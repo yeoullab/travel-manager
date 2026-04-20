@@ -14,4 +14,7 @@ export const queryKeys = {
   group: {
     me: ["group", "me"] as const,
   },
+  schedule: {
+    byTripId: (tripId: string) => ["schedule", tripId] as const,
+  },
 } as const;

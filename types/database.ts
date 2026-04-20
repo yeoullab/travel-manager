@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12"
   }
@@ -133,6 +135,68 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      schedule_items: {
+        Row: {
+          created_at: string
+          id: string
+          memo: string | null
+          place_address: string | null
+          place_external_id: string | null
+          place_lat: number | null
+          place_lng: number | null
+          place_name: string | null
+          place_provider: string | null
+          sort_order: number
+          time_of_day: string | null
+          title: string
+          trip_day_id: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          memo?: string | null
+          place_address?: string | null
+          place_external_id?: string | null
+          place_lat?: number | null
+          place_lng?: number | null
+          place_name?: string | null
+          place_provider?: string | null
+          sort_order: number
+          time_of_day?: string | null
+          title: string
+          trip_day_id: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          memo?: string | null
+          place_address?: string | null
+          place_external_id?: string | null
+          place_lat?: number | null
+          place_lng?: number | null
+          place_name?: string | null
+          place_provider?: string | null
+          sort_order?: number
+          time_of_day?: string | null
+          title?: string
+          trip_day_id?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_items_trip_day_id_fkey"
+            columns: ["trip_day_id"]
+            isOneToOne: false
+            referencedRelation: "trip_days"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trip_days: {
         Row: {
@@ -287,6 +351,22 @@ export type Database = {
       can_access_trip: { Args: { p_trip_id: string }; Returns: boolean }
       cancel_invite: { Args: never; Returns: undefined }
       create_invite: { Args: never; Returns: Json }
+      create_schedule_item: {
+        Args: {
+          p_memo?: string
+          p_place_address?: string
+          p_place_external_id?: string
+          p_place_lat?: number
+          p_place_lng?: number
+          p_place_name?: string
+          p_place_provider?: string
+          p_time_of_day?: string
+          p_title: string
+          p_trip_day_id: string
+          p_url?: string
+        }
+        Returns: string
+      }
       create_trip: {
         Args: {
           p_currencies: string[]
@@ -298,9 +378,48 @@ export type Database = {
         }
         Returns: string
       }
+      delete_schedule_item: { Args: { p_item_id: string }; Returns: undefined }
       dissolve_group: { Args: never; Returns: undefined }
+      is_group_member: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      move_schedule_item_across_days: {
+        Args: {
+          p_item_id: string
+          p_target_day_id: string
+          p_target_position: number
+        }
+        Returns: undefined
+      }
+      query_publication_tables: {
+        Args: never
+        Returns: {
+          tablename: string
+        }[]
+      }
+      reorder_schedule_items_in_day: {
+        Args: { p_item_ids: string[]; p_trip_day_id: string }
+        Returns: undefined
+      }
       resize_trip_days: {
         Args: { p_new_end: string; p_new_start: string; p_trip_id: string }
+        Returns: undefined
+      }
+      update_schedule_item: {
+        Args: {
+          p_item_id: string
+          p_memo?: string
+          p_place_address?: string
+          p_place_external_id?: string
+          p_place_lat?: number
+          p_place_lng?: number
+          p_place_name?: string
+          p_place_provider?: string
+          p_time_of_day?: string
+          p_title: string
+          p_url?: string
+        }
         Returns: undefined
       }
     }

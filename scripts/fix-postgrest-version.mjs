@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 const path = "types/database.ts";
 const src = readFileSync(path, "utf8");
-const next = src.replace(/PostgrestVersion:\s*"[0-9]+"/g, 'PostgrestVersion: "12"');
+const next = src.replace(/PostgrestVersion:\s*"[0-9.]+"/g, 'PostgrestVersion: "12"');
 if (src === next) {
   console.log("[fix-postgrest-version] no change (already 12 or pattern absent)");
 } else {
