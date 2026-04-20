@@ -26,3 +26,10 @@ end $$;
 revoke all on function public.test_truncate_cascade() from public;
 revoke all on function public.test_truncate_cascade() from authenticated;
 grant execute on function public.test_truncate_cascade() to service_role;
+
+create or replace function public.replica_identity_of(p_table text)
+  returns "char" language sql security definer set search_path = public, pg_catalog as $$
+  select relreplident from pg_class where oid = ('public.' || p_table)::regclass;
+$$;
+revoke all on function public.replica_identity_of(text) from public, anon, authenticated;
+grant execute on function public.replica_identity_of(text) to service_role;

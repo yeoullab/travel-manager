@@ -19,6 +19,8 @@ describe("Realtime publication 감사", () => {
     expect(tables).toContain("trips");
     expect(tables).toContain("group_members");
     expect(tables).toContain("groups");
+    expect(tables).toContain("schedule_items");   // Phase 3 Task 1 에서 publication 추가
     expect(tables).not.toContain("profiles");
+    expect(tables).not.toContain("trip_days");    // parent table 은 publication 제외
   });
 });
