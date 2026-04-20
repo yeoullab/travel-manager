@@ -20,6 +20,10 @@ const scriptSrc = [
   .filter(Boolean)
   .join(" ");
 
+// Supabase REST + Realtime 모두 허용. Realtime은 wss:// 스킴을 쓰므로 별도 항목 필요.
+const supabaseHttp = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabaseWs = supabaseHttp.replace(/^https:\/\//i, "wss://");
+
 const securityHeaders = [
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -34,7 +38,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://accounts.google.com",
       "img-src 'self' data: blob: https://lh3.googleusercontent.com",
       "font-src 'self' data:",
-      `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""} https://accounts.google.com`,
+      `connect-src 'self' ${supabaseHttp} ${supabaseWs} https://accounts.google.com`,
       "frame-src https://accounts.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
