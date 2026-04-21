@@ -16,7 +16,11 @@ test.describe("일정 CRUD (Spec §2.5)", () => {
     await page.getByRole("button", { name: "국내" }).click();
     await page.getByRole("button", { name: "여행 만들기" }).click();
 
-    await expect(page).toHaveURL(/\/trips\/[\w-]+/, { timeout: 10_000 });
+    // UUID 패턴으로 매칭 — /trips/new 상태에서 tripId="new" 로 오염 방지
+    await expect(page).toHaveURL(
+      /\/trips\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/,
+      { timeout: 10_000 },
+    );
     tripId = page.url().split("/trips/")[1].split("?")[0];
 
     await page.getByLabel("일정 추가").click();

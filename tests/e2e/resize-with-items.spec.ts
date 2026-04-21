@@ -31,19 +31,19 @@ test("종료일 Day 4→Day 2 축소 → 확인 다이얼로그 → Day 2 에 6�
 
     // 종료일 수정 (Day 4 → Day 2)
     await page.getByLabel("종료일").fill("2026-07-02");
-    await page.getByRole("button", { name: /저장|변경|수정/ }).click();
+    await page.getByRole("button", { name: "저장", exact: true }).click();
 
-    // DateShrinkConfirm 다이얼로그 — 확인 버튼 클릭
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
-    await page.getByRole("button", { name: /확인|계속/ }).click();
+    // DateShrinkConfirm — 텍스트로 감지 (role="dialog" 아님)
+    await expect(page.getByText("날짜를 줄이시겠어요?")).toBeVisible({ timeout: 5_000 });
+    await page.getByRole("button", { name: "확인", exact: true }).click();
 
-    // 일정 탭 → Day 2 에 6개
+    // 일정 탭 → Day 2 (마지막 day) 에 6개 합병됨
     await page.goto(`/trips/${tripId}`);
+    await page.getByRole("tab", { name: /Day 2/ }).click();
     const items = page.locator("li[role='button']");
     await expect(items).toHaveCount(6, { timeout: 10_000 });
 
-    // Day 3 버튼은 사라짐
-    await expect(page.getByRole("button", { name: "Day 3" })).toHaveCount(0);
+    // Day 3 탭은 사라짐
+    await expect(page.getByRole("tab", { name: /Day 3/ })).toHaveCount(0);
   },
 );

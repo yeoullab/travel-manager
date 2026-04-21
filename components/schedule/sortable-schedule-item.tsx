@@ -23,26 +23,26 @@ export function SortableScheduleItem({ item, index, onTap }: Props) {
   };
 
   return (
-    <li ref={setNodeRef} style={style} className="flex items-start gap-2" {...attributes}>
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-start gap-2"
+      {...attributes}
+      {...listeners}
+      onClick={() => onTap(item)}
+    >
       <div className="bg-surface-300 text-ink-700 mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold">
         {index}
       </div>
-      <div className="min-w-0 flex-1" {...listeners}>
-        <button
-          type="button"
-          className="w-full text-left"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => onTap(item)}
-        >
-          <ScheduleItemCard
-            category="other"
-            title={item.title}
-            time={item.time_of_day ? item.time_of_day.slice(0, 5) : undefined}
-            placeName={item.place_name ?? undefined}
-            memo={item.memo ?? undefined}
-            draggable
-          />
-        </button>
+      <div className="min-w-0 flex-1 text-left">
+        <ScheduleItemCard
+          category="other"
+          title={item.title}
+          time={item.time_of_day ? item.time_of_day.slice(0, 5) : undefined}
+          placeName={item.place_name ?? undefined}
+          memo={item.memo ?? undefined}
+          draggable
+        />
       </div>
     </li>
   );

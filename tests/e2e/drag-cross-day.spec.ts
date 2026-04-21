@@ -45,13 +45,13 @@ test.describe("다른 날로 이동 (cross-day, Spec §3.4)", () => {
     await expect(page.getByText("Day1-B")).toBeVisible();
 
     // Day 2 탭으로 이동 → 2개 (Day1-A + Day2-X)
-    await page.getByRole("button", { name: /Day 2/ }).click();
+    await page.getByRole("tab", { name: /Day 2/ }).click();
     await expect(items).toHaveCount(2, { timeout: 5_000 });
     await expect(page.getByText("Day1-A")).toBeVisible();
 
     // persist
     await page.reload();
-    await page.getByRole("button", { name: /Day 2/ }).click();
+    await page.getByRole("tab", { name: /Day 2/ }).click();
     await expect(page.getByText("Day1-A")).toBeVisible();
   });
 

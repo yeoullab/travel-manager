@@ -68,13 +68,12 @@ export function ScheduleItem({
         className={cn("absolute top-0 bottom-0 left-0 w-1", categoryColor[category])}
       />
       {draggable && (
-        <button
-          type="button"
+        <span
           aria-label="순서 변경"
           className="text-ink-500 -ml-1 flex h-10 w-6 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
         >
           <GripVertical size={16} />
-        </button>
+        </span>
       )}
       <div className="min-w-0 flex-1 pl-2">
         <div className="flex items-start justify-between gap-2">
