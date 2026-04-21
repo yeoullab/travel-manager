@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { request } from "@playwright/test";
+import { chromium } from "@playwright/test";
 import type { Database } from "@/types/database";
 import type { TestUser } from "../fixtures/users";
 
@@ -56,20 +56,29 @@ export async function ensureTestUser(user: TestUser): Promise<string> {
  * /api/test/sign-in 을 호출해 Supabase SSR 쿠키를 정상 경로로 세팅하고
  * storageState JSON 으로 덤프. 수동 cookie 조립은 하지 않는다.
  */
+/**
+ * Chromium 브라우저 컨텍스트로 /api/test/sign-in 을 호출해 SSR 쿠키를 저장.
+ * request.newContext() 는 브라우저 쿠키 저장소와 분리되어 storageState 가
+ * 브라우저 컨텍스트에 올바르게 로드되지 않을 수 있으므로 chromium 을 사용한다.
+ */
 export async function buildStorageState(user: TestUser, outputPath: string): Promise<void> {
   const baseURL = requireEnv("PLAYWRIGHT_BASE_URL");
   const testSecret = requireEnv("TEST_SECRET");
 
-  const ctx = await request.newContext({ baseURL });
-  const res = await ctx.post("/api/test/sign-in", {
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({ baseURL });
+
+  const res = await ctx.request.post("/api/test/sign-in", {
     headers: { "X-Test-Secret": testSecret },
     data: { email: user.email, password: user.password },
   });
   if (!res.ok()) {
     const body = await res.text().catch(() => "");
-    await ctx.dispose();
+    await ctx.close();
+    await browser.close();
     throw new Error(`POST /api/test/sign-in → ${res.status()} ${body.slice(0, 200)}`);
   }
   await ctx.storageState({ path: outputPath });
-  await ctx.dispose();
+  await ctx.close();
+  await browser.close();
 }

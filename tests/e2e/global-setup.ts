@@ -43,8 +43,8 @@ async function ensureAlicePartnersBob(): Promise<void> {
   if ((acc as { error: unknown }).error)
     throw new Error(`accept_invite failed: ${JSON.stringify((acc as { error: unknown }).error)}`);
 
-  await aliceC.auth.signOut();
-  await bobC.auth.signOut();
+  await aliceC.auth.signOut({ scope: "local" });
+  await bobC.auth.signOut({ scope: "local" });
 }
 
 export default async function globalSetup(): Promise<void> {
