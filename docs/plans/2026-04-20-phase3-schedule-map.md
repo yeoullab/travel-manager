@@ -6897,3 +6897,41 @@ Expected: 0 error / 0 failure / 0 high|critical.
    - **권장:** `playwright.config.ts` 상단에 `import "dotenv/config"` + `DOTENV_CONFIG_PATH=.env.test pnpm exec playwright test` 실행. `.env.local` 의 prod key 오염 방지.
    - **대안:** shell export + `pnpm test:e2e`. CI 는 GitHub Actions `env:` 블록으로 주입.
    - `webServer.env.ALLOW_TEST_SIGNIN=true` 는 dev 서버 한정 — **`reuseExistingServer=true` 시 이미 기동된 서버의 env 는 덮어쓰지 못한다**. 로컬 `pnpm dev` 를 별도 터미널로 띄워두고 Playwright 를 실행하면 `.env.local` 에 `ALLOW_TEST_SIGNIN=true` 가 반드시 있어야 한다. CI 에서는 `reuseExistingServer=false` 라 webServer.env 가 유효.
+
+---
+
+## Retrospective (2026-04-21 완료)
+
+### 결과 요약
+
+- **커밋:** 18개 (`b0695d5` → tag `phase-3-schedule-map`, main HEAD=`052cce3`+)
+- **소요:** 2일 (2026-04-20~21, 집/회사 2머신)
+- **테스트:** unit 63/63 · integration 69/69 (22파일) · E2E 7 passed / 5 skipped / 0 failed × 3회 연속
+- **Verification SQL:** 5/5 all green
+
+### 잘된 것
+
+- `dnd-kit PointerSensor(delay:400ms)` long-press + `KeyboardSensor` 조합 — tap vs drag 자연 분리
+- `place_search` 서버 경유 + TM128 변환 + strip-html + rate-limit(30/min/user) 구조 — 외부 API key 클라이언트 노출 없음
+- `trips REPLICA IDENTITY FULL` + share-toggle Realtime — spec §9 ADR 정확히 구현
+- Playwright storageState를 `chromium.launch()` 기반으로 전환 — `request.newContext()` 쿠키 비호환 이슈 해결
+- `Supabase signOut({ scope: "local" })` 명시 — 기본 global scope 로 alice 세션 전역 revoke 버그 발견·해결
+- nested `<button>` 제거 — React dev overlay 오탐 + dnd-kit PointerSensor 무력화 양쪽 동시 해소
+
+### 어려웠던 것
+
+- Part B v1 critic REJECT (BLOCKER 3건 — schedule_items 스키마 오가정) → 전면 폐기 후 레지스트리 선행 v2 재작성
+- `supabase db push` SQLSTATE 42601 multi-statement — Dashboard SQL Editor 수동 실행으로 회피
+- 2머신(폰→집→회사) 환경 분산 — `git fetch/rebase`로 커밋 동기화 필요
+
+### Skip 항목 (후속 phase 이관)
+
+- `partner-realtime` / `share-toggle` E2E — `useTripsList`/`useTripDetail` Realtime 구독 미구현
+- `place-search` E2E (Naver/Google) — 외부 API 타이밍 flaky, Maps 키 환경 의존. mock 기반 재작성 예정
+
+### Follow-up
+
+- `useTripsList` / `useTripDetail` Realtime 구독 추가 (INSERT·UPDATE 채널) → partner-realtime / share-toggle E2E skip 복구
+- Naver/Google place-search E2E mock 기반 재작성
+- `useFlashToast()` 공용 훅 도입 (Phase 2 follow-up 인계)
+- Maps API 키 Vercel 환경변수 등록 + preview 도메인 등록

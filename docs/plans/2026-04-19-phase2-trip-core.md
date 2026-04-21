@@ -3815,3 +3815,31 @@ _(Phase 2 실행 완료 후 이 섹션에 추가)_
 - `on_group_dissolved` trigger에 `categories.group_id → null` fanout 추가
 - Realtime publication에 schedule_items 등 추가
 - 지도 API 선택 ADR 필요 (Google Maps 해외, Naver Maps 국내)
+
+---
+
+## Retrospective (2026-04-20 완료)
+
+### 결과 요약
+
+- **커밋:** 17개 (`858bd37` → tag `phase-2-trip-core`, main HEAD=`0c710a2`)
+- **소요:** 2일 (2026-04-19~20)
+- **테스트:** unit 22/22 · integration 36/36 · manual E2E 5/5 통과
+
+### 잘된 것
+
+- `group_members` RLS 무한 재귀를 integration 테스트에서 즉시 발견 → 0004 마이그레이션으로 해결 (ADR-008)
+- `accept_invite` 동시성 20회 race test → 단일 승자 보장 확인
+- Mock 전용 UI(HighlightPanel, StatusPill, preview toggle) 전면 제거 — 코드베이스 정리
+- `/invite/[code]` 5-branch state machine으로 엣지케이스 망라
+
+### 어려웠던 것
+
+- `supabase db types` 재생성이 Phase 1 `PostgrestVersion: "12"` workaround를 덮어씀 → 재적용 필요
+- `wss://` connect-src CSP 누락으로 WebSocket 전면 차단 (Phase 2 첫 Realtime 사용 시 발현)
+- Google OAuth Playwright 자동화 거절 → 수동 체크리스트로 전환, Phase 3에서 service_role 기반 복귀
+
+### Follow-up
+
+- `useFlashToast()` 공용 훅 도입 — flash + setTimeout 5파일 중복 정리
+- Phase 3에서 share-toggle OFF Realtime 전환 (`REPLICA IDENTITY FULL`) 구현
