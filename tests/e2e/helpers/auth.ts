@@ -62,7 +62,7 @@ export async function ensureTestUser(user: TestUser): Promise<string> {
  * 브라우저 컨텍스트에 올바르게 로드되지 않을 수 있으므로 chromium 을 사용한다.
  */
 export async function buildStorageState(user: TestUser, outputPath: string): Promise<void> {
-  const baseURL = requireEnv("PLAYWRIGHT_BASE_URL");
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
   const testSecret = requireEnv("TEST_SECRET");
 
   const browser = await chromium.launch();
