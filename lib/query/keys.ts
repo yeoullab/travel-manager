@@ -20,4 +20,17 @@ export const queryKeys = {
   schedule: {
     byTripId: (tripId: string) => ["schedule", tripId] as const,
   },
+  // ── Phase 4 additions ──
+  expenses: {
+    byTripId: (tripId: string) => ["expenses", tripId] as const,
+  },
+  todos: {
+    byTripId: (tripId: string) => ["todos", tripId] as const,
+  },
+  records: {
+    byTripId: (tripId: string) => ["records", tripId] as const,
+  },
+  guest: {
+    byTripId: (tripId: string) => ["guest", "byTripId", tripId] as const,
+  },
 } as const;
