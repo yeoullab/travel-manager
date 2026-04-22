@@ -31,7 +31,6 @@ import { useMoveScheduleItemAcrossDays } from "@/lib/schedule/use-move-schedule-
 import { useUiStore } from "@/lib/store/ui-store";
 import { providerForTrip } from "@/lib/maps/provider";
 import type { PlaceResult } from "@/lib/maps/types";
-import type { ScheduleCategory } from "@/lib/types";
 
 import { DayTabBar } from "@/components/schedule/day-tab-bar";
 import { ScheduleList } from "@/components/schedule/schedule-list";
@@ -162,15 +161,17 @@ export function ScheduleTab({ tripId }: Props) {
 
   function handleSubmit(value: ScheduleItemFormValue) {
     if (!modal || !activeDayId) return;
-    const categoryCode: ScheduleCategory =
-      (value.categoryCode as ScheduleCategory | undefined) ??
-      (modal.initial?.category_code as ScheduleCategory | undefined) ??
-      "other";
+    // manual_place stage 에서 들어온 수동 주소는 lat/lng 부재로 DB place 필드에 넣을 수 없어
+    // memo 앞에 "주소: ..." 로 prepend (DB CHECK schedule_items_place_atomic 호환).
+    const memoMerged =
+      value.placeAddressManual && value.placeAddressManual.trim().length > 0
+        ? `주소: ${value.placeAddressManual.trim()}${value.memo ? `\n\n${value.memo}` : ""}`
+        : value.memo;
     const base = {
       title: value.title,
-      categoryCode,
+      categoryCode: value.categoryCode,
       timeOfDay: value.timeOfDay,
-      memo: value.memo,
+      memo: memoMerged,
       url: value.url,
       placeName: value.place?.name ?? null,
       placeAddress: value.place?.address ?? null,
