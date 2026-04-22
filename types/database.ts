@@ -38,6 +38,80 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          amount: number
+          category_code: string
+          created_at: string
+          currency: string
+          expense_date: string
+          id: string
+          memo: string | null
+          paid_by: string | null
+          schedule_item_id: string | null
+          title: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_code?: string
+          created_at?: string
+          currency?: string
+          expense_date: string
+          id?: string
+          memo?: string | null
+          paid_by?: string | null
+          schedule_item_id?: string | null
+          title: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_code?: string
+          created_at?: string
+          currency?: string
+          expense_date?: string
+          id?: string
+          memo?: string | null
+          paid_by?: string | null
+          schedule_item_id?: string | null
+          title?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_schedule_item_id_fkey"
+            columns: ["schedule_item_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           group_id: string
@@ -133,6 +207,56 @@ export type Database = {
           },
         ]
       }
+      guest_shares: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          show_expenses: boolean
+          show_records: boolean
+          show_schedule: boolean
+          show_todos: boolean
+          token: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          show_expenses?: boolean
+          show_records?: boolean
+          show_schedule?: boolean
+          show_todos?: boolean
+          token?: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          show_expenses?: boolean
+          show_records?: boolean
+          show_schedule?: boolean
+          show_todos?: boolean
+          token?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_shares_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -159,6 +283,44 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      records: {
+        Row: {
+          content: string
+          created_at: string
+          date: string
+          id: string
+          title: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          date: string
+          id?: string
+          title: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          date?: string
+          id?: string
+          title?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "records_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schedule_items: {
         Row: {
@@ -228,6 +390,61 @@ export type Database = {
             columns: ["trip_day_id"]
             isOneToOne: false
             referencedRelation: "trip_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      todos: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          is_completed: boolean
+          memo: string | null
+          title: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          memo?: string | null
+          title: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          memo?: string | null
+          title?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todos_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todos_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todos_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
             referencedColumns: ["id"]
           },
         ]
@@ -384,7 +601,30 @@ export type Database = {
       accept_invite: { Args: { p_invite_code: string }; Returns: Json }
       can_access_trip: { Args: { p_trip_id: string }; Returns: boolean }
       cancel_invite: { Args: never; Returns: undefined }
+      create_expense: {
+        Args: {
+          p_amount: number
+          p_category_code?: string
+          p_currency?: string
+          p_expense_date: string
+          p_memo?: string
+          p_paid_by?: string
+          p_schedule_item_id?: string
+          p_title: string
+          p_trip_id: string
+        }
+        Returns: string
+      }
       create_invite: { Args: never; Returns: Json }
+      create_record: {
+        Args: {
+          p_content: string
+          p_date: string
+          p_title: string
+          p_trip_id: string
+        }
+        Returns: string
+      }
       create_schedule_item: {
         Args: {
           p_category_code?: string
@@ -402,6 +642,15 @@ export type Database = {
         }
         Returns: string
       }
+      create_todo: {
+        Args: {
+          p_assigned_to?: string
+          p_memo?: string
+          p_title: string
+          p_trip_id: string
+        }
+        Returns: string
+      }
       create_trip: {
         Args: {
           p_currencies: string[]
@@ -413,8 +662,12 @@ export type Database = {
         }
         Returns: string
       }
+      delete_expense: { Args: { p_expense_id: string }; Returns: undefined }
+      delete_record: { Args: { p_record_id: string }; Returns: undefined }
       delete_schedule_item: { Args: { p_item_id: string }; Returns: undefined }
+      delete_todo: { Args: { p_todo_id: string }; Returns: undefined }
       dissolve_group: { Args: never; Returns: undefined }
+      get_guest_trip_data: { Args: { p_token: string }; Returns: Json }
       is_group_member: {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
@@ -443,6 +696,33 @@ export type Database = {
         Returns: undefined
       }
       test_truncate_cascade: { Args: never; Returns: undefined }
+      toggle_todo: {
+        Args: { p_complete: boolean; p_todo_id: string }
+        Returns: undefined
+      }
+      update_expense: {
+        Args: {
+          p_amount: number
+          p_category_code: string
+          p_currency: string
+          p_expense_date: string
+          p_expense_id: string
+          p_memo?: string
+          p_paid_by?: string
+          p_schedule_item_id?: string
+          p_title: string
+        }
+        Returns: undefined
+      }
+      update_record: {
+        Args: {
+          p_content: string
+          p_date: string
+          p_record_id: string
+          p_title: string
+        }
+        Returns: undefined
+      }
       update_schedule_item: {
         Args: {
           p_category_code?: string
@@ -457,6 +737,15 @@ export type Database = {
           p_time_of_day?: string
           p_title: string
           p_url?: string
+        }
+        Returns: undefined
+      }
+      update_todo: {
+        Args: {
+          p_assigned_to?: string
+          p_memo?: string
+          p_title: string
+          p_todo_id: string
         }
         Returns: undefined
       }
