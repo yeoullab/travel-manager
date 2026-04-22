@@ -61,12 +61,14 @@ const CATEGORY_COLOR: Record<ScheduleCategory, string> = {
   other: "bg-ink-400",
 };
 
-function initialStageFor(initial: ScheduleItem | null | undefined): FormStage {
+export function initialStageFor(initial: ScheduleItem | null | undefined): FormStage {
   if (!initial) return "category_select";
   const code = (initial.category_code as ScheduleCategory) ?? "other";
   if (code === "other") return "other_form";
   return "place_search";
 }
+
+export type { FormStage };
 
 function initialPlaceFor(initial: ScheduleItem | null | undefined): PlaceResult | null {
   if (
