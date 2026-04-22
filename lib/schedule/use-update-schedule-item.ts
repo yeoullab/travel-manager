@@ -3,11 +3,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
 import { queryKeys } from "@/lib/query/keys";
+import type { ScheduleCategory } from "@/lib/types";
 
 export type UpdateScheduleItemInput = {
   tripId: string;
   itemId: string;
   title: string;
+  categoryCode: ScheduleCategory;
   timeOfDay?: string | null;
   placeName?: string | null;
   placeAddress?: string | null;
@@ -37,6 +39,7 @@ export function useUpdateScheduleItem() {
         p_place_external_id: input.placeExternalId ?? null,
         p_memo: input.memo ?? null,
         p_url: input.url ?? null,
+        p_category_code: input.categoryCode,
       });
       if (error) throw error;
     },

@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { TextField, TextArea } from "@/components/ui/text-field";
 import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
 import type { PlaceResult } from "@/lib/maps/types";
+import type { ScheduleCategory } from "@/lib/types";
 
 export type ScheduleItemFormValue = {
   title: string;
+  // Task 6~7에서 카테고리 분기 폼 구축 시 필수로 전환. 현재는 modal.initial.category_code fallback.
+  categoryCode?: ScheduleCategory;
   timeOfDay: string | null;
   memo: string | null;
   url: string | null;

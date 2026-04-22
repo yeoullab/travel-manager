@@ -31,6 +31,7 @@ import { useMoveScheduleItemAcrossDays } from "@/lib/schedule/use-move-schedule-
 import { useUiStore } from "@/lib/store/ui-store";
 import { providerForTrip } from "@/lib/maps/provider";
 import type { PlaceResult } from "@/lib/maps/types";
+import type { ScheduleCategory } from "@/lib/types";
 
 import { DayTabBar } from "@/components/schedule/day-tab-bar";
 import { ScheduleList } from "@/components/schedule/schedule-list";
@@ -161,8 +162,13 @@ export function ScheduleTab({ tripId }: Props) {
 
   function handleSubmit(value: ScheduleItemFormValue) {
     if (!modal || !activeDayId) return;
+    const categoryCode: ScheduleCategory =
+      (value.categoryCode as ScheduleCategory | undefined) ??
+      (modal.initial?.category_code as ScheduleCategory | undefined) ??
+      "other";
     const base = {
       title: value.title,
+      categoryCode,
       timeOfDay: value.timeOfDay,
       memo: value.memo,
       url: value.url,

@@ -3,11 +3,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
 import { queryKeys } from "@/lib/query/keys";
+import type { ScheduleCategory } from "@/lib/types";
 
 export type CreateScheduleItemInput = {
   tripId: string; // invalidate 키 용도 (서버엔 미전달)
   tripDayId: string;
   title: string;
+  categoryCode: ScheduleCategory;
   timeOfDay?: string | null;
   placeName?: string | null;
   placeAddress?: string | null;
@@ -37,6 +39,7 @@ export function useCreateScheduleItem() {
         p_place_external_id: input.placeExternalId ?? null,
         p_memo: input.memo ?? null,
         p_url: input.url ?? null,
+        p_category_code: input.categoryCode,
       });
       if (error) throw error;
       return data as string;
