@@ -10,9 +10,10 @@ type Props = {
   item: ScheduleItem;
   index: number;
   onTap: (item: ScheduleItem) => void;
+  registerRef?: (el: HTMLLIElement | null) => void;
 };
 
-export function SortableScheduleItem({ item, index, onTap }: Props) {
+export function SortableScheduleItem({ item, index, onTap, registerRef }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
 
@@ -25,7 +26,10 @@ export function SortableScheduleItem({ item, index, onTap }: Props) {
 
   return (
     <li
-      ref={setNodeRef}
+      ref={(el) => {
+        setNodeRef(el);
+        registerRef?.(el);
+      }}
       style={style}
       className="flex items-start gap-2"
       {...attributes}

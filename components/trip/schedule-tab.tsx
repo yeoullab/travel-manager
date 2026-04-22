@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarX, ChevronDown, Map as MapIcon } from "lucide-react";
 import {
@@ -70,6 +70,16 @@ export function ScheduleTab({ tripId }: Props) {
   const [placeSheetOpen, setPlaceSheetOpen] = useState(false);
   const [pickedPlace, setPickedPlace] = useState<PlaceResult | null>(null);
   const [dayMoveFor, setDayMoveFor] = useState<ScheduleItem | null>(null);
+
+  const scheduleRefs = useRef<Record<string, HTMLLIElement | null>>({});
+  const registerItemRef = useCallback((id: string, el: HTMLLIElement | null) => {
+    if (el) scheduleRefs.current[id] = el;
+    else delete scheduleRefs.current[id];
+  }, []);
+  const handleMarkerClick = useCallback((id: string) => {
+    const el = scheduleRefs.current[id];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -267,7 +277,13 @@ export function ScheduleTab({ tripId }: Props) {
         </button>
       </div>
 
-      {mapOpen && trip && <MapPanel isDomestic={trip.is_domestic} items={mapItems} />}
+      {mapOpen && trip && (
+        <MapPanel
+          isDomestic={trip.is_domestic}
+          items={mapItems}
+          onMarkerClick={handleMarkerClick}
+        />
+      )}
 
       <DndContext
         sensors={sensors}
@@ -288,7 +304,11 @@ export function ScheduleTab({ tripId }: Props) {
             }
           />
         ) : (
-          <ScheduleList items={activeDayItems} onTapItem={openEdit} />
+          <ScheduleList
+            items={activeDayItems}
+            onTapItem={openEdit}
+            registerItemRef={registerItemRef}
+          />
         )}
       </DndContext>
 
