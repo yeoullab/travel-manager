@@ -31,16 +31,54 @@ interface GoogleMarker {
 
 let loadPromise: Promise<void> | null = null;
 
-function injectLoaderScript(apiKey: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    // loading=async 필수: importLibrary() 기반 lazy-module 로더 활성화.
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&loading=async`;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("google sdk load failed"));
-    document.head.appendChild(script);
-  });
+// Google Maps JS API "Dynamic Library Import" bootstrap.
+// https://developers.google.com/maps/documentation/javascript/load-maps-js-api
+// URL-only `loading=async` 로는 importLibrary 가 script onload 시점까지 attach 안 될 수
+// 있으므로, 공식 inline bootstrap 을 주입해 google.maps.importLibrary 를 동기적으로 노출.
+function injectBootstrap(apiKey: string): void {
+  const w = window as unknown as {
+    google?: { maps?: { importLibrary?: unknown } };
+  };
+  if (w.google?.maps?.importLibrary) return;
+
+  ((g: Record<string, string>) => {
+    let h: Promise<void> | undefined;
+    const w2 = window as unknown as Record<string, unknown>;
+    const c = "google";
+    const l = "importLibrary";
+    const q = "__ib__";
+    const mDoc = document;
+    const base = (w2[c] ??= {}) as Record<string, unknown>;
+    const d = (base.maps ??= {}) as Record<string, unknown>;
+    const r = new Set<string>();
+    const e = new URLSearchParams();
+    const u = () =>
+      h ??
+      (h = new Promise<void>((resolve, reject) => {
+        const a = mDoc.createElement("script");
+        e.set("libraries", [...r].join(","));
+        for (const k of Object.keys(g)) {
+          e.set(k.replace(/[A-Z]/g, (t) => "_" + t[0].toLowerCase()), g[k]);
+        }
+        e.set("callback", c + ".maps." + q);
+        a.src = `https://maps.${c}apis.com/maps/api/js?` + e.toString();
+        (d as Record<string, unknown>)[q] = resolve;
+        a.onerror = () => reject(new Error("google maps could not load"));
+        a.nonce = mDoc.querySelector("script[nonce]")?.getAttribute("nonce") ?? "";
+        mDoc.head.append(a);
+      }));
+    if (d[l]) {
+      console.warn("google maps already loaded; ignoring");
+    } else {
+      d[l] = (f: string, ...n: unknown[]) => {
+        r.add(f);
+        return u().then(
+          () =>
+            (d as Record<string, (...a: unknown[]) => Promise<unknown>>)[l](f, ...n),
+        );
+      };
+    }
+  })({ key: apiKey, v: "weekly" });
 }
 
 async function loadSdk(): Promise<void> {
@@ -55,9 +93,7 @@ async function loadSdk(): Promise<void> {
   }
 
   loadPromise = (async () => {
-    if (!gmaps()?.importLibrary) {
-      await injectLoaderScript(apiKey);
-    }
+    injectBootstrap(apiKey);
     const g = gmaps();
     if (!g?.importLibrary) throw new Error("google maps importLibrary unavailable");
     // loading=async 모드에서 Map·LatLng·LatLngBounds 는 "maps" 라이브러리에,
