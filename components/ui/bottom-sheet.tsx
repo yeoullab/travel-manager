@@ -30,7 +30,7 @@ export function BottomSheet({
   className,
 }: BottomSheetProps) {
   return (
-    <HDialog open={open} onClose={onClose} className="relative z-50">
+    <HDialog open={open} onClose={onClose} className="relative z-[100]">
       <div
         aria-hidden
         className="fixed inset-0 bg-[rgba(38,37,30,0.55)] backdrop-blur-[2px] transition-opacity duration-200"

@@ -41,7 +41,7 @@ export function ConfirmDialog({
   destructive,
 }: DialogProps) {
   return (
-    <HDialog open={open} onClose={onClose} className="relative z-50">
+    <HDialog open={open} onClose={onClose} className="relative z-[100]">
       <div
         className="fixed inset-0 bg-[rgba(38,37,30,0.55)] backdrop-blur-[2px]"
         aria-hidden="true"

@@ -16,7 +16,7 @@ export function Toast({ message, tone = "info", className, ...props }: ToastProp
       role="status"
       aria-live="polite"
       className={cn(
-        "fixed left-1/2 z-50 -translate-x-1/2",
+        "fixed left-1/2 z-[100] -translate-x-1/2",
         "bg-ink-900 text-cream rounded-[16px]",
         "shadow-[0_0_16px_rgba(0,0,0,0.02),0_0_8px_rgba(0,0,0,0.008)]",
         "flex items-center gap-3 px-4 py-3",
