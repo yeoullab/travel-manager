@@ -24,6 +24,8 @@ test.describe("일정 CRUD (Spec §2.5)", () => {
     tripId = page.url().split("/trips/")[1].split("?")[0];
 
     await page.getByLabel("일정 추가").click();
+    // category_select stage → "기타" 선택 → other_form 으로 전이
+    await page.getByRole("radio", { name: "기타" }).click();
     await page.getByLabel("제목").fill("첫 일정");
     await page.getByRole("button", { name: "추가", exact: true }).click();
 
@@ -37,14 +39,15 @@ test.describe("일정 CRUD (Spec §2.5)", () => {
     await page.goto(`/trips/${tripId}`);
 
     await page.getByText("첫 일정").click();
-    await expect(page.getByText("일정 수정")).toBeVisible({ timeout: 5_000 });
+    // edit 모드: other 카테고리는 other_form stage 로 → dialogTitle "일정 (기타)"
+    await expect(page.getByText(/일정 \(기타\)/)).toBeVisible({ timeout: 5_000 });
     await page.getByLabel("제목").fill("첫 일정 (수정)");
     await page.getByRole("button", { name: "저장" }).click();
     await expect(page.getByText("첫 일정 (수정)")).toBeVisible({ timeout: 5_000 });
 
     page.once("dialog", (d) => d.accept());
     await page.getByText("첫 일정 (수정)").click();
-    await expect(page.getByText("일정 수정")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/일정 \(기타\)/)).toBeVisible({ timeout: 5_000 });
     await page.getByRole("button", { name: "삭제" }).click();
 
     await expect(page.getByText("첫 일정 (수정)")).toHaveCount(0, { timeout: 5_000 });

@@ -33,6 +33,7 @@ export default defineConfig({
       },
       testMatch: [
         "schedule-crud.spec.ts",
+        "schedule-category-flow.spec.ts",
         "drag-same-day.spec.ts",
         "drag-cross-day.spec.ts",
         "resize-with-items.spec.ts",

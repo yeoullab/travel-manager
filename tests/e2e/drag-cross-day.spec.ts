@@ -30,9 +30,9 @@ test.describe("다른 날로 이동 (cross-day, Spec §3.4)", () => {
     const items = page.locator("li[role='button']");
     await expect(items).toHaveCount(2, { timeout: 10_000 });
 
-    // Day1-A 클릭 → 일정 수정 모달
+    // Day1-A 클릭 → 일정 수정 모달 (other 카테고리 → "일정 (기타)" title)
     await page.getByText("Day1-A").click();
-    await expect(page.getByText("일정 수정")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/일정 \(기타\)/)).toBeVisible({ timeout: 5_000 });
 
     // "다른 날로 이동" 버튼 클릭
     await page.getByRole("button", { name: "다른 날로 이동" }).click();
