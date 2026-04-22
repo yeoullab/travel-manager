@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ScheduleItem as ScheduleItemCard } from "@/components/ui/schedule-item";
 import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
+import type { ScheduleCategory } from "@/lib/types";
 
 type Props = {
   item: ScheduleItem;
@@ -36,7 +37,7 @@ export function SortableScheduleItem({ item, index, onTap }: Props) {
       </div>
       <div className="min-w-0 flex-1 text-left">
         <ScheduleItemCard
-          category="other"
+          category={item.category_code as ScheduleCategory}
           title={item.title}
           time={item.time_of_day ? item.time_of_day.slice(0, 5) : undefined}
           placeName={item.place_name ?? undefined}
