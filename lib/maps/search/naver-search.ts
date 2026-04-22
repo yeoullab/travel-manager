@@ -6,6 +6,11 @@ import { clampLatLng } from "@/lib/maps/rate-limit";
 
 const ENDPOINT = "https://openapi.naver.com/v1/search/local.json";
 
+// Naver Local Search 의 mapx/mapy 포맷 자동 감지 임계값.
+// - TM128 (레거시): x ≈ 100k~500k, y ≈ 200k~800k (전부 < 10M)
+// - WGS84 × 10^7 (현행): Korea 기준 lng×10^7 ≈ 1.26e9, lat×10^7 ≈ 3.5e8 (전부 > 10M)
+const WGS84_SCALE_THRESHOLD = 10_000_000;
+
 type NaverItem = {
   title: string;
   link?: string;
@@ -14,6 +19,17 @@ type NaverItem = {
   mapx: string;
   mapy: string;
 };
+
+function parseNaverCoord(mapx: number, mapy: number): [lng: number, lat: number] | null {
+  if (!Number.isFinite(mapx) || !Number.isFinite(mapy)) return null;
+  // 현행 Naver API: mapx=lng*10^7, mapy=lat*10^7
+  if (Math.abs(mapx) > WGS84_SCALE_THRESHOLD || Math.abs(mapy) > WGS84_SCALE_THRESHOLD) {
+    return [mapx / 10_000_000, mapy / 10_000_000];
+  }
+  // 레거시 TM128 응답
+  const [lng, lat] = tm128ToWgs84(mapx, mapy);
+  return [lng, lat];
+}
 
 export async function searchNaver(query: string): Promise<PlaceResult[]> {
   const { NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET } = getServerEnv();
@@ -34,10 +50,9 @@ export async function searchNaver(query: string): Promise<PlaceResult[]> {
 
   const out: PlaceResult[] = [];
   for (const item of body.items ?? []) {
-    const x = Number(item.mapx);
-    const y = Number(item.mapy);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-    const [lng, lat] = tm128ToWgs84(x, y);
+    const coord = parseNaverCoord(Number(item.mapx), Number(item.mapy));
+    if (!coord) continue;
+    const [lng, lat] = coord;
     const clamped = clampLatLng(lat, lng);
     if (!clamped) continue;
     out.push({

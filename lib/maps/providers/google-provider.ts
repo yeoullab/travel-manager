@@ -11,6 +11,7 @@ interface GoogleMapsNamespace {
     AdvancedMarkerElement: new (opts: unknown) => GoogleMarker;
     PinElement: new (opts: unknown) => { element: HTMLElement };
   };
+  importLibrary: (name: "maps" | "marker") => Promise<unknown>;
 }
 
 function gmaps(): GoogleMapsNamespace | undefined {
@@ -30,26 +31,41 @@ interface GoogleMarker {
 
 let loadPromise: Promise<void> | null = null;
 
-function loadSdk(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (gmaps()) return Promise.resolve();
-  if (loadPromise) return loadPromise;
-
-  loadPromise = new Promise((resolve, reject) => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      reject(new Error("missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"));
-      return;
-    }
+function injectLoaderScript(apiKey: string): Promise<void> {
+  return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&v=weekly&loading=async`;
+    // loading=async 필수: importLibrary() 기반 lazy-module 로더 활성화.
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&loading=async`;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => {
-      loadPromise = null;
-      reject(new Error("google sdk load failed"));
-    };
+    script.onerror = () => reject(new Error("google sdk load failed"));
     document.head.appendChild(script);
+  });
+}
+
+async function loadSdk(): Promise<void> {
+  if (typeof window === "undefined") return;
+  // 이미 importLibrary 로 maps + marker 모두 로드된 상태면 skip
+  if (gmaps()?.LatLng && gmaps()?.marker) return;
+  if (loadPromise) return loadPromise;
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return Promise.reject(new Error("missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"));
+  }
+
+  loadPromise = (async () => {
+    if (!gmaps()?.importLibrary) {
+      await injectLoaderScript(apiKey);
+    }
+    const g = gmaps();
+    if (!g?.importLibrary) throw new Error("google maps importLibrary unavailable");
+    // loading=async 모드에서 Map·LatLng·LatLngBounds 는 "maps" 라이브러리에,
+    // AdvancedMarkerElement·PinElement 는 "marker" 라이브러리에 담겨 있음.
+    await Promise.all([g.importLibrary("maps"), g.importLibrary("marker")]);
+  })().catch((err) => {
+    loadPromise = null;
+    throw err;
   });
   return loadPromise;
 }

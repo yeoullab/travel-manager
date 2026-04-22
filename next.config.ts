@@ -8,6 +8,24 @@ import type { NextConfig } from "next";
  */
 const isDev = process.env.NODE_ENV !== "production";
 
+// Naver Maps SDK 는 페이지 protocol(dev=http)을 따라 subsequent 요청을 발행.
+// dev 에서는 http 스킴, prod 에서는 https 만 허용.
+const naverMapsHostsHttps = [
+  "https://oapi.map.naver.com", // auth, SDK
+  "https://nrbe.map.naver.com", // 타일 스토어 JSONP
+  "https://*.pstatic.net", // 타일/정적 리소스 CDN
+  "https://*.map.naver.net", // 타일 CDN
+];
+const naverMapsHostsHttp = isDev
+  ? [
+      "http://oapi.map.naver.com",
+      "http://nrbe.map.naver.com",
+      "http://*.pstatic.net",
+      "http://*.map.naver.net",
+    ]
+  : [];
+const naverMapsHosts = [...naverMapsHostsHttps, ...naverMapsHostsHttp];
+
 // Next.js dev 모드의 React Refresh와 Turbopack HMR이 eval을 사용하므로
 // dev 에서만 'unsafe-eval' 허용. production 빌드는 그대로 차단.
 const scriptSrc = [
@@ -17,7 +35,7 @@ const scriptSrc = [
   "https://accounts.google.com",
   "https://accounts.google.com/gsi/client",
   // Phase 3 (ADR-009) — Maps SDK
-  "https://oapi.map.naver.com", // Naver Maps SDK
+  ...naverMapsHosts,
   "https://maps.googleapis.com", // Google Maps JS loader
 ]
   .filter(Boolean)
@@ -33,6 +51,7 @@ const imgSrc = [
   // Phase 3 Maps 타일/정적 이미지
   "https://*.naver.net", // Naver 타일
   "https://*.pstatic.net", // Naver 정적
+  ...(isDev ? ["http://*.naver.net", "http://*.pstatic.net"] : []),
   "https://maps.googleapis.com", // Google Static Maps
   "https://maps.gstatic.com", // Google 아이콘
   "https://*.googleusercontent.com", // Google Places photos
@@ -44,6 +63,7 @@ const connectSrc = [
   supabaseWs,
   "https://accounts.google.com",
   // Phase 3 — Maps/Search API (client 에서 직접 호출하는 도메인 + SDK 가 fetch 하는 도메인)
+  ...naverMapsHosts, // Naver Maps auth + 타일 스토어 XHR (http/https 둘 다)
   "https://naveropenapi.apigw.ntruss.com",
   "https://maps.googleapis.com",
 ].join(" ");

@@ -40,7 +40,8 @@ function loadSdk(): Promise<void> {
       return;
     }
     const script = document.createElement("script");
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}`;
+    // Naver 통합 콘솔 전환(2024~)으로 ncpClientId 는 deprecated. 신규 키는 ncpKeyId 파라미터 사용.
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => {
