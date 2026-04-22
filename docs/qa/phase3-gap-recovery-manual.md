@@ -126,16 +126,18 @@ plan: docs/plans/2026-04-22-phase3-gap-recovery.md
 
 ## Verdict
 
+자동 수행: 2026-04-22 (Claude Preview MCP + Supabase DB 쿼리)
+
 | 섹션 | 상태 | 비고 |
 |------|------|------|
-| 1. 기본값 | ⬜ | |
-| 2. 기타 폼 | ⬜ | |
-| 3. 장소 검색 분기 | ⬜ | |
-| 4. 직접 입력 | ⬜ | |
-| 5. auto-fill | ⬜ | |
-| 6. edit 초기 stage | ⬜ | |
-| 7. 마커 스크롤 | ⬜ | |
-| 8. DB 정합성 | ⬜ | |
-| 9. 회귀 | ⬜ | |
+| 1. 기본값 | ✅ PASS | DB: 14건 `other` default 적용 |
+| 2. 기타 폼 | ✅ PASS | radiogroup 6-chip + "카테고리를 선택하세요" |
+| 3. 장소 검색 분기 | ✅ PASS | "일정 (식당)" title + 장소 검색 btn + 직접 입력 switch + 제목 필드 없음 |
+| 4. 직접 입력 | ✅ PASS | "일정 (식당 · 직접 입력)" + 제목+주소 required |
+| 5. auto-fill | ⏭️ SKIP | 실 Maps API 결과 필요 (사용자 수동 검증) |
+| 6. edit 초기 stage | ✅ PASS | food→place_search, other→other_form, "카테고리 변경" 복귀 |
+| 7. 마커 스크롤 | ⏭️ SKIP | 실 Maps API + 지오 데이터 필요 (사용자 수동) |
+| 8. DB 정합성 | ✅ PASS | 6 seed + FK cascade/restrict + RLS authenticated SELECT-only |
+| 9. 회귀 | ✅ PASS | E2E 10 pass / unit 78 / integration 77 |
 
-**Overall**: ⬜ PASS / ⬜ FAIL
+**Overall**: ✅ PASS (7/9 자동, 2/9 실 Maps API 의존 — 사용자 수동 검증 필요)
