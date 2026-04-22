@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          code: string
+          color_token: string
+          created_at: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          color_token: string
+          created_at?: string
+          name: string
+          sort_order: number
+        }
+        Update: {
+          code?: string
+          color_token?: string
+          created_at?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       group_members: {
         Row: {
           group_id: string
@@ -138,6 +162,7 @@ export type Database = {
       }
       schedule_items: {
         Row: {
+          category_code: string
           created_at: string
           id: string
           memo: string | null
@@ -155,6 +180,7 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          category_code?: string
           created_at?: string
           id?: string
           memo?: string | null
@@ -172,6 +198,7 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          category_code?: string
           created_at?: string
           id?: string
           memo?: string | null
@@ -189,6 +216,13 @@ export type Database = {
           url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "schedule_items_category_code_fkey"
+            columns: ["category_code"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["code"]
+          },
           {
             foreignKeyName: "schedule_items_trip_day_id_fkey"
             columns: ["trip_day_id"]
@@ -353,6 +387,7 @@ export type Database = {
       create_invite: { Args: never; Returns: Json }
       create_schedule_item: {
         Args: {
+          p_category_code?: string
           p_memo?: string
           p_place_address?: string
           p_place_external_id?: string
@@ -402,12 +437,15 @@ export type Database = {
         Args: { p_item_ids: string[]; p_trip_day_id: string }
         Returns: undefined
       }
+      replica_identity_of: { Args: { p_table: string }; Returns: unknown }
       resize_trip_days: {
         Args: { p_new_end: string; p_new_start: string; p_trip_id: string }
         Returns: undefined
       }
+      test_truncate_cascade: { Args: never; Returns: undefined }
       update_schedule_item: {
         Args: {
+          p_category_code?: string
           p_item_id: string
           p_memo?: string
           p_place_address?: string
