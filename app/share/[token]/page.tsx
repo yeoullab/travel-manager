@@ -1,68 +1,114 @@
-"use client";
-
 import Link from "next/link";
-import { use, useMemo } from "react";
-import {
-  AlertCircle,
-  Eye,
-  Plane,
-  MapPin,
-  Calendar as CalendarIcon,
-  Sparkles,
-} from "lucide-react";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { Plane, MapPin, Calendar as CalendarIcon, Eye, Sparkles } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
-import { Button } from "@/components/ui/button";
-import { ScheduleItem } from "@/components/ui/schedule-item";
-import { ExpenseRow } from "@/components/ui/expense-row";
-import { EmptyState } from "@/components/ui/empty-state";
-import {
-  getGuestShareByToken,
-  getTripById,
-  getTripDaysByTripId,
-  getScheduleItemsByTripDayId,
-  getExpensesByTripId,
-  getTodosByTripId,
-  getRecordsByTripId,
-} from "@/lib/mocks";
+import { ScheduleItem, type ScheduleCategory } from "@/components/ui/schedule-item";
+import { ExpenseRow, type ExpenseCategory } from "@/components/ui/expense-row";
+import { getServerClient } from "@/lib/supabase/server-client";
 import { cn } from "@/lib/cn";
 
-/**
- * 14 `/share/[token]` — 게스트 읽기 전용 뷰.
- *
- * guest_shares.show_* 플래그에 따라 일정·경비·할 일·기록 섹션 노출.
- * 하단 CTA 배너 → /login (가입 유도).
- * Phase 0 목업: 정적 렌더, PII 필드(email·paidBy id) 미노출.
- */
-export default function SharePage({
+type ScheduleItemShare = {
+  title: string;
+  timeOfDay: string | null;
+  placeName: string | null;
+  placeAddress: string | null;
+  memo: string | null;
+  url: string | null;
+  categoryCode: string;
+};
+
+type DaySchedule = {
+  dayNumber: number;
+  date: string;
+  items: ScheduleItemShare[];
+};
+
+type ExpenseShare = {
+  expenseDate: string;
+  title: string;
+  amount: number;
+  currency: string;
+  categoryCode: string;
+  memo: string | null;
+};
+
+type TodoShare = {
+  title: string;
+  memo: string | null;
+  isCompleted: boolean;
+};
+
+type RecordShare = {
+  title: string;
+  content: string;
+  date: string;
+};
+
+type SharePayload = {
+  trip: {
+    title: string;
+    destination: string;
+    startDate: string;
+    endDate: string;
+    isDomestic: boolean;
+  };
+  share: {
+    showSchedule: boolean;
+    showExpenses: boolean;
+    showTodos: boolean;
+    showRecords: boolean;
+  };
+  scheduleByDay: DaySchedule[];
+  expenses: ExpenseShare[];
+  todos: TodoShare[];
+  records: RecordShare[];
+};
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function fetchGuestData(token: string): Promise<SharePayload | null> {
+  if (!UUID_RE.test(token)) return null;
+  const supabase = await getServerClient();
+  // get_guest_trip_data 는 anon GRANT — 세션 없이 호출 가능 (RPC 가 auth.uid() 를 안 씀)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc("get_guest_trip_data", {
+    p_token: token,
+  });
+  if (error || !data) return null;
+  return data as SharePayload;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  const data = await fetchGuestData(token);
+  if (!data) return { title: "공유 링크", robots: { index: false, follow: false } };
+  return {
+    title: `${data.trip.title} · 여행 공유`,
+    description: `${data.trip.destination} · ${data.trip.startDate} ~ ${data.trip.endDate}`,
+    openGraph: {
+      title: data.trip.title,
+      description: data.trip.destination,
+      type: "website",
+    },
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function SharePage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
-  const { token } = use(params);
+  const { token } = await params;
+  const data = await fetchGuestData(token);
+  if (!data) notFound();
 
-  const share = useMemo(() => getGuestShareByToken(token), [token]);
-  const trip = useMemo(() => (share ? getTripById(share.tripId) : undefined), [share]);
-
-  if (!share || !trip) {
-    return (
-      <div className="flex min-h-dvh flex-col" style={{ minHeight: "100dvh" }}>
-        <AppBar title="공유 링크" />
-        <main className="flex-1">
-          <EmptyState
-            className="py-24"
-            icon={<AlertCircle size={48} strokeWidth={1.5} />}
-            title="만료되었거나 존재하지 않는 링크"
-            description="공유를 요청한 분께 새 링크를 받아주세요."
-            cta={
-              <Link href="/">
-                <Button variant="primary">홈으로</Button>
-              </Link>
-            }
-          />
-        </main>
-      </div>
-    );
-  }
+  const { trip, share, scheduleByDay, expenses, todos, records } = data;
 
   return (
     <div className="flex min-h-dvh flex-col pb-28" style={{ minHeight: "100dvh" }}>
@@ -81,9 +127,7 @@ export default function SharePage({
             <span
               className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]",
-                trip.isDomestic
-                  ? "bg-ti-grep/40 text-ink-800"
-                  : "bg-ti-read/40 text-ink-800",
+                trip.isDomestic ? "bg-ti-grep/40 text-ink-800" : "bg-ti-read/40 text-ink-800",
               )}
               aria-hidden
             >
@@ -106,12 +150,12 @@ export default function SharePage({
           </p>
         </section>
 
-        {share.showSchedule && <ShareScheduleSection tripId={trip.id} />}
-        {share.showExpenses && <ShareExpensesSection tripId={trip.id} />}
-        {share.showTodos && <ShareTodosSection tripId={trip.id} />}
-        {share.showRecords && <ShareRecordsSection tripId={trip.id} />}
+        {share.showSchedule && <ScheduleSection days={scheduleByDay} />}
+        {share.showExpenses && <ExpensesSection items={expenses} />}
+        {share.showTodos && <TodosSection items={todos} />}
+        {share.showRecords && <RecordsSection items={records} />}
 
-        {/* Invite CTA banner */}
+        {/* Invite CTA */}
         <section className="bg-accent-orange text-cream mt-10 overflow-hidden rounded-[16px] p-6">
           <div className="flex items-start gap-3">
             <Sparkles size={24} className="shrink-0" />
@@ -132,67 +176,63 @@ export default function SharePage({
         </section>
 
         <p className="text-ink-500 mt-6 text-center text-[11px]">
-          공개 설정은 소유자가 언제든 해제할 수 있습니다 · Phase 0 목업
+          공개 설정은 소유자가 언제든 해제할 수 있습니다
         </p>
       </main>
     </div>
   );
 }
 
-function ShareScheduleSection({ tripId }: { tripId: string }) {
-  const days = getTripDaysByTripId(tripId);
+function ScheduleSection({ days }: { days: DaySchedule[] }) {
+  const nonEmpty = days.filter((d) => d.items.length > 0);
+  if (nonEmpty.length === 0) return null;
   return (
     <Section title="일정">
       <div className="flex flex-col gap-6">
-        {days.map((d) => {
-          const items = getScheduleItemsByTripDayId(d.id);
-          if (items.length === 0) return null;
-          return (
-            <div key={d.id}>
-              <div className="mb-2 flex items-baseline gap-2">
-                <span className="bg-accent-orange text-cream rounded-full px-2 py-0.5 text-[11px] font-medium">
-                  Day {d.dayNumber}
-                </span>
-                <span className="text-ink-600 font-mono text-[12px]">{d.date}</span>
-              </div>
-              <ul className="flex flex-col gap-2">
-                {items.map((item, idx) => (
-                  <li key={item.id} className="flex items-start gap-2">
-                    <div className="bg-surface-300 text-ink-700 mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold">
-                      {idx + 1}
-                    </div>
-                    <div className="flex-1">
-                      <ScheduleItem
-                        category={item.category}
-                        title={item.title}
-                        time={item.time ?? undefined}
-                        placeName={item.placeName ?? undefined}
-                        memo={item.memo ?? undefined}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
+        {nonEmpty.map((d) => (
+          <div key={d.dayNumber}>
+            <div className="mb-2 flex items-baseline gap-2">
+              <span className="bg-accent-orange text-cream rounded-full px-2 py-0.5 text-[11px] font-medium">
+                Day {d.dayNumber}
+              </span>
+              <span className="text-ink-600 font-mono text-[12px]">{d.date}</span>
             </div>
-          );
-        })}
+            <ul className="flex flex-col gap-2">
+              {d.items.map((it, idx) => (
+                <li key={`${d.dayNumber}-${idx}`} className="flex items-start gap-2">
+                  <div className="bg-surface-300 text-ink-700 mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1">
+                    <ScheduleItem
+                      category={toScheduleCategory(it.categoryCode)}
+                      title={it.title}
+                      time={it.timeOfDay?.slice(0, 5) ?? undefined}
+                      placeName={it.placeName ?? undefined}
+                      memo={it.memo ?? undefined}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </Section>
   );
 }
 
-function ShareExpensesSection({ tripId }: { tripId: string }) {
-  const expenses = getExpensesByTripId(tripId);
-  if (expenses.length === 0) return null;
+function ExpensesSection({ items }: { items: ExpenseShare[] }) {
+  if (items.length === 0) return null;
   return (
     <Section title="경비">
       <div className="bg-surface-100 border-border-primary overflow-hidden rounded-[12px] border">
-        {expenses.map((e) => (
+        {items.map((e, idx) => (
           <ExpenseRow
-            key={e.id}
-            category={e.category}
+            key={`${e.expenseDate}-${idx}`}
+            category={toExpenseCategory(e.categoryCode)}
             title={e.title}
-            amount={e.amount}
+            amount={Number(e.amount)}
             currency={e.currency}
             memo={e.memo ?? undefined}
           />
@@ -202,14 +242,13 @@ function ShareExpensesSection({ tripId }: { tripId: string }) {
   );
 }
 
-function ShareTodosSection({ tripId }: { tripId: string }) {
-  const todos = getTodosByTripId(tripId);
-  if (todos.length === 0) return null;
+function TodosSection({ items }: { items: TodoShare[] }) {
+  if (items.length === 0) return null;
   return (
     <Section title="할 일">
       <ul className="bg-surface-100 border-border-primary divide-border-primary flex flex-col divide-y overflow-hidden rounded-[12px] border">
-        {todos.map((t) => (
-          <li key={t.id} className="flex items-center gap-3 px-4 py-3">
+        {items.map((t, idx) => (
+          <li key={idx} className="flex items-center gap-3 px-4 py-3">
             <span
               aria-hidden
               className={cn(
@@ -221,14 +260,17 @@ function ShareTodosSection({ tripId }: { tripId: string }) {
             >
               {t.isCompleted && "✓"}
             </span>
-            <p
-              className={cn(
-                "text-[14px]",
-                t.isCompleted ? "text-ink-500 line-through" : "text-ink-900",
-              )}
-            >
-              {t.title}
-            </p>
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  "text-[14px]",
+                  t.isCompleted ? "text-ink-500 line-through" : "text-ink-900",
+                )}
+              >
+                {t.title}
+              </p>
+              {t.memo && <p className="text-ink-600 mt-0.5 truncate text-[12px]">{t.memo}</p>}
+            </div>
           </li>
         ))}
       </ul>
@@ -236,15 +278,14 @@ function ShareTodosSection({ tripId }: { tripId: string }) {
   );
 }
 
-function ShareRecordsSection({ tripId }: { tripId: string }) {
-  const records = getRecordsByTripId(tripId);
-  if (records.length === 0) return null;
+function RecordsSection({ items }: { items: RecordShare[] }) {
+  if (items.length === 0) return null;
   return (
     <Section title="기록">
       <div className="flex flex-col gap-3">
-        {records.map((r) => (
+        {items.map((r, idx) => (
           <article
-            key={r.id}
+            key={idx}
             className="bg-surface-100 border-border-primary rounded-[12px] border p-4"
           >
             <div className="flex items-baseline justify-between">
@@ -264,12 +305,38 @@ function ShareRecordsSection({ tripId }: { tripId: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-ink-900 mb-3 text-[17px] font-semibold tracking-[-0.005em]">
-        {title}
-      </h2>
+      <h2 className="text-ink-900 mb-3 text-[17px] font-semibold tracking-[-0.005em]">{title}</h2>
       {children}
     </section>
   );
+}
+
+const SCHEDULE_CATEGORIES: ScheduleCategory[] = [
+  "transport",
+  "sightseeing",
+  "food",
+  "lodging",
+  "shopping",
+  "other",
+];
+const EXPENSE_CATEGORY_SET: ExpenseCategory[] = [
+  "food",
+  "transport",
+  "lodging",
+  "shopping",
+  "activity",
+  "other",
+];
+
+function toScheduleCategory(code: string): ScheduleCategory {
+  return (SCHEDULE_CATEGORIES as readonly string[]).includes(code)
+    ? (code as ScheduleCategory)
+    : "other";
+}
+function toExpenseCategory(code: string): ExpenseCategory {
+  return (EXPENSE_CATEGORY_SET as readonly string[]).includes(code)
+    ? (code as ExpenseCategory)
+    : "other";
 }
 
 function formatRange(start: string, end: string): string {
