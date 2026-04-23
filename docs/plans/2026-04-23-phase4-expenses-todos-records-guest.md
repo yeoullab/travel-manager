@@ -2367,3 +2367,57 @@ Phase 4 에서 다음 ADR 들을 `~/MY_AI_WIKI/projects/travel-manager/decisions
 - Phase 3 gap recovery plan: `docs/plans/2026-04-22-phase3-gap-recovery.md` (§0 레지스트리 패턴 차용)
 - Knowledge: [[knowledge/patterns/plan-writing-requires-schema-registry-first]] · [[knowledge/patterns/plan-execution-config-scan-checklist]]
 - Memory: [[memory/feedback_plan_writing]]
+
+---
+
+## § 33 Retrospective (2026-04-24 집행 완료)
+
+실행 범위: Tasks 13~20 + 23~24 (UI rewire + SSR + Realtime + unit 테스트 + QA 체크리스트 + Exit gate). Tasks 21 (integration) · 22 (E2E) 는 Phase 4 follow-up 으로 이관.
+
+### §33.1 무엇이 잘 되었나
+
+- **§0 source-verbatim 레지스트리 원칙 정착**: 직전 세션의 migrations + hooks 단계와 동일한 critic REVISE 패턴으로 plan 이 정확한 시그니처를 제공 → Task 13~19 에서 RPC 파라미터 드리프트 0건.
+- **BottomSheet 재사용 가능한 "SheetMode" 패턴 확립**: expenses/todos/records 3 탭 전부 `{ kind: "closed" | "create" | "edit" }` discriminated union + `buildInitialValues(mode)` + `sheetKey` re-init effect 패턴 공유. 유지보수 일관성 확보.
+- **Task 14 quickAdd URL 계약이 간결**: state machine 대신 URL 단일 source-of-truth. `UUID_RE` 가 오염된 입력을 첫 관문에서 차단.
+- **Task 18 SSR 전환 매끄러움**: `get_guest_trip_data` 가 anon GRANT + camelCase JSON 으로 설계돼 있어 Server Component 에서 `as SharePayload` 한 번의 캐스팅만 필요. 섹션 컴포넌트는 전부 `"use client"` 없이 렌더.
+- **Task 19 Realtime 3 채널 확장이 3 라인 패치**: 기존 `subscribeToTable` 계약 재사용으로 gateway `useEffect` 단일화 원칙 유지 (critic HIGH#2 준수).
+
+### §33.2 무엇이 어려웠나
+
+- **React 19 `react-hooks/set-state-in-effect` 재발 (3 파일)**: expenses/todos/records 의 sheet re-init 에서 동일 패턴 반복. 기존 config-scan 체크리스트의 block eslint-disable 조항을 참조해 해결. 근본 완화는 `key` prop 기반 re-mount 패턴 전환이 더 낫지만, BottomSheet mount-unmount 플리커를 피하려면 현행 effect 유지 + disable 이 실용적.
+- **UUID_RE regex 범위 차이**: schedule quickAdd 파싱용 UUID_RE (`/^[0-9a-f-]{36}$/i`) 와 `/share/[token]` 용 strict UUID (`/^[0-9a-f]{8}-[0-9a-f]{4}-...$/i`) 를 의도적으로 분리. 전자는 빠른 sanity gate, 후자는 RPC 호출 전 strict validation. 향후 `lib/uuid.ts` 공용 유틸로 통합 고려.
+- **Expense 타입 factory**: 통합 테스트 없이 unit 테스트만 작성하려니 `Database["public"]["Tables"]["expenses"]["Row"]` 의 모든 필드를 mock 해야 함. 작은 헬퍼 (`mk()`) 로 회피.
+
+### §33.3 Plan drift 발견 건수
+
+- **0건** — §0 레지스트리 원칙 + §32 version history 에 critic inline patch 반영으로 plan 자체가 실행 지침. Task 19 Realtime 이 가장 명확한 레지스트리 일치 사례 (`subscribeToTable<{ trip_id: string }>` 계약 100% 매칭).
+
+### §33.4 새로 추가된 knowledge 페이지
+
+- 신규 추가 없음. 기존 패턴 적용만:
+  - [[knowledge/patterns/react-effect-set-state-rule-handling]] (Phase 3 Task 18~20 에서 도입) 재활용
+  - [[knowledge/patterns/plan-writing-requires-schema-registry-first]] 재활용
+
+### §33.5 다음 phase 주의점
+
+1. **Integration/E2E 이관**: Phase 4 follow-up 에서 Task 21 (RLS × 4 테이블 + 통화 검증 + FK SET NULL + publication audit 확장 + 1 active per trip unique + toggle consistency) + Task 22 (5 spec) 집행. 참고: [[issues/supabase-signout-default-global-scope-revokes-all-sessions]], [[issues/dnd-kit-sortable-stoppropagation-blocks-pointer-sensor]] 피해 가야 함.
+2. **Realtime 구독 완성도**: Phase 3 에서 skip 처리된 partner-realtime / share-toggle E2E 는 `useTripsList`/`useTripDetail` Realtime 구독 미구현이 원인. Phase 5 (또는 별도 hotfix) 에서 trips row-level subscription 로 복구 필요.
+3. **Maps API 키 prod 등록**: Vercel preview 배포 시 preview 도메인 GIS origin + Naver/Google Maps 도메인 등록이 선행돼야 `/share/[token]` 이외 모든 trip 기반 기능이 동작.
+4. **audit 2 moderate**: `pnpm audit --audit-level=high` 는 통과하지만 moderate 2건 잔존. Phase 5 착수 전 `pnpm update` 1회 검토.
+
+### §33.6 게이트 결과 (2026-04-24)
+
+| 항목 | 결과 |
+|------|------|
+| `pnpm tsc --noEmit` | 0 error |
+| `pnpm lint` | 0 error · 11 pre-existing warnings |
+| `pnpm build` | ✓ 14 routes · `/share/[token]` = ƒ (Dynamic) |
+| `pnpm vitest run tests/unit` | 102 passed / 27 files |
+| `pnpm audit --audit-level=high` | 0 high · 2 moderate |
+| Manual QA | `docs/qa/phase4-e2e-manual-checklist.md` 9 섹션 · 실 수행은 사용자 몫 |
+| Verification SQL | `scripts/phase4-verify.sql` 6 쿼리 · 실 수행은 사용자 몫 |
+
+### §33.7 Tag
+
+`git tag phase-4-expenses-records-guest` — UI rewire + SSR + Realtime + unit 완료 지점. Integration/E2E 는 `phase-4-e2e-complete` 별도 tag 로 follow-up.
+
