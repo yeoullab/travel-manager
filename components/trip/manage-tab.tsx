@@ -19,6 +19,7 @@ import { usePartnerShareToggle } from "@/lib/trip/use-partner-share-toggle";
 import { useDeleteTrip } from "@/lib/trip/use-delete-trip";
 import { EditTripModal } from "@/components/trip/edit-trip-modal";
 import { DeleteTripDialog } from "@/components/trip/delete-trip-dialog";
+import { GuestShareSection } from "@/components/trip/guest-share-section";
 import { cn } from "@/lib/cn";
 
 type Props = { tripId: string };
@@ -140,11 +141,9 @@ export function ManageTab({ tripId }: Props) {
         </ManageSection>
       )}
 
-      {/* 게스트 링크 — Phase 6 이관 */}
+      {/* 게스트 링크 */}
       <ManageSection label="게스트 링크">
-        <div className="bg-surface-300/50 text-ink-700 px-4 py-3 text-[13px]">
-          게스트 링크 공유는 다음 단계에서 추가됩니다.
-        </div>
+        <GuestShareSection tripId={tripId} onFlash={flash} />
       </ManageSection>
 
       {/* 위험 영역 */}
