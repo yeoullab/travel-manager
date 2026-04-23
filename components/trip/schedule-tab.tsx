@@ -325,6 +325,17 @@ export function ScheduleTab({ tripId }: Props) {
           onDelete={modal.mode === "edit" ? handleDelete : undefined}
           onOpenPlaceSearch={() => setPlaceSheetOpen(true)}
           onOpenDayMove={modal.mode === "edit" ? () => setDayMoveFor(modal.initial) : undefined}
+          onAddExpense={
+            modal.mode === "edit" && modal.initial
+              ? () => {
+                  const itemId = modal.initial!.id;
+                  closeModal();
+                  router.push(
+                    `/trips/${tripId}?tab=expenses&quickAdd=scheduleItemId:${itemId}`,
+                  );
+                }
+              : undefined
+          }
         />
       )}
 

@@ -32,6 +32,8 @@ type Props = {
   onDelete?: () => void;
   onOpenPlaceSearch: () => void;
   onOpenDayMove?: () => void;
+  /** 편집 모드에서만 렌더 — 클릭 시 경비 탭 quickAdd URL 로 네비게이션. */
+  onAddExpense?: () => void;
 };
 
 const CATEGORY_CODES: ScheduleCategory[] = [
@@ -100,6 +102,7 @@ export function ScheduleItemModal({
   onDelete,
   onOpenPlaceSearch,
   onOpenDayMove,
+  onAddExpense,
 }: Props) {
   const [stage, setStage] = useState<FormStage>("category_select");
   const [categoryCode, setCategoryCode] = useState<ScheduleCategory>("other");
@@ -187,20 +190,27 @@ export function ScheduleItemModal({
       onClose={onClose}
       title={dialogTitle}
       footer={
-        <div className="flex w-full gap-2">
-          {mode === "edit" && onDelete && (
-            <Button variant="ghost" onClick={onDelete}>
-              삭제
+        <div className="flex w-full flex-col gap-2">
+          {mode === "edit" && onAddExpense && (
+            <Button variant="light" onClick={onAddExpense}>
+              이 일정의 경비 추가
             </Button>
           )}
-          {mode === "edit" && onOpenDayMove && (
-            <Button variant="tertiary" onClick={onOpenDayMove}>
-              다른 날로 이동
+          <div className="flex w-full gap-2">
+            {mode === "edit" && onDelete && (
+              <Button variant="ghost" onClick={onDelete}>
+                삭제
+              </Button>
+            )}
+            {mode === "edit" && onOpenDayMove && (
+              <Button variant="tertiary" onClick={onOpenDayMove}>
+                다른 날로 이동
+              </Button>
+            )}
+            <Button fullWidth variant="primary" disabled={!canSave} onClick={submit}>
+              {mode === "create" ? "추가" : "저장"}
             </Button>
-          )}
-          <Button fullWidth variant="primary" disabled={!canSave} onClick={submit}>
-            {mode === "create" ? "추가" : "저장"}
-          </Button>
+          </div>
         </div>
       }
     >

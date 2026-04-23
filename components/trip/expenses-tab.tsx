@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, Wallet } from "lucide-react";
 import { ExpenseRow } from "@/components/ui/expense-row";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -12,6 +13,8 @@ import { chipClassForColor } from "@/lib/profile/colors";
 import { useTripMembers } from "@/lib/profile/use-trip-members";
 import { useMyProfile } from "@/lib/profile/use-profile";
 import { useTripDetail } from "@/lib/trip/use-trip-detail";
+import { useTripDays } from "@/lib/trip/use-trip-days";
+import { useScheduleList } from "@/lib/schedule/use-schedule-list";
 import { useExpenseList, type Expense } from "@/lib/expense/use-expense-list";
 import { useCreateExpense } from "@/lib/expense/use-create-expense";
 import { useUpdateExpense } from "@/lib/expense/use-update-expense";
@@ -55,9 +58,15 @@ const CURRENCY_SYMBOL: Record<string, string> = {
 
 type Props = { tripId: string };
 
+type Prefill = {
+  title?: string;
+  expenseDate?: string;
+  scheduleItemId?: string;
+};
+
 type SheetMode =
   | { kind: "closed" }
-  | { kind: "create" }
+  | { kind: "create"; prefill?: Prefill }
   | { kind: "edit"; expense: Expense };
 
 type FormValue = {
@@ -68,7 +77,10 @@ type FormValue = {
   categoryCode: ExpenseCategoryCode;
   paidBy: string | null;
   memo: string;
+  scheduleItemId: string | null;
 };
+
+const UUID_RE = /^[0-9a-f-]{36}$/i;
 
 /**
  * 08 /trips/[id]?tab=expenses
@@ -77,6 +89,9 @@ type FormValue = {
  * ExpenseRow 사용. FAB → BottomSheet 경비 추가/편집.
  */
 export function ExpensesTab({ tripId }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [filter, setFilter] = useState<FilterKey>("all");
   const [sheet, setSheet] = useState<SheetMode>({ kind: "closed" });
 
@@ -84,11 +99,57 @@ export function ExpensesTab({ tripId }: Props) {
   const { data: me } = useMyProfile();
   const { data: members = [], lookup: lookupMember } = useTripMembers(tripId);
   const { data: expenses = [], isLoading, error } = useExpenseList(tripId);
+  const { data: scheduleItems = [] } = useScheduleList(tripId);
+  const { data: tripDays = [] } = useTripDays(tripId);
 
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
   const showToast = useUiStore((s) => s.showToast);
+
+  // URL quickAdd: ?quickAdd=scheduleItemId:<uuid>
+  const quickAdd = searchParams.get("quickAdd");
+  const clearQuickAdd = () => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("quickAdd");
+    const qs = next.toString();
+    router.replace(`/trips/${tripId}${qs ? `?${qs}` : ""}`, { scroll: false });
+  };
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!quickAdd) return;
+    const sepIdx = quickAdd.indexOf(":");
+    if (sepIdx < 0) {
+      clearQuickAdd();
+      return;
+    }
+    const kind = quickAdd.slice(0, sepIdx);
+    const id = quickAdd.slice(sepIdx + 1);
+    if (kind !== "scheduleItemId" || !UUID_RE.test(id)) {
+      clearQuickAdd();
+      return;
+    }
+    // schedule 아직 로딩 중이면 대기 (다음 effect tick 에서 prefill)
+    if (scheduleItems.length === 0) return;
+    const item = scheduleItems.find((s) => s.id === id);
+    if (!item) {
+      showToast("해당 일정을 찾을 수 없어요", "error");
+      clearQuickAdd();
+      return;
+    }
+    const day = tripDays.find((d) => d.id === item.trip_day_id);
+    setSheet({
+      kind: "create",
+      prefill: {
+        title: item.title,
+        expenseDate: day?.date,
+        scheduleItemId: item.id,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quickAdd, scheduleItems, tripDays]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const totals = useMemo(() => aggregateByCurrency(expenses), [expenses]);
   const categoryTotals = useMemo(() => aggregateByCategory(expenses), [expenses]);
@@ -111,7 +172,10 @@ export function ExpensesTab({ tripId }: Props) {
   };
 
   const openEdit = (expense: Expense) => setSheet({ kind: "edit", expense });
-  const closeSheet = () => setSheet({ kind: "closed" });
+  const closeSheet = () => {
+    setSheet({ kind: "closed" });
+    if (quickAdd) clearQuickAdd();
+  };
 
   return (
     <div className="px-4 pt-3 pb-28">
@@ -273,6 +337,7 @@ export function ExpensesTab({ tripId }: Props) {
               currency: values.currency,
               categoryCode: values.categoryCode,
               paidBy: values.paidBy,
+              scheduleItemId: values.scheduleItemId,
               memo: values.memo.trim() === "" ? null : values.memo,
             });
             showToast("경비를 추가했어요", "success");
@@ -295,6 +360,7 @@ export function ExpensesTab({ tripId }: Props) {
               currency: values.currency,
               categoryCode: values.categoryCode,
               paidBy: values.paidBy,
+              scheduleItemId: values.scheduleItemId,
               memo: values.memo.trim() === "" ? null : values.memo,
             });
             showToast("경비를 수정했어요", "success");
@@ -364,7 +430,12 @@ function ExpenseSheet({
   // Re-init form when sheet opens or target expense changes.
   // eslint-disable react-hooks rules: we intentionally re-seed local state when
   // the sheet identity changes (new create session or different expense edit).
-  const sheetKey = mode.kind === "edit" ? mode.expense.id : mode.kind;
+  const sheetKey =
+    mode.kind === "edit"
+      ? `edit:${mode.expense.id}`
+      : mode.kind === "create"
+        ? `create:${mode.prefill?.scheduleItemId ?? "blank"}`
+        : "closed";
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (mode.kind === "closed") return;
@@ -597,16 +668,19 @@ function buildInitialValues(
       categoryCode: e.category_code as ExpenseCategoryCode,
       paidBy: e.paid_by,
       memo: e.memo ?? "",
+      scheduleItemId: e.schedule_item_id,
     };
   }
+  const prefill = mode.kind === "create" ? mode.prefill : undefined;
   return {
-    expenseDate: todayIso(),
-    title: "",
+    expenseDate: prefill?.expenseDate ?? todayIso(),
+    title: prefill?.title ?? "",
     amount: "",
     currency: opts.initialCurrency,
     categoryCode: "food",
     paidBy: opts.myProfileId,
     memo: "",
+    scheduleItemId: prefill?.scheduleItemId ?? null,
   };
 }
 
