@@ -8,6 +8,9 @@ import { subscribeToTrips } from "@/lib/realtime/trips-channel";
 import { subscribeToScheduleItems } from "@/lib/realtime/schedule-channel";
 import { subscribeToGroupMembers } from "@/lib/realtime/group-members-channel";
 import { subscribeToGroups } from "@/lib/realtime/groups-channel";
+import { subscribeToExpenses } from "@/lib/realtime/expenses-channel";
+import { subscribeToTodos } from "@/lib/realtime/todos-channel";
+import { subscribeToRecords } from "@/lib/realtime/records-channel";
 import { useUiStore } from "@/lib/store/ui-store";
 
 export function useRealtimeGateway(userId: string | undefined) {
@@ -28,6 +31,9 @@ export function useRealtimeGateway(userId: string | undefined) {
     const unsubGroups = subscribeToGroups(queryClient, {
       onDissolved: () => showToast("파트너와의 공유가 종료되었어요"),
     });
+    const unsubExpenses = subscribeToExpenses(queryClient);
+    const unsubTodos = subscribeToTodos(queryClient);
+    const unsubRecords = subscribeToRecords(queryClient);
 
     const handleOnline = () => {
       void queryClient.invalidateQueries();
@@ -39,6 +45,9 @@ export function useRealtimeGateway(userId: string | undefined) {
       unsubSchedule();
       unsubMembers();
       unsubGroups();
+      unsubExpenses();
+      unsubTodos();
+      unsubRecords();
       window.removeEventListener("online", handleOnline);
       void supabase.removeAllChannels();
     };
