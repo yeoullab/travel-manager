@@ -11,12 +11,19 @@ import { subscribeToGroups } from "@/lib/realtime/groups-channel";
 import { subscribeToExpenses } from "@/lib/realtime/expenses-channel";
 import { subscribeToTodos } from "@/lib/realtime/todos-channel";
 import { subscribeToRecords } from "@/lib/realtime/records-channel";
+import { useMyGroup } from "@/lib/group/use-my-group";
 import { useUiStore } from "@/lib/store/ui-store";
 
 export function useRealtimeGateway(userId: string | undefined) {
   const queryClient = useQueryClient();
   const supabase = getBrowserClient();
   const showToast = useUiStore((s) => s.showToast);
+
+  // trips-channel 의 visibility 판정은 group.me 캐시에 의존 (subscribeToTrips 참조).
+  // 게이트웨이가 항상 mount 되는 providers 에서 useMyGroup 을 prefetch 해
+  // /trips 목록이나 /trips/[id] 처럼 useMyGroup 을 직접 호출하지 않는 페이지에서도
+  // wasVisible/isVisibleNow 평가가 정확하도록 보장한다.
+  useMyGroup();
 
   const isDragging = useUiStore((s) => s.isDraggingSchedule);
   const pending = useUiStore((s) => s.pendingScheduleInvalidate);
