@@ -13,7 +13,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "db:types": "supabase gen types typescript --linked --schema public > types/database.ts && node scripts/fix-postgrest-version.mjs",
-    "db:seed:test": "psql \"$DATABASE_URL\" -f supabase/seed/test.sql"
+    "db:seed:test": "psql \"$DATABASE_URL\" -f supabase/seed/test.sql",
+    "icons:gen": "node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
