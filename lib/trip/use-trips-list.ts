@@ -19,5 +19,8 @@ export function useTripsList() {
       if (error) throw error;
       return data ?? [];
     },
+    // partner 측 가시성 손실 polling — useTripDetail 와 같은 이유 (Spec §9.2 가정 어긋남, ADR-011)
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
   });
 }

@@ -15,11 +15,12 @@ test.beforeAll(async () => {
   });
 });
 
-// Realtime UPDATE 의 RLS 평가가 `new` row 기준이어서 group_id: X → null UPDATE 시
-// partner 가 NOTIFY 를 받지 못한다 (Spec §9.2 가정과 실제 Supabase 동작이 어긋남).
-// REPLICA IDENTITY FULL 만으로는 부족하며, 서버측 broadcast 또는 sentinel UPDATE
-// 패턴이 필요하다. 별도 follow-up 으로 마이그레이션 + 채널 패턴 변경.
-test.skip("Alice share-OFF → Bob 목록에서 5초 내 사라짐 + detail 에서 TripUnavailable 전환 (Spec §9.5)", async ({
+// Realtime postgres_changes UPDATE 의 RLS 평가가 `new` row 기준이어서 group_id: X → null
+// UPDATE 시 partner 가 NOTIFY 를 받지 못한다 (Spec §9.2 가정과 실제 Supabase 동작이 어긋남).
+// useTripDetail / useTripsList 의 5초 polling 으로 보완 — RLS 가 차단된 row 가 maybeSingle()
+// 에서 null 로 떨어지면 app/trips/[id]/page.tsx 의 !trip 분기가 <TripUnavailable /> 렌더.
+// 자세한 결정은 ADR-011 참조.
+test("Alice share-OFF → Bob 목록에서 5초 내 사라짐 + detail 에서 TripUnavailable 전환 (Spec §9.5)", async ({
   browser,
 }) => {
   test.setTimeout(30_000);
