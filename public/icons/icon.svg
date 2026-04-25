@@ -1,6 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#f2f1ed"/>
-  <text x="50%" y="50%" font-family="Pretendard, system-ui, sans-serif"
-        font-size="220" font-weight="700" fill="#1a1a1a"
-        text-anchor="middle" dominant-baseline="central">tm</text>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heartGrad" x1="270" y1="260" x2="760" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF9DB2" stop-opacity="0.82"/>
+      <stop offset="0.48" stop-color="#F8A9C6" stop-opacity="0.72"/>
+      <stop offset="0.52" stop-color="#AFC6FF" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#86A9FF" stop-opacity="0.82"/>
+    </linearGradient>
+    <filter id="softShadow" x="64" y="64" width="896" height="896" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="30" flood-color="#13213D" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- App tile -->
+  <rect x="112" y="112" width="800" height="800" rx="160" fill="#FFFFFF" filter="url(#softShadow)"/>
+
+  <!-- Couple heart / shared travel symbol -->
+  <path d="M512 650C500 638 332 488 294 395C260 312 315 240 399 240C452 240 488 269 512 306C536 269 572 240 625 240C709 240 764 312 730 395C692 488 524 638 512 650Z" fill="url(#heartGrad)"/>
+
+  <!-- Travel route -->
+  <path d="M248 628C332 632 341 514 445 508C548 502 586 543 650 496C704 456 726 399 786 378" stroke="#172441" stroke-width="14" stroke-linecap="round" stroke-dasharray="22 28"/>
+
+  <!-- Location pin -->
+  <path d="M245 538C245 505 272 478 305 478C338 478 365 505 365 538C365 584 305 654 305 654C305 654 245 584 245 538Z" fill="#172441"/>
+  <circle cx="305" cy="537" r="22" fill="#FFFFFF"/>
+
+  <!-- Airplane -->
+  <path d="M801 304C817 294 833 296 839 306C845 316 838 331 822 341L792 360L805 416L784 429L758 381L715 407L717 440L699 451L684 407L643 384L662 372L694 384L737 358L689 332L710 319L766 333L801 304Z" fill="#172441"/>
+
+  <!-- Suitcase -->
+  <rect x="421" y="362" width="182" height="244" rx="44" fill="#FFFFFF" stroke="#172441" stroke-width="18"/>
+  <path d="M467 362V322C467 307 479 295 494 295H530C545 295 557 307 557 322V362" stroke="#172441" stroke-width="18" stroke-linecap="round"/>
+  <rect x="453" y="606" width="28" height="35" rx="14" fill="#172441"/>
+  <rect x="543" y="606" width="28" height="35" rx="14" fill="#172441"/>
+  <path d="M512 511C507 506 474 477 467 458C461 441 473 427 490 427C501 427 508 433 512 441C516 433 523 427 534 427C551 427 563 441 557 458C550 477 517 506 512 511Z" fill="#F7A0BC"/>
+
+  <!-- Wordmark -->
+  <text x="512" y="762" text-anchor="middle" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-4" fill="#172441">travel</text>
+  <text x="512" y="840" text-anchor="middle" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="68" font-weight="400" letter-spacing="8" fill="#172441">manager</text>
 </svg>
