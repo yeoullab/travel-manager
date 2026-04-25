@@ -2,7 +2,8 @@
 type: design-spec
 project: travel-manager
 date: 2026-04-20
-status: current (Phase 1·2 implemented, Phase 3+ planned)
+last-reviewed: 2026-04-25
+status: current (Phase 1~4 + §6.11 V1 implemented, plus original Phase 5/6/7 absorbed; Phase 8 PWA + §6.11 V2 custom categories + Maps prod outstanding)
 author: AI + human collaborative design
 supersedes: docs/superpowers/specs/2026-04-16-travel-manager-design.md
 merges: docs/specs/2026-04-19-phase2-trip-core-design.md
@@ -17,21 +18,39 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 
 ---
 
-## 0. Implementation Status (2026-04-20 기준)
+## 0. Implementation Status (2026-04-25 기준 — re-audited)
 
 | Phase | Scope | 상태 | Git tag |
 |---|---|---|---|
 | Phase 0 | 목업 (15 화면) + 디자인 시스템 토큰 + 공통 컴포넌트 | ✅ Complete | — |
 | Phase 1 | Google 로그인(GIS + signInWithIdToken) + `profiles` + middleware + color palette | ✅ Complete | `phase-1-foundation-auth` |
 | Phase 2 | `groups`·`group_members`·`trips`·`trip_days` + 6 RPC + Realtime (3 채널) + `/trips/*`·`/settings/*`·`/invite/[code]` 실 DB 연결 | ✅ Complete | `phase-2-trip-core` |
-| Phase 3 | `schedule_items` + `trip_days` 활용 일정 탭 + 지도 API + 드래그앤드롭 + E2E 자동화 복귀 | ⏳ Planned | — |
-| Phase 4 | `expenses` + `categories` + 통화별 합계 + 일정↔경비 연동 | ⏳ Planned | — |
-| Phase 5 | `todos` + `records` | ⏳ Planned | — |
-| Phase 6 | `guest_shares` + `/share/[token]` SSR + CTA 배너 | ⏳ Planned | — |
-| Phase 7 | Realtime 전면 확장 (schedule/expenses/todos) + 충돌 병합 | ⏳ Planned | — |
-| Phase 8 | PWA (Workbox 쉘 프리캐시) + 마이크로 인터랙션 폴리시 | ⏳ Planned | — |
+| Phase 3 | `schedule_items` + 일정 탭 + Maps Provider 추상화 (Naver+Google) + DnD + E2E 자동화 복귀 + REPLICA IDENTITY FULL | ✅ Complete | `phase-3-schedule-map` |
+| Phase 4 | `expenses` + `categories` + 통화별 합계 + 일정↔경비 URL quickAdd 연동 + `todos` + `records` + `guest_shares` + `/share/[token]` SSR + Realtime 7 채널 확장 | ✅ Complete | `phase-4-expenses-records-guest`, `phase-4-e2e-complete` |
+| Phase 5 | (원안 `todos` + `records`) **→ Phase 4 에 흡수 완료**. 새 스코프 미정 — TBD | n/a | — |
+| Phase 6 | (원안 `guest_shares` + `/share/[token]` SSR) **→ Phase 4 에 흡수 완료**. 자동 가시성 손실 전환은 ADR-011 polling 으로 우회 | ✅ Complete (Phase 4 합산) | — |
+| Phase 7 | (원안 Realtime 전면 확장) **→ Phase 3+4 에서 7 채널 완성** (trips/schedule/group_members/groups/expenses/todos/records). 충돌 병합 V2 후보 | ✅ Complete (Phase 3+4 합산) | — |
+| Phase 8 | **(미완)** PWA (Workbox 쉘 프리캐시 + manifest.json + sw.js) + 마이크로 인터랙션 폴리시 | ⏳ Outstanding | — |
+| §6.11 V1 | 카테고리 관리 페이지 (`/settings/categories`) — 시스템 카테고리 6+6 read-only | ✅ Complete | tag `categories-v1` |
+| §6.11 V2 | 커스텀 카테고리 (CRUD + 그룹 fanout + RLS group_id 추가) | ⏳ Outstanding | — |
+| Maps prod | **(미완)** NCP/Google Maps prod 도메인 등록 + GIS prod origin + Vercel preview/prod 배포 (사용자 작업 영역) | ⏳ Outstanding | — |
 
-현재 main HEAD: `0c710a2` (2026-04-20). tsc 0 · lint 0 errors · unit 22/22 · integration 36/36 · build 12 routes · manual E2E 5/5 PASS.
+현재 main HEAD: `35332f5` (2026-04-25, 1 ahead of origin — push 사용자 수동). tsc 0 · lint 0 errors · unit 102/102 · integration 133/133 · build 14 routes · share-toggle + partner-realtime E2E PASS.
+
+### 0.1 Spec ↔ Code 실재성 매핑 (재감사 2026-04-25)
+
+| Spec 표 / 절 | 코드/마이그레이션 실재 | 비고 |
+|---|---|---|
+| `0001_profiles.sql` ~ `0017_trips_visibility_cleanup.sql` | 17 마이그레이션 모두 원격 적용 | 0017 은 ADR-011 cleanup |
+| `lib/{auth,profile,group,trip,schedule,expense,todo,record,guest,maps,realtime,query,store,supabase}` | 전부 존재 | Phase 4 까지 동선 모두 배선 |
+| `app/share/[token]/page.tsx` (SSR) | 존재, `get_guest_trip_data` anon RPC 호출 | Phase 4 Task 18 |
+| `lib/realtime/{trips,schedule,group-members,groups,expenses,todos,records}-channel.ts` | 7 채널 존재 | Phase 7 원안 충족 |
+| `components/trip/{expenses,todos,records,manage,schedule,guest-share-section}-tab.tsx` | 전부 실 DB 배선 | Phase 4 Tasks 13~17 |
+| schedule↔expense quickAdd | `components/schedule/schedule-item-modal.tsx::onAddExpense` + `schedule-tab.tsx::router.push('?tab=expenses&quickAdd=...')` | Phase 4 Task 14 |
+| ADR-010 Realtime gateway prefetches `useMyGroup` | `lib/realtime/use-realtime-gateway.ts::useMyGroup()` | 2026-04-25 |
+| ADR-011 share-toggle polling | `lib/trip/use-trip-detail.ts::refetchInterval=5000` + `use-trips-list.ts` | 2026-04-25 |
+| `/settings/categories` 페이지 | **부재** | §6.11 미구현 |
+| `public/manifest.json`, `public/sw.js`, Workbox | **부재** | Phase 8 미구현 |
 
 ---
 
@@ -433,18 +452,18 @@ Phase 3+ 확장: `ALTER PUBLICATION supabase_realtime ADD TABLE schedule_items, 
 /trips                     → 여행 목록 (Skeleton → Client fetch)           [Phase 2 ✅]
 /trips/new                 → 여행 생성                                    [Phase 2 ✅]
 /trips/[id]                → 여행 상세 — 탭 기반
-  ├─ 일정 탭 (기본)         → mock UI + "다음 단계" 배너                  [Phase 3 ⏳]
-  ├─ 경비 탭               → mock UI + 배너                              [Phase 4 ⏳]
-  ├─ Todo 탭               → mock UI + 배너                              [Phase 5 ⏳]
-  ├─ 기록 탭               → mock UI + 배너                              [Phase 5 ⏳]
-  └─ 관리 탭               → 실 DB (share toggle + delete + edit)         [Phase 2 ✅]
-/settings                  → 전역 설정 허브                               [Phase 2 ✅]
-  ├─ /settings/profile     → display_name + color palette                [Phase 2 ✅]
+  ├─ 일정 탭 (기본)         → 실 DB (schedule_items + DnD + Maps + place 검색)  [Phase 3 ✅]
+  ├─ 경비 탭               → 실 DB (expenses + 통화별 합계 + schedule quickAdd) [Phase 4 ✅]
+  ├─ Todo 탭               → 실 DB (todos + optimistic toggle)             [Phase 4 ✅]
+  ├─ 기록 탭               → 실 DB (records + 날짜 경계)                   [Phase 4 ✅]
+  └─ 관리 탭               → 실 DB (share toggle + delete + edit + guest)  [Phase 2+4 ✅]
+/settings                  → 전역 설정 허브                                 [Phase 2 ✅]
+  ├─ /settings/profile     → display_name + color palette                  [Phase 2 ✅]
   ├─ /settings/couple      → 초대 생성·취소·해제 (3 모드: no-group/pending/active) [Phase 2 ✅]
-  └─ /settings/categories  → 일정/경비 커스텀 카테고리                     [Phase 4 ⏳]
-/invite/[code]             → 초대 수락 — 5-branch 상태 머신                [Phase 2 ✅]
-/share/[token]             → 게스트 조회 (SSR, 인증 불필요)                [Phase 6 ⏳]
-/auth/logout               → logout route                                 [Phase 1 ✅]
+  └─ /settings/categories  → 일정/경비 시스템 카테고리 read-only (V1 ✅, V2 커스텀 ⏳)
+/invite/[code]             → 초대 수락 — 5-branch 상태 머신                  [Phase 2 ✅]
+/share/[token]             → 게스트 조회 (SSR, 인증 불필요)                  [Phase 4 ✅]
+/auth/logout               → logout route                                  [Phase 1 ✅]
 ```
 
 ### `/invite/[code]` 5-branch State Machine (Phase 2 구현됨)
@@ -523,9 +542,9 @@ Top AppBar + 여행 상세 내 탭 전환 (일정 | 경비 | Todo | 기록 | 관
 
 **충돌:** last-write-wins (2명 사용이라 충분).
 
-**Known limitation (Phase 3 follow-up):** Partner 측 share-toggle OFF 시 `TripUnavailable` 자동 전환 안 됨 — 새로고침 필요. trips UPDATE `group_id: X → null` 이벤트를 RLS 상 DELETE 로 취급하는 ADR 필요.
+**해결 (ADR-011, 2026-04-25):** Partner 측 share-toggle OFF 시 `TripUnavailable` 자동 전환은 Realtime postgres_changes UPDATE 가 `new` row 기준 RLS 만 평가해 partner 에게 NOTIFY 가 송신되지 않는 한계가 있어, broadcast trigger / events table / client broadcast 3 패턴 모두 `CHANNEL_ERROR` 로 fail. 최종적으로 `useTripDetail` / `useTripsList` 에 `refetchInterval: 5_000` polling 추가로 우회. RLS 차단된 row 가 maybeSingle() 에서 null 반환 → `<TripUnavailable />` 렌더 (15초 budget 충족).
 
-### 6.5 Schedule  [Phase 3 ⏳]
+### 6.5 Schedule  [Phase 3 ✅]
 
 - View: Day Tab (수평 스크롤) + 지도(접기/펼치기) + 일정 리스트
 - 장소 검색: 국내 Naver/Kakao, 해외 Google Maps (ADR 대기)
@@ -533,18 +552,18 @@ Top AppBar + 여행 상세 내 탭 전환 (일정 | 경비 | Todo | 기록 | 관
 - Drag & Drop: long press → drag (drag 없으면 무동작, 메뉴는 별도 트리거)
 - Optimistic update + rollback + 토스트
 
-### 6.6 Expenses  [Phase 4 ⏳]
+### 6.6 Expenses  [Phase 4 ✅]
 
 - 날짜 기반 (`expense_date`) — trip_days 독립
 - 해외: `trips.currencies` 에 설정된 통화 선택 / 국내: KRW 고정
 - 집계: 일별/통화별/카테고리별 (환율 변환 없음)
 - 일정↔경비 양방향 링크 (schedule_items 삭제 시 경비는 유지, FK NULL)
 
-### 6.7 Todo / 6.8 Records  [Phase 5 ⏳]
+### 6.7 Todo / 6.8 Records  [Phase 4 ✅, 원안 Phase 5]
 
-최초 스펙 유지.
+최초 스펙 유지. Phase 4 에 흡수 (Tasks 15~16).
 
-### 6.9 Guest Sharing  [Phase 6 ⏳]
+### 6.9 Guest Sharing  [Phase 4 ✅, 원안 Phase 6]
 
 - 관리 탭에서 공유 URL 생성, show_* 플래그로 공개 항목 선택
 - RPC `get_guest_trip_data(share_token)` SECURITY DEFINER — anon 직접 테이블 접근 불허
@@ -556,14 +575,15 @@ Top AppBar + 여행 상세 내 탭 전환 (일정 | 경비 | Todo | 기록 | 관
 - `/settings/profile` 에서 display_name 설정 + color 팔레트 선택
 - display_name 없으면 이메일 표시 (본인만 — 타인은 profiles_public view 라 email 없음)
 
-### 6.11 Category Management  [Phase 4 ⏳]
+### 6.11 Category Management  [V1 ✅ (2026-04-25), V2 ⏳]
 
 최초 스펙 유지 — 기본 카테고리 + 커스텀. 그룹 형성 시 개인 카테고리 fanout (trigger `on_group_dissolved` 에 `categories.group_id → null` 추가).
 
-### 6.12 Maps Integration  [Phase 3 ⏳]
+### 6.12 Maps Integration  [Phase 3 ✅, prod 배포 ⏳]
 
-- 국내/해외 분리. Phase 3 전 지도 API ADR 필요 (Kakao / Naver / Mapbox / Google)
-- 지도 SDK lazy load (일정 탭 진입 시)
+- 국내/해외 분리. **ADR-009: Naver(국내) + Google(해외) 채택**.
+- 지도 SDK lazy load (일정 탭 진입 시) — `lib/maps/providers/{naver,google}.ts`
+- prod 도메인 등록 + Vercel 배포는 사용자 작업 영역 (미완)
 
 ---
 
@@ -703,21 +723,31 @@ travel-manager/
 | 0 | 목업 + 디자인 시스템 토큰 + 공통 컴포넌트 + Empty State | ✅ | (Phase 1 직전 head) |
 | 1 | 인증 (Google GIS + signInWithIdToken) + 프로필 + 레이아웃 + 6색 팔레트 | ✅ | `phase-1-foundation-auth` |
 | 2 | 여행 CRUD + 그룹 연결 + 파트너 공유 토글 + Realtime 3채널 | ✅ | `phase-2-trip-core` |
-| 3 | 일정 (schedule_items + List + Map + 드래그앤드롭 + 경비 추가 바로가기) + E2E 자동화 복귀 | ⏳ | — |
-| 4 | 경비 + 카테고리 | ⏳ | — |
-| 5 | Todo + 기록 | ⏳ | — |
-| 6 | 게스트 공유 URL (SSR + CTA 배너) | ⏳ | — |
-| 7 | Realtime 전면 확장 (schedule·expenses·todos) + 충돌 병합 | ⏳ | — |
-| 8 | PWA + 마이크로 인터랙션 폴리시 | ⏳ | — |
+| 3 | 일정 (schedule_items + List + Map + 드래그앤드롭 + 경비 추가 바로가기) + Maps Provider 추상화 + E2E 자동화 복귀 + REPLICA IDENTITY FULL | ✅ | `phase-3-schedule-map` |
+| 4 | 경비 + 카테고리 시드 + Todo + 기록 + 게스트 공유 URL (SSR + CTA 배너) + Realtime 7 채널 확장 + ADR-011 polling fallback | ✅ | `phase-4-expenses-records-guest`, `phase-4-e2e-complete` |
+| 5 | (원안 Todo + 기록) → Phase 4 흡수. 신규 스코프 TBD | n/a | — |
+| 6 | (원안 게스트 공유) → Phase 4 흡수 | n/a | — |
+| 7 | (원안 Realtime 전면 확장) → Phase 3+4 흡수 | n/a | — |
+| 8 | PWA (Workbox + manifest + sw.js) + 마이크로 인터랙션 폴리시 | ⏳ | — |
+| extra | `/settings/categories` 카테고리 관리 페이지 (§6.11) | ⏳ | — |
+| extra | Maps prod 도메인 등록 + GIS prod origin 등록 + Vercel preview/prod 배포 | ⏳ (사용자 작업) | — |
 
-### Phase 3 Entry Criteria (다음 세션 준비 체크)
+### Phase 3 Entry Criteria (참고 — 모두 충족됨, 이력 보존)
 
-- [ ] 지도 API 선택 ADR (Kakao / Naver / Mapbox / Google)
-- [ ] Playwright E2E 자동화 복귀 인프라 — `auth.admin.createUser` + `signInWithPassword` helper + storageState 프로그램적 생성으로 Google OAuth 우회
-- [ ] `schedule_items` 스키마 확정 (최초 스펙 §4 기준, map_provider CHECK 는 ADR 후 반영)
-- [ ] `resize_trip_days` 의 Phase 3 확장 — 축소 시 last-kept day 로 `schedule_items` 재배치 (body 변경만, 시그니처·호출부 불변)
-- [ ] Partner 측 share-toggle OFF 자동 Realtime 전환 설계 ADR (trips UPDATE group_id:X→null 을 RLS DELETE 로 취급 or REPLICA IDENTITY FULL)
-- [ ] `categories` 테이블 + 기본 카테고리 시드 + 그룹 형성 fanout (Phase 4 와 함께도 가능)
+- [x] 지도 API 선택 ADR (Kakao / Naver / Mapbox / Google) — **ADR-009 Naver(국내) + Google(해외) 채택**
+- [x] Playwright E2E 자동화 복귀 인프라 — `/api/test/sign-in` 3중 guard + `chromium.launch()` storageState
+- [x] `schedule_items` 스키마 확정 — 0005 마이그레이션 (`trip_day_id` FK + `time_of_day` 단일)
+- [x] `resize_trip_days` 의 Phase 3 확장 — 0006 마이그레이션 v2 (start/end 파라미터 + items 합병)
+- [x] Partner 측 share-toggle OFF 자동 Realtime 전환 — **ADR-011 5초 polling 으로 우회** (broadcast/INSERT 패턴 모두 CHANNEL_ERROR)
+- [x] `categories` 테이블 + 기본 카테고리 시드 — 0008 마이그레이션 (6 시드, 관리 페이지는 §6.11 미구현)
+
+### Phase 5+ 후보 (스펙 외, status.md 메모)
+
+- 정산 (paid_by + 분담 기반 자동 계산, 통화별)
+- 통계/인사이트 (여행별/카테고리별/일별 차트)
+- 일정 공유 V2 (게스트 댓글, 만료, 접근 로그)
+- §6.11 카테고리 관리 페이지
+- Phase 8 PWA
 
 ### 미완 / 기술 부채 (Phase 3 이후 정리 후보)
 
@@ -783,3 +813,5 @@ V1 max_members=2. 확장 시:
 | 8 Folder | `src/features/` 폐기 → `app/` + `lib/` + `components/` 실제 구조로 재작성 |
 | 9 | Implementation Order 에 진행 상태 표시 + Phase 3 Entry Criteria + 기술 부채 섹션 |
 | 10 | V2 그룹 확장 시 `groups.name` 재도입 및 `check_active_group_uniqueness` 재검토 노트 |
+| **2026-04-25 re-audit** | §0 Implementation Status 전체 갱신 — Phase 3/4 ✅, 원안 Phase 5/6/7 모두 Phase 4 에 흡수 완료. Phase 8 PWA + §6.11 카테고리 관리 + Maps prod 만 미완. §0.1 Spec↔Code 실재성 매핑 표 신설. §5 Routing / §6.4 Realtime / §6.5~§6.12 / §9 Implementation Order 의 phase 표시 모두 동기화. ADR-009 (Naver+Google), ADR-010 (Realtime gateway prefetch), ADR-011 (share-toggle polling) 반영 |
+| **2026-04-25 categories V1** | §6.11 분리 — V1 read-only 페이지 (`/settings/categories`) 완료. tag `categories-v1`. plan: `docs/plans/2026-04-25-categories-management.md`. V2 커스텀 카테고리 (CRUD + group_id RLS + dissolve fanout) outstanding |
