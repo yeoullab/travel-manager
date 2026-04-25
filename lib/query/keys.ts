@@ -20,6 +20,9 @@ export const queryKeys = {
   schedule: {
     byTripId: (tripId: string) => ["schedule", tripId] as const,
   },
+  categories: {
+    all: ["categories", "all"] as const,
+  },
   // ── Phase 4 additions ──
   expenses: {
     byTripId: (tripId: string) => ["expenses", tripId] as const,
