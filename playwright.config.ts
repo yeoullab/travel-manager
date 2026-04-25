@@ -38,6 +38,11 @@ export default defineConfig({
         "drag-cross-day.spec.ts",
         "resize-with-items.spec.ts",
         "place-search.spec.ts",
+        "expenses-crud.spec.ts",
+        "expenses-from-schedule.spec.ts",
+        "todos-crud.spec.ts",
+        "records-crud.spec.ts",
+        "guest-share-flow.spec.ts",
       ],
     },
     {
