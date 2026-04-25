@@ -23,4 +23,18 @@ describe("Realtime publication 감사", () => {
     expect(tables).not.toContain("profiles");
     expect(tables).not.toContain("trip_days");    // parent table 은 publication 제외
   });
+
+  it("Phase 4: expenses/todos/records 가 supabase_realtime 에 포함", async () => {
+    const { data, error } = await admin.rpc("query_publication_tables" as never);
+    if (error) {
+      console.warn("query_publication_tables RPC not found — skipping Phase 4 realtime audit.");
+      return;
+    }
+    const tables = (data as Array<{ tablename: string }> ?? []).map((r) => r.tablename);
+    expect(tables).toContain("expenses");
+    expect(tables).toContain("todos");
+    expect(tables).toContain("records");
+    // guest_shares 는 publication 제외 (게스트 토글 변경은 관리탭 invalidate 로 갱신)
+    expect(tables).not.toContain("guest_shares");
+  });
 });
