@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import withSerwistInit from "@serwist/next";
+import { withSerwist } from "@serwist/turbopack";
 
 /**
  * Phase 0 기본 보안 헤더 세트.
@@ -105,13 +105,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-const withSerwist = withSerwistInit({
-  swSrc: "app/sw.ts",
-  swDest: "public/sw.js",
-  cacheOnNavigation: true,
-  reloadOnOnline: true,
-  // dev SW 는 HMR 충돌 + Workbox console 노이즈 → 비활성화. preview/prod 만 동작.
-  disable: process.env.NODE_ENV === "development",
-});
-
+// @serwist/turbopack — SW 빌드는 app/[swPath]/route.ts 의 createSerwistRoute 가 담당.
+// 본 wrap 은 serverExternalPackages 자동 추가 등 Next 16 + Turbopack 통합용.
 export default withSerwist(nextConfig);
