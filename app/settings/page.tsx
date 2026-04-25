@@ -105,8 +105,8 @@ export default function SettingsPage() {
           <SettingsRow
             icon={<Tag size={20} className="text-ink-600" />}
             title="카테고리 관리"
-            subtitle="일정·경비 카테고리 커스터마이즈"
-            onClick={() => flash("카테고리 관리는 Phase 6에서 연결됩니다")}
+            subtitle="일정·경비 카테고리 한눈에 보기"
+            onClick={() => router.push("/settings/categories")}
           />
         </SettingsGroup>
 
