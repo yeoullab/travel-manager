@@ -49,7 +49,7 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 | schedule↔expense quickAdd | `components/schedule/schedule-item-modal.tsx::onAddExpense` + `schedule-tab.tsx::router.push('?tab=expenses&quickAdd=...')` | Phase 4 Task 14 |
 | ADR-010 Realtime gateway prefetches `useMyGroup` | `lib/realtime/use-realtime-gateway.ts::useMyGroup()` | 2026-04-25 |
 | ADR-011 share-toggle polling | `lib/trip/use-trip-detail.ts::refetchInterval=5000` + `use-trips-list.ts` | 2026-04-25 |
-| `/settings/categories` 페이지 | **부재** | §6.11 미구현 |
+| `/settings/categories` 페이지 | `app/settings/categories/page.tsx` (V1 read-only) | §6.11 V1 (tag `categories-v1`) |
 | `public/manifest.json`, `public/sw.js`, Workbox | **부재** | Phase 8 미구현 |
 
 ---
