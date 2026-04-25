@@ -1,5 +1,5 @@
 세션 종료 루틴을 수행하라:
-
+(경로가 없으면 sh 대신 sohyun 으로 바꿔서 탐색)
 1. 오늘 작업 내용을 /Users/sh/Library/CloudStorage/SynologyDrive-home/앱/MY_AI_WIKI/projects/travel-manager/sessions/ 에 세션 로그로 기록하라.
    - 파일명: YYYY-MM-DD-주제.md (주제는 핵심 작업을 kebab-case로)
    - /Users/sh/Library/CloudStorage/SynologyDrive-home/앱/MY_AI_WIKI/projects/travel-manager/sessions/000-template.md 형식을 따르라.
