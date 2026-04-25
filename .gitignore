@@ -46,6 +46,7 @@ next-env.d.ts
 .bkit/
 .superpowers/
 .claude/settings.local.json
+.claude/launch.json
 
 # IDE
 .idea/
