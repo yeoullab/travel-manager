@@ -5,9 +5,9 @@ import { AppBar } from "@/components/ui/app-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoryRow } from "@/components/settings/category-row";
 import { useCategories, CATEGORY_FALLBACK_LABEL } from "@/lib/category/use-categories";
-import { EXPENSE_CATEGORIES } from "@/lib/expense/constants";
+import { EXPENSE_CATEGORIES, type ExpenseCategoryCode } from "@/lib/expense/constants";
 
-const EXPENSE_COLOR_TOKEN: Record<string, string> = {
+const EXPENSE_COLOR_TOKEN: Record<ExpenseCategoryCode, string> = {
   food: "bg-ti-thinking",
   transport: "bg-ti-read",
   lodging: "bg-ti-edit",
