@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
 
 /**
  * Phase 0 기본 보안 헤더 세트.
@@ -85,6 +86,7 @@ const securityHeaders = [
       "font-src 'self' data:",
       connectSrc,
       "frame-src https://accounts.google.com",
+      "worker-src 'self'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -103,4 +105,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  cacheOnNavigation: true,
+  reloadOnOnline: true,
+  // dev SW 는 HMR 충돌 + Workbox console 노이즈 → 비활성화. preview/prod 만 동작.
+  disable: process.env.NODE_ENV === "development",
+});
+
+export default withSerwist(nextConfig);
