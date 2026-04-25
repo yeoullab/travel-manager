@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getBrowserClient } from "@/lib/supabase/browser-client";
 import { queryKeys } from "@/lib/query/keys";
 import type { Database } from "@/types/database";
+import type { ScheduleCategory } from "@/lib/types";
 
 export type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 
@@ -29,7 +30,7 @@ export function useCategories() {
 }
 
 /** 0008 seed 의 한글 라벨 fallback. DB row.name 이 우선이지만 SSR/loading 시 fallback. */
-export const CATEGORY_FALLBACK_LABEL: Record<string, string> = {
+export const CATEGORY_FALLBACK_LABEL: Record<ScheduleCategory, string> = {
   transport: "교통",
   sightseeing: "관광",
   food: "식당",
