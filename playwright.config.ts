@@ -23,7 +23,7 @@ export default defineConfig({
     {
       name: "anonymous",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: ["login.spec.ts"],
+      testMatch: ["login.spec.ts", "pwa.spec.ts"],
     },
     {
       name: "alice",
