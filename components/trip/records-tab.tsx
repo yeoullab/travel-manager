@@ -285,9 +285,19 @@ function RecordSheet({
       onClose={onClose}
       title={isEdit ? "기록 수정" : "기록 추가"}
       footer={
-        <div className="flex w-full gap-2">
+        <div className="flex w-full flex-col gap-2">
+          <Button
+            fullWidth
+            variant="primary"
+            onClick={() => void handleSubmit()}
+            disabled={isSaving || isDeleting}
+          >
+            {isSaving ? "저장 중…" : "저장"}
+          </Button>
           {isEdit && (
             <Button
+              fullWidth
+              size="sm"
               variant="ghost"
               onClick={() => {
                 if (mode.kind !== "edit") return;
@@ -298,14 +308,6 @@ function RecordSheet({
               삭제
             </Button>
           )}
-          <Button
-            fullWidth
-            variant="primary"
-            onClick={() => void handleSubmit()}
-            disabled={isSaving || isDeleting}
-          >
-            {isSaving ? "저장 중…" : "저장"}
-          </Button>
         </div>
       }
     >

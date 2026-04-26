@@ -414,9 +414,19 @@ function TodoSheet({
       onClose={onClose}
       title={isEdit ? "할 일 수정" : "할 일 추가"}
       footer={
-        <div className="flex w-full gap-2">
+        <div className="flex w-full flex-col gap-2">
+          <Button
+            fullWidth
+            variant="primary"
+            onClick={() => void handleSubmit()}
+            disabled={isSaving || isDeleting}
+          >
+            {isSaving ? "저장 중…" : "저장"}
+          </Button>
           {isEdit && (
             <Button
+              fullWidth
+              size="sm"
               variant="ghost"
               onClick={() => {
                 if (mode.kind !== "edit") return;
@@ -427,14 +437,6 @@ function TodoSheet({
               삭제
             </Button>
           )}
-          <Button
-            fullWidth
-            variant="primary"
-            onClick={() => void handleSubmit()}
-            disabled={isSaving || isDeleting}
-          >
-            {isSaving ? "저장 중…" : "저장"}
-          </Button>
         </div>
       }
     >
