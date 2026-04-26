@@ -17,6 +17,7 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { Button } from "@/components/ui/button";
 import { Fab } from "@/components/ui/fab";
 import { cn } from "@/lib/cn";
@@ -256,7 +257,7 @@ export function ScheduleTab({ tripId }: Props) {
   }
 
   if (daysLoading || itemsLoading) {
-    return <p className="text-ink-500 px-4 py-6 text-[13px]">불러오는 중…</p>;
+    return <ListSkeleton rows={5} />;
   }
 
   return (

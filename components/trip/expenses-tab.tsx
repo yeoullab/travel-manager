@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, Wallet } from "lucide-react";
 import { ExpenseRow } from "@/components/ui/expense-row";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { TextField, TextArea } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -261,7 +262,7 @@ export function ExpensesTab({ tripId }: Props) {
           description={error.message}
         />
       ) : isLoading ? (
-        <p className="text-ink-600 py-16 text-center text-[14px]">불러오는 중…</p>
+        <ListSkeleton rows={4} />
       ) : filtered.length === 0 ? (
         <EmptyState
           className="py-16"

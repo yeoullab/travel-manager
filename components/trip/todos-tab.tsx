@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { TextField, TextArea } from "@/components/ui/text-field";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { Fab } from "@/components/ui/fab";
 import { chipClassForColor } from "@/lib/profile/colors";
 import { useTripMembers } from "@/lib/profile/use-trip-members";
@@ -86,7 +87,7 @@ export function TodosTab({ tripId }: Props) {
   }
 
   if (isLoading) {
-    return <p className="text-ink-600 px-4 py-16 text-center text-[14px]">불러오는 중…</p>;
+    return <ListSkeleton rows={4} />;
   }
 
   if (todos.length === 0) {
