@@ -565,37 +565,59 @@ function ExpenseSheet({
           maxLength={100}
         />
 
-        <div className="grid grid-cols-[1fr_88px] gap-2">
-          <TextField
-            label="금액"
-            placeholder="0"
-            inputMode="decimal"
-            value={values.amount}
-            onChange={(e) => update("amount", formatAmountInput(e.target.value))}
-            error={errors.amount}
-          />
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <label className="text-ink-700 text-[13px] font-medium">통화</label>
-            <select
-              value={values.currency}
-              onChange={(e) => update("currency", e.target.value)}
-              className={cn(
-                "bg-surface-100 border-border-primary h-11 w-full appearance-none rounded-[8px] border pr-2 pl-3 text-[15px]",
-                errors.currency && "border-error",
+        {/*
+          통화 1개면 select 미표시 (KRW 고정) — 모바일 좁은 폭에서 select 가 시트 밖으로 잘리는
+          문제 회피. 통화 2개 이상일 때만 select 노출, 폭은 minmax(96px, 1fr) 로 화면 폭 따라 유연.
+        */}
+        {tripCurrencies.length > 1 ? (
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(96px,auto)] gap-2">
+            <TextField
+              label="금액"
+              placeholder="0"
+              inputMode="decimal"
+              value={values.amount}
+              onChange={(e) => update("amount", formatAmountInput(e.target.value))}
+              error={errors.amount}
+            />
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <label className="text-ink-700 text-[13px] font-medium">통화</label>
+              <select
+                value={values.currency}
+                onChange={(e) => update("currency", e.target.value)}
+                className={cn(
+                  "bg-surface-100 border-border-primary h-11 min-w-0 rounded-[8px] border px-3 text-[15px]",
+                  errors.currency && "border-error",
+                )}
+                aria-invalid={errors.currency ? "true" : undefined}
+              >
+                {tripCurrencies.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {errors.currency && (
+                <p className="text-error text-[12px]">{errors.currency}</p>
               )}
-              aria-invalid={errors.currency ? "true" : undefined}
-            >
-              {tripCurrencies.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {errors.currency && (
-              <p className="text-error text-[12px]">{errors.currency}</p>
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-end justify-between gap-2">
+              <label className="text-ink-700 text-[13px] font-medium">금액</label>
+              <span className="text-ink-600 text-[12px] font-medium tracking-wider uppercase">
+                {tripCurrencies[0] ?? "KRW"}
+              </span>
+            </div>
+            <TextField
+              placeholder="0"
+              inputMode="decimal"
+              value={values.amount}
+              onChange={(e) => update("amount", formatAmountInput(e.target.value))}
+              error={errors.amount}
+            />
+          </div>
+        )}
 
         <TextField
           label="날짜"

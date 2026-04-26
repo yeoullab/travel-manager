@@ -55,10 +55,9 @@ export async function searchNaver(query: string): Promise<PlaceResult[]> {
     const [lng, lat] = coord;
     const clamped = clampLatLng(lat, lng);
     if (!clamped) continue;
-    // §6.13: Naver Local API 의 link 필드. 모바일 deeplink (nmap://, applinks 등) 일 수
-    // 있으므로 https?:// 스킴만 externalUrl 로 노출. 그 외는 undefined → place-link 헬퍼 fallback.
-    const externalUrl =
-      item.link && /^https?:\/\//i.test(item.link) ? item.link : undefined;
+    // §6.13 V1.1: Naver Local API 의 link 는 사업자가 등록한 외부 URL (instagram/홈페이지 등)
+    // 이라 Naver Map 페이지가 아니다. 사용자가 기대하는 동작은 항상 Naver Map place 페이지로
+    // 이동. 좌표 기반 fallback (place-link 헬퍼) 이 의도와 일치하므로 externalUrl 을 비워둔다.
     out.push({
       externalId: `naver:${item.link || `${item.mapx},${item.mapy}`}`,
       name: stripHtmlTags(item.title),
@@ -66,7 +65,6 @@ export async function searchNaver(query: string): Promise<PlaceResult[]> {
       lat: clamped[0],
       lng: clamped[1],
       provider: "naver",
-      externalUrl,
     });
   }
   return out;

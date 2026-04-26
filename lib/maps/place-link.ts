@@ -1,12 +1,17 @@
 /**
- * §6.13 V1 — 일정 카드/모달/게스트 페이지의 "📍 지도에서 보기" 버튼이 가리킬 URL 결정.
+ * §6.13 V1.1 — 일정 카드/모달/게스트 페이지의 "📍 지도에서 보기" 버튼이 가리킬 URL 결정.
+ *
+ * 정책:
+ * - 국내 (Naver): 항상 Naver Map place 페이지로 이동. Naver 지역검색 API 의 `link` 필드는
+ *   사업자 등록 외부 URL (instagram/홈페이지 등) 이라 신뢰 안 함 → naver-search.ts 에서
+ *   externalUrl 미저장. 좌표/이름 기반 `map.naver.com/v5/search/<name>` 으로 통일.
+ * - 해외 (Google): Places API (New) 의 `googleMapsUri` 가 정식 Google Maps Place 페이지 →
+ *   placeExternalUrl 우선. 누락 시 좌표 기반 `google.com/maps/search` 로 fallback.
  *
  * 우선순위:
- *   1. place_external_url (옵션 A) — 검색 결과 출처 URL (Naver Place / Google Maps Place 페이지)
- *   2. 좌표 기반 일반 지도 검색 (옵션 C) — 옛 일정 / external_url 누락 fallback
+ *   1. place_external_url (옵션 A — Google 만 실효)
+ *   2. 좌표 기반 일반 지도 검색 (옵션 C — Naver 는 항상 이 경로)
  *   3. null — 좌표도 없으면 버튼 숨김
- *
- * isDomestic 플래그로 Naver Map ↔ Google Maps fallback 분기.
  */
 
 export type PlaceLinkInput = {
