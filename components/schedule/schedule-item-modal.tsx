@@ -192,25 +192,37 @@ export function ScheduleItemModal({
       footer={
         <div className="flex w-full flex-col gap-2">
           {mode === "edit" && onAddExpense && (
-            <Button variant="light" onClick={onAddExpense}>
+            <Button fullWidth variant="light" onClick={onAddExpense}>
               이 일정의 경비 추가
             </Button>
           )}
-          <div className="flex w-full gap-2">
-            {mode === "edit" && onDelete && (
-              <Button variant="ghost" onClick={onDelete}>
-                삭제
-              </Button>
-            )}
-            {mode === "edit" && onOpenDayMove && (
-              <Button variant="tertiary" onClick={onOpenDayMove}>
-                다른 날로 이동
-              </Button>
-            )}
-            <Button fullWidth variant="primary" disabled={!canSave} onClick={submit}>
-              {mode === "create" ? "추가" : "저장"}
-            </Button>
-          </div>
+          <Button fullWidth variant="primary" disabled={!canSave} onClick={submit}>
+            {mode === "create" ? "추가" : "저장"}
+          </Button>
+          {mode === "edit" && (onDelete || onOpenDayMove) && (
+            <div className="flex w-full gap-2">
+              {onOpenDayMove && (
+                <Button
+                  fullWidth
+                  size="sm"
+                  variant="tertiary"
+                  onClick={onOpenDayMove}
+                >
+                  다른 날로 이동
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  fullWidth
+                  size="sm"
+                  variant="ghost"
+                  onClick={onDelete}
+                >
+                  삭제
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       }
     >

@@ -26,9 +26,9 @@ const variants: Record<ButtonVariant, string> = {
   // Ghost — transparent
   ghost:
     "bg-ink-200 text-ink-600 hover:text-error rounded-[8px]",
-  // Light surface — minimal
+  // Light surface — accent CTA with orange text + subtle outline (보조 액션 강조용)
   light:
-    "bg-surface-100 text-ink-900 hover:text-error rounded-[8px]",
+    "bg-surface-100 text-accent-orange border border-accent-orange/30 hover:bg-accent-orange/5 rounded-[8px]",
 };
 
 const sizes: Record<ButtonSize, string> = {
