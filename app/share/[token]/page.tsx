@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Plane, MapPin, Calendar as CalendarIcon, Eye, Sparkles } from "lucide-react";
+import { Plane, MapPin, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
 import { ScheduleItem, type ScheduleCategory } from "@/components/ui/schedule-item";
 import { ExpenseRow, type ExpenseCategory } from "@/components/ui/expense-row";
+import { MapPanel } from "@/components/schedule/map-panel";
 import { getServerClient } from "@/lib/supabase/server-client";
 import { cn } from "@/lib/cn";
 
@@ -13,6 +13,8 @@ type ScheduleItemShare = {
   timeOfDay: string | null;
   placeName: string | null;
   placeAddress: string | null;
+  placeLat: number | null;
+  placeLng: number | null;
   memo: string | null;
   url: string | null;
   categoryCode: string;
@@ -150,32 +152,14 @@ export default async function SharePage({
           </p>
         </section>
 
-        {share.showSchedule && <ScheduleSection days={scheduleByDay} />}
+        {share.showSchedule && (
+          <ScheduleSection days={scheduleByDay} isDomestic={trip.isDomestic} />
+        )}
         {share.showExpenses && <ExpensesSection items={expenses} />}
         {share.showTodos && <TodosSection items={todos} />}
         {share.showRecords && <RecordsSection items={records} />}
 
-        {/* Invite CTA */}
-        <section className="bg-accent-orange text-cream mt-10 overflow-hidden rounded-[16px] p-6">
-          <div className="flex items-start gap-3">
-            <Sparkles size={24} className="shrink-0" />
-            <div>
-              <h2 className="text-[18px] font-semibold tracking-[-0.005em]">
-                나도 내 여행을 만들어볼까요?
-              </h2>
-              <p className="mt-1 text-[13px] leading-[1.55] opacity-90">
-                커플·소그룹을 위한 여행 플래너. 파트너와 실시간으로 계획하고 정산하세요.
-              </p>
-              <Link href="/login" className="mt-4 inline-block">
-                <span className="bg-cream text-ink-900 inline-flex h-10 items-center rounded-full px-5 text-[13px] font-semibold">
-                  travel-manager 시작하기 →
-                </span>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <p className="text-ink-500 mt-6 text-center text-[11px]">
+        <p className="text-ink-500 mt-10 text-center text-[11px]">
           공개 설정은 소유자가 언제든 해제할 수 있습니다
         </p>
       </main>
@@ -183,40 +167,66 @@ export default async function SharePage({
   );
 }
 
-function ScheduleSection({ days }: { days: DaySchedule[] }) {
+function ScheduleSection({
+  days,
+  isDomestic,
+}: {
+  days: DaySchedule[];
+  isDomestic: boolean;
+}) {
   const nonEmpty = days.filter((d) => d.items.length > 0);
   if (nonEmpty.length === 0) return null;
   return (
     <Section title="일정">
       <div className="flex flex-col gap-6">
-        {nonEmpty.map((d) => (
-          <div key={d.dayNumber}>
-            <div className="mb-2 flex items-baseline gap-2">
-              <span className="bg-accent-orange text-cream rounded-full px-2 py-0.5 text-[11px] font-medium">
-                Day {d.dayNumber}
-              </span>
-              <span className="text-ink-600 font-mono text-[12px]">{d.date}</span>
+        {nonEmpty.map((d) => {
+          const mapItems = d.items
+            .map((it, idx) => {
+              if (it.placeLat == null || it.placeLng == null) return null;
+              return {
+                id: `${d.dayNumber}-${idx}`,
+                place_lat: it.placeLat,
+                place_lng: it.placeLng,
+                label: String(idx + 1),
+              };
+            })
+            .filter(
+              (v): v is { id: string; place_lat: number; place_lng: number; label: string } =>
+                v !== null,
+            );
+          return (
+            <div key={d.dayNumber}>
+              <div className="mb-2 flex items-baseline gap-2">
+                <span className="bg-accent-orange text-cream rounded-full px-2 py-0.5 text-[11px] font-medium">
+                  Day {d.dayNumber}
+                </span>
+                <span className="text-ink-600 font-mono text-[12px]">{d.date}</span>
+              </div>
+              {mapItems.length > 0 && (
+                <MapPanel isDomestic={isDomestic} items={mapItems} />
+              )}
+              <ul className="mt-3 flex flex-col gap-2">
+                {d.items.map((it, idx) => (
+                  <li key={`${d.dayNumber}-${idx}`} className="flex items-start gap-2">
+                    {/* 카드 번호 = 지도 마커와 동일 시각: 28×28 원형 + accent-orange + 흰 글자/테두리 */}
+                    <div className="bg-accent-orange text-cream ring-cream mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold shadow-[0_2px_4px_rgba(0,0,0,0.25)] ring-2">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1">
+                      <ScheduleItem
+                        category={toScheduleCategory(it.categoryCode)}
+                        title={it.title}
+                        time={it.timeOfDay?.slice(0, 5) ?? undefined}
+                        placeName={it.placeName ?? undefined}
+                        memo={it.memo ?? undefined}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="flex flex-col gap-2">
-              {d.items.map((it, idx) => (
-                <li key={`${d.dayNumber}-${idx}`} className="flex items-start gap-2">
-                  <div className="bg-surface-300 text-ink-700 mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1">
-                    <ScheduleItem
-                      category={toScheduleCategory(it.categoryCode)}
-                      title={it.title}
-                      time={it.timeOfDay?.slice(0, 5) ?? undefined}
-                      placeName={it.placeName ?? undefined}
-                      memo={it.memo ?? undefined}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Section>
   );
