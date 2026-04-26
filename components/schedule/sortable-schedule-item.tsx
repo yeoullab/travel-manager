@@ -22,6 +22,9 @@ export function SortableScheduleItem({ item, index, onTap, registerRef }: Props)
     transition,
     opacity: isDragging ? 0.6 : 1,
     boxShadow: isDragging ? "0 12px 24px rgba(0,0,0,0.12)" : undefined,
+    // 모바일 long-press 가 브라우저 native scroll/zoom 보다 dnd-kit TouchSensor 에 먼저 가도록.
+    // dnd-kit 공식 권장: TouchSensor 사용 시 draggable 요소의 touch-action 을 none 으로.
+    touchAction: "none",
   };
 
   return (

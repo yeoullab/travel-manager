@@ -6,6 +6,7 @@ import { CalendarX, ChevronDown, Map as MapIcon } from "lucide-react";
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -91,7 +92,10 @@ export function ScheduleTab({ tripId }: Props) {
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const sensors = useSensors(
+    // PointerSensor: 데스크톱 마우스 + 일부 mobile pointer events
     useSensor(PointerSensor, { activationConstraint: { delay: 400, tolerance: 8 } }),
+    // TouchSensor: iOS Safari/Android Chrome long-press — touch-action: none 과 결합 필수
+    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
