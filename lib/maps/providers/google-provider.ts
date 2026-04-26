@@ -107,22 +107,22 @@ async function loadSdk(): Promise<void> {
 }
 
 function renderPinElement(label: string): HTMLElement {
-  // Naver provider 의 renderMarkerHtml 과 동일한 28×28 원형 — 일정 카드 번호와 시각 매칭.
+  // Naver provider 의 renderMarkerHtml 과 동일한 24×24 ink 톤 — 카드 번호와 시각 매칭, 절제된 디자인.
   const el = document.createElement("div");
   el.style.cssText = [
-    "background:#F54E00",
-    "color:#fff",
-    "width:28px",
-    "height:28px",
+    "background:#26251e",
+    "color:#f2f1ed",
+    "width:24px",
+    "height:24px",
     "border-radius:50%",
     "display:flex",
     "align-items:center",
     "justify-content:center",
     "font-weight:600",
-    "font-size:13px",
-    "box-shadow:0 2px 4px rgba(0,0,0,.25)",
-    "border:2px solid #fff",
+    "font-size:11px",
+    "border:1.5px solid #fff",
     "cursor:pointer",
+    "font-variant-numeric:tabular-nums",
   ].join(";");
   el.textContent = label;
   return el;

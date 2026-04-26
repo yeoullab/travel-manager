@@ -208,8 +208,8 @@ function ScheduleSection({
               <ul className="mt-3 flex flex-col gap-2">
                 {d.items.map((it, idx) => (
                   <li key={`${d.dayNumber}-${idx}`} className="flex items-start gap-2">
-                    {/* 카드 번호 = 지도 마커와 동일 시각: 28×28 원형 + accent-orange + 흰 글자/테두리 */}
-                    <div className="bg-accent-orange text-cream ring-cream mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold shadow-[0_2px_4px_rgba(0,0,0,0.25)] ring-2">
+                    {/* 카드 번호: 22×22 ink-900 원형 + cream 글자. 지도 마커와 동일 톤. */}
+                    <div className="bg-ink-900 text-cream mt-2.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums">
                       {idx + 1}
                     </div>
                     <div className="flex-1">
