@@ -83,7 +83,12 @@ export function EditTripModal({ trip, onClose, onSaved }: Props) {
       <DateShrinkConfirm
         fromDay={newDays + 1}
         toDay={originalDays}
-        onConfirm={save}
+        onConfirm={() => {
+          // 확인 → 즉시 form 영역으로 복귀해 isPending / saveError 가 보이도록.
+          // save() 의 mutation 결과 (성공: onClose, 실패: setSaveError) 가 form 위에 그려진다.
+          setShowShrinkConfirm(false);
+          void save();
+        }}
         onCancel={() => setShowShrinkConfirm(false)}
       />
     );
