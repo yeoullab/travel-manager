@@ -25,6 +25,10 @@ import {
   type ExpenseCategoryCode,
 } from "@/lib/expense/constants";
 import {
+  formatAmountInput,
+  parseAmountInput,
+} from "@/lib/expense/format-amount-input";
+import {
   aggregateByCategory,
   aggregateByCurrency,
   groupByDate,
@@ -333,7 +337,7 @@ export function ExpensesTab({ tripId }: Props) {
               tripId,
               expenseDate: values.expenseDate,
               title: values.title,
-              amount: Number(values.amount),
+              amount: parseAmountInput(values.amount),
               currency: values.currency,
               categoryCode: values.categoryCode,
               paidBy: values.paidBy,
@@ -356,7 +360,7 @@ export function ExpensesTab({ tripId }: Props) {
               expenseId,
               expenseDate: values.expenseDate,
               title: values.title,
-              amount: Number(values.amount),
+              amount: parseAmountInput(values.amount),
               currency: values.currency,
               categoryCode: values.categoryCode,
               paidBy: values.paidBy,
@@ -457,7 +461,7 @@ function ExpenseSheet({
     const titleResult = expenseTitleSchema.safeParse(values.title);
     if (!titleResult.success) next.title = titleResult.error.issues[0]?.message ?? "제목 오류";
 
-    const amountResult = expenseAmountSchema.safeParse(values.amount);
+    const amountResult = expenseAmountSchema.safeParse(parseAmountInput(values.amount));
     if (!amountResult.success)
       next.amount = amountResult.error.issues[0]?.message ?? "금액 오류";
 
@@ -566,7 +570,7 @@ function ExpenseSheet({
             placeholder="0"
             inputMode="decimal"
             value={values.amount}
-            onChange={(e) => update("amount", e.target.value)}
+            onChange={(e) => update("amount", formatAmountInput(e.target.value))}
             error={errors.amount}
           />
           <div className="flex flex-col gap-1.5">
@@ -663,7 +667,7 @@ function buildInitialValues(
     return {
       expenseDate: e.expense_date,
       title: e.title,
-      amount: String(e.amount),
+      amount: formatAmountInput(String(e.amount)),
       currency: e.currency,
       categoryCode: e.category_code as ExpenseCategoryCode,
       paidBy: e.paid_by,
