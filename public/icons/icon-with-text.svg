@@ -1,0 +1,37 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="96" x2="928" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <linearGradient id="heart" x1="236" y1="186" x2="824" y2="684" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF5A76"/>
+      <stop offset="0.5" stop-color="#FF5A76"/>
+      <stop offset="0.5001" stop-color="#5DA7FF"/>
+      <stop offset="1" stop-color="#2F7CF6"/>
+    </linearGradient>
+    <filter id="shadow" x="36" y="28" width="952" height="952" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#0F172A" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect x="36" y="36" width="952" height="952" rx="210" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <path d="M512 674C371 562 254 464 254 337C254 253 313 192 395 192C444 192 486 216 512 254C538 216 580 192 629 192C711 192 770 253 770 337C770 464 653 562 512 674Z" fill="url(#heart)" opacity="0.98"/>
+    <path d="M204 606C280 570 305 516 371 498C445 479 541 515 616 452C666 410 671 357 744 309" stroke="#0B2A6F" stroke-width="24" stroke-linecap="round" stroke-dasharray="34 28"/>
+    <path d="M196 512C151 512 120 547 120 589C120 644 196 728 196 728C196 728 272 644 272 589C272 547 241 512 196 512Z" fill="#0B2A6F"/>
+    <circle cx="196" cy="589" r="24" fill="white"/>
+    <path d="M746 245L887 185C902 179 915 193 909 207L850 350C846 359 835 362 828 355L790 316L724 374C716 381 703 373 707 362L733 285L656 310C645 314 637 301 644 293L702 227L663 189C656 182 659 171 668 167L746 245Z" fill="#0B2A6F"/>
+
+    <rect x="350" y="318" width="324" height="346" rx="64" fill="white"/>
+    <path d="M440 318V263C440 242 457 225 478 225H546C567 225 584 242 584 263V318" stroke="white" stroke-width="46" stroke-linecap="round"/>
+    <path d="M440 318V263C440 242 457 225 478 225H546C567 225 584 242 584 263V318" stroke="#0B2A6F" stroke-width="24" stroke-linecap="round"/>
+    <rect x="389" y="638" width="42" height="72" rx="21" fill="white"/>
+    <rect x="593" y="638" width="42" height="72" rx="21" fill="white"/>
+    <path d="M512 548C467 512 429 480 429 439C429 412 448 393 474 393C490 393 503 400 512 413C521 400 534 393 550 393C576 393 595 412 595 439C595 480 557 512 512 548Z" fill="url(#heart)"/>
+  </g>
+
+  <text x="512" y="835" text-anchor="middle" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="96" font-weight="800" letter-spacing="-5" fill="#0B2A6F">travel</text>
+  <text x="512" y="910" text-anchor="middle" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="70" font-weight="700" letter-spacing="-2" fill="#FF5A76">manager</text>
+</svg>
