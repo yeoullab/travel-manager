@@ -498,9 +498,19 @@ function ExpenseSheet({
       onClose={onClose}
       title={title}
       footer={
-        <div className="flex gap-2">
+        <div className="flex w-full flex-col gap-2">
+          <Button
+            fullWidth
+            variant="primary"
+            onClick={() => void handleSubmit()}
+            disabled={isSaving || isDeleting}
+          >
+            {isSaving ? "저장 중…" : "저장"}
+          </Button>
           {isEdit && (
             <Button
+              fullWidth
+              size="sm"
               variant="ghost"
               onClick={() => {
                 if (!isEdit) return;
@@ -513,14 +523,6 @@ function ExpenseSheet({
               삭제
             </Button>
           )}
-          <Button
-            fullWidth
-            variant="primary"
-            onClick={() => void handleSubmit()}
-            disabled={isSaving || isDeleting}
-          >
-            {isSaving ? "저장 중…" : "저장"}
-          </Button>
         </div>
       }
     >
