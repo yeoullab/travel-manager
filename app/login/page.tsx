@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Compass, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
 import { requestGoogleIdToken } from "@/lib/auth/google-id-token";
 import { signInWithGoogle } from "@/lib/auth/sign-in";
@@ -39,16 +40,15 @@ function LoginInner() {
 
   return (
     <div className="flex w-full max-w-[360px] flex-col items-center text-center">
-      <div
-        aria-hidden
-        className="bg-surface-300 text-accent-orange mb-6 flex h-14 w-14 items-center justify-center rounded-[16px]"
-      >
-        <Compass size={26} strokeWidth={1.75} />
-      </div>
-      <h1 className="text-ink-900 text-[26px] font-semibold tracking-[-0.01em]">
-        travel-manager에 오신 것을 환영합니다
-      </h1>
-      <p className="text-ink-700 mt-3 text-[15px] leading-[1.5]">
+      <Image
+        src="/icons/icon-with-text.svg"
+        alt="travel-manager"
+        width={220}
+        height={220}
+        priority
+        className="mb-6 h-auto w-[220px]"
+      />
+      <p className="text-ink-700 mt-1 text-[15px] leading-[1.5]">
         구글 계정으로 로그인하면 파트너와 여행을 실시간으로 공유할 수 있어요.
       </p>
 
