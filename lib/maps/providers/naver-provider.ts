@@ -54,10 +54,10 @@ function loadSdk(): Promise<void> {
 }
 
 function renderMarkerHtml(label: string): string {
-  // 톤다운: 24×24 ink-900 + cream 글자 + 1.5px 흰 테두리 (지도 배경과 분리). 카드 번호 (22×22) 와 동일 톤.
-  return `<div style="background:#26251e;color:#f2f1ed;width:24px;height:24px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;
-    border:1.5px solid #fff;font-variant-numeric:tabular-nums">${label}</div>`;
+  // 28×28 peach (ti-thinking #dfa88f) + cream 글자 + 2px 흰 테두리. 카드 번호 (28×28) 와 동일 톤.
+  return `<div style="background:#dfa88f;color:#f2f1ed;width:28px;height:28px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;
+    border:2px solid #fff;font-variant-numeric:tabular-nums;box-shadow:0 2px 6px rgba(38,37,30,0.18)">${label}</div>`;
 }
 
 function createMap(container: HTMLElement, options: MapOptions): MapHandle {

@@ -564,7 +564,7 @@ function ExpenseSheet({
           maxLength={100}
         />
 
-        <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div className="grid grid-cols-[1fr_88px] gap-2">
           <TextField
             label="금액"
             placeholder="0"
@@ -573,13 +573,13 @@ function ExpenseSheet({
             onChange={(e) => update("amount", formatAmountInput(e.target.value))}
             error={errors.amount}
           />
-          <div className="flex flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <label className="text-ink-700 text-[13px] font-medium">통화</label>
             <select
               value={values.currency}
               onChange={(e) => update("currency", e.target.value)}
               className={cn(
-                "bg-surface-100 border-border-primary h-11 rounded-[8px] border px-3 text-[15px]",
+                "bg-surface-100 border-border-primary h-11 w-full appearance-none rounded-[8px] border pr-2 pl-3 text-[15px]",
                 errors.currency && "border-error",
               )}
               aria-invalid={errors.currency ? "true" : undefined}
