@@ -82,28 +82,39 @@ export function ScheduleItem({
             <span className="text-ink-600 shrink-0 font-mono text-[12px]">{time}</span>
           )}
         </div>
-        <div className="mt-1 flex items-center gap-1.5">
+        {/* 부가 정보 한 줄: [카테고리 dot] 카테고리 · 장소 · 메모 (모두 truncate) */}
+        <div className="text-ink-600 mt-1 flex min-w-0 items-center gap-1.5 text-[12px]">
           <span
+            aria-hidden
             className={cn(
-              "inline-block h-1.5 w-1.5 rounded-full",
+              "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
               categoryColor[category],
             )}
           />
-          <span className="text-ink-600 text-[11px] uppercase">
-            {categoryLabel[category]}
-          </span>
+          <span className="shrink-0">{categoryLabel[category]}</span>
+          {placeName && (
+            <>
+              <span aria-hidden className="text-ink-400 shrink-0">
+                ·
+              </span>
+              <MapPin
+                size={11}
+                strokeWidth={2}
+                className="text-ink-500 shrink-0"
+                aria-hidden
+              />
+              <span className="truncate">{placeName}</span>
+            </>
+          )}
+          {memo && (
+            <>
+              <span aria-hidden className="text-ink-400 shrink-0">
+                ·
+              </span>
+              <span className="truncate">{memo}</span>
+            </>
+          )}
         </div>
-        {placeName && (
-          <div className="text-ink-700 mt-1 flex items-center gap-1 text-[13px]">
-            <MapPin size={12} strokeWidth={2} />
-            <span className="truncate">{placeName}</span>
-          </div>
-        )}
-        {memo && (
-          <p className="text-ink-600 mt-1 line-clamp-2 text-[13px] leading-[1.45]">
-            {memo}
-          </p>
-        )}
       </div>
     </div>
   );
