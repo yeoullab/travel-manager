@@ -55,6 +55,10 @@ export async function searchNaver(query: string): Promise<PlaceResult[]> {
     const [lng, lat] = coord;
     const clamped = clampLatLng(lat, lng);
     if (!clamped) continue;
+    // §6.13: Naver Local API 의 link 필드. 모바일 deeplink (nmap://, applinks 등) 일 수
+    // 있으므로 https?:// 스킴만 externalUrl 로 노출. 그 외는 undefined → place-link 헬퍼 fallback.
+    const externalUrl =
+      item.link && /^https?:\/\//i.test(item.link) ? item.link : undefined;
     out.push({
       externalId: `naver:${item.link || `${item.mapx},${item.mapy}`}`,
       name: stripHtmlTags(item.title),
@@ -62,6 +66,7 @@ export async function searchNaver(query: string): Promise<PlaceResult[]> {
       lat: clamped[0],
       lng: clamped[1],
       provider: "naver",
+      externalUrl,
     });
   }
   return out;

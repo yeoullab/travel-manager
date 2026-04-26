@@ -17,6 +17,7 @@ export type CreateScheduleItemInput = {
   placeLng?: number | null;
   placeProvider?: "naver" | "google" | null;
   placeExternalId?: string | null;
+  placeExternalUrl?: string | null;
   memo?: string | null;
   url?: string | null;
 };
@@ -40,6 +41,7 @@ export function useCreateScheduleItem() {
         p_memo: input.memo ?? null,
         p_url: input.url ?? null,
         p_category_code: input.categoryCode,
+        p_place_external_url: input.placeExternalUrl ?? null,
       });
       if (error) throw error;
       return data as string;

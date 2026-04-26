@@ -5,15 +5,17 @@ import { CSS } from "@dnd-kit/utilities";
 import { ScheduleItem as ScheduleItemCard } from "@/components/ui/schedule-item";
 import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
 import type { ScheduleCategory } from "@/lib/types";
+import { resolvePlaceLink } from "@/lib/maps/place-link";
 
 type Props = {
   item: ScheduleItem;
   index: number;
+  isDomestic: boolean;
   onTap: (item: ScheduleItem) => void;
   registerRef?: (el: HTMLLIElement | null) => void;
 };
 
-export function SortableScheduleItem({ item, index, onTap, registerRef }: Props) {
+export function SortableScheduleItem({ item, index, isDomestic, onTap, registerRef }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
 
@@ -59,6 +61,13 @@ export function SortableScheduleItem({ item, index, onTap, registerRef }: Props)
           time={item.time_of_day ? item.time_of_day.slice(0, 5) : undefined}
           placeName={item.place_name ?? undefined}
           memo={item.memo ?? undefined}
+          placeUrl={resolvePlaceLink({
+            placeExternalUrl: item.place_external_url,
+            placeLat: item.place_lat,
+            placeLng: item.place_lng,
+            placeName: item.place_name,
+            isDomestic,
+          })}
         />
       </div>
     </li>

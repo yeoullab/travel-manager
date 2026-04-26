@@ -175,6 +175,42 @@ describe("get_guest_trip_data — token validation + section filter", () => {
     expect(Object.keys(day)).toContain("items");
   });
 
+  it("schedule items 에 placeExternalUrl 포함 (§6.13 / 0020)", async () => {
+    // §6.13: schedule item 에 place_external_url 포함되어 게스트 페이지 "지도에서 보기" 동작
+    const day1 = await admin
+      .from("trip_days")
+      .select("id")
+      .eq("trip_id", tripId)
+      .eq("day_number", 1)
+      .single();
+    const placeUrl = "https://map.naver.com/v5/entry/place/123";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (aliceC as any).rpc("create_schedule_item", {
+      p_trip_day_id: day1.data!.id,
+      p_title: "테스트 장소",
+      p_place_name: "테스트",
+      p_place_lat: 37.5,
+      p_place_lng: 127.0,
+      p_place_provider: "naver",
+      p_place_external_url: placeUrl,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (anonC as any).rpc("get_guest_trip_data", { p_token: activeToken });
+    type GuestSchedItem = {
+      title?: string;
+      placeExternalUrl?: string | null;
+    };
+    type GuestDay = { items?: GuestSchedItem[] };
+    const allItems = (data.scheduleByDay as GuestDay[])
+      .flatMap((d) => d.items ?? [])
+      .filter((it): it is GuestSchedItem => Boolean(it));
+    const target = allItems.find((it) => it.title === "테스트 장소");
+    expect(target).toBeDefined();
+    expect(Object.keys(target!)).toContain("placeExternalUrl");
+    expect(target!.placeExternalUrl).toBe(placeUrl);
+  });
+
   it("expired token → null (에러 없음)", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (anonC as any).rpc("get_guest_trip_data", { p_token: expiredToken });

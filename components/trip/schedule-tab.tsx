@@ -193,6 +193,7 @@ export function ScheduleTab({ tripId }: Props) {
       placeLng: value.place?.lng ?? null,
       placeProvider: value.place?.provider ?? null,
       placeExternalId: value.place?.externalId ?? null,
+      placeExternalUrl: value.place?.externalUrl ?? null,
     };
     if (modal.mode === "create") {
       createItem.mutate(
@@ -317,6 +318,7 @@ export function ScheduleTab({ tripId }: Props) {
         ) : (
           <ScheduleList
             items={activeDayItems}
+            isDomestic={trip?.is_domestic ?? true}
             onTapItem={openEdit}
             registerItemRef={registerItemRef}
           />

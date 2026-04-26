@@ -3,7 +3,9 @@ import { getServerEnv } from "@/lib/env";
 import { clampLatLng } from "@/lib/maps/rate-limit";
 
 const ENDPOINT = "https://places.googleapis.com/v1/places:searchText";
-const FIELD_MASK = "places.id,places.displayName,places.formattedAddress,places.location";
+// §6.13: googleMapsUri 추가 (Places API New v1) — Google Maps Place 페이지 직링크.
+const FIELD_MASK =
+  "places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri";
 
 type GoogleResp = {
   places?: Array<{
@@ -11,6 +13,7 @@ type GoogleResp = {
     displayName?: { text?: string };
     formattedAddress?: string;
     location?: { latitude: number; longitude: number };
+    googleMapsUri?: string;
   }>;
 };
 
@@ -46,6 +49,11 @@ export async function searchGoogle(query: string, near?: LatLng): Promise<PlaceR
     if (!p.location) continue;
     const clamped = clampLatLng(p.location.latitude, p.location.longitude);
     if (!clamped) continue;
+    // googleMapsUri 가 누락되면 place_id 기반 정식 URL 합성. https 스킴 보장.
+    const externalUrl =
+      p.googleMapsUri && /^https?:\/\//i.test(p.googleMapsUri)
+        ? p.googleMapsUri
+        : `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(p.id)}`;
     out.push({
       externalId: `google:${p.id}`,
       name: p.displayName?.text ?? "",
@@ -53,6 +61,7 @@ export async function searchGoogle(query: string, near?: LatLng): Promise<PlaceR
       lat: clamped[0],
       lng: clamped[1],
       provider: "google",
+      externalUrl,
     });
   }
   return out;

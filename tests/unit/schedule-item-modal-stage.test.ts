@@ -17,6 +17,7 @@ function mkItem(partial: Partial<ScheduleItem>): ScheduleItem {
     place_lng: null,
     place_provider: null,
     place_external_id: null,
+    place_external_url: null,
     memo: null,
     url: null,
     created_at: "2026-04-22T00:00:00Z",

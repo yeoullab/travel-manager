@@ -330,6 +330,7 @@ export type Database = {
           memo: string | null
           place_address: string | null
           place_external_id: string | null
+          place_external_url: string | null
           place_lat: number | null
           place_lng: number | null
           place_name: string | null
@@ -348,6 +349,7 @@ export type Database = {
           memo?: string | null
           place_address?: string | null
           place_external_id?: string | null
+          place_external_url?: string | null
           place_lat?: number | null
           place_lng?: number | null
           place_name?: string | null
@@ -366,6 +368,7 @@ export type Database = {
           memo?: string | null
           place_address?: string | null
           place_external_id?: string | null
+          place_external_url?: string | null
           place_lat?: number | null
           place_lng?: number | null
           place_name?: string | null
@@ -631,6 +634,7 @@ export type Database = {
           p_memo?: string
           p_place_address?: string
           p_place_external_id?: string
+          p_place_external_url?: string
           p_place_lat?: number
           p_place_lng?: number
           p_place_name?: string
@@ -730,6 +734,7 @@ export type Database = {
           p_memo?: string
           p_place_address?: string
           p_place_external_id?: string
+          p_place_external_url?: string
           p_place_lat?: number
           p_place_lng?: number
           p_place_name?: string

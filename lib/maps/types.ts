@@ -12,6 +12,8 @@ export interface PlaceResult {
   lat: number;
   lng: number;
   provider: MapsProviderName;
+  /** 검색 결과 출처 URL — Naver Place / Google Maps Place 페이지. https?:// 스킴만. §6.13 V1. */
+  externalUrl?: string;
 }
 
 export interface MarkerSpec {

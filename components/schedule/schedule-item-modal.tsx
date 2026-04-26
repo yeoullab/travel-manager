@@ -89,6 +89,7 @@ function initialPlaceFor(initial: ScheduleItem | null | undefined): PlaceResult 
     lat: initial.place_lat,
     lng: initial.place_lng,
     provider: initial.place_provider as "naver" | "google",
+    externalUrl: initial.place_external_url ?? undefined,
   };
 }
 
@@ -261,18 +262,30 @@ export function ScheduleItemModal({
           <>
             <CategoryChipRow value={categoryCode} onBack={backToCategory} />
             {place ? (
-              <div className="border-border-primary flex items-start justify-between gap-2 rounded-[10px] border px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-ink-900 truncate text-[14px] font-medium">{place.name}</p>
-                  <p className="text-ink-600 truncate text-[12px]">{place.address}</p>
+              <div className="border-border-primary rounded-[10px] border px-3 py-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-ink-900 truncate text-[14px] font-medium">{place.name}</p>
+                    <p className="text-ink-600 truncate text-[12px]">{place.address}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-ink-500 text-[12px]"
+                    onClick={() => setPlace(null)}
+                  >
+                    해제
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="text-ink-500 text-[12px]"
-                  onClick={() => setPlace(null)}
-                >
-                  해제
-                </button>
+                {place.externalUrl && (
+                  <a
+                    href={place.externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-orange mt-2 inline-block text-[12px] underline-offset-2 hover:underline"
+                  >
+                    📍 지도에서 보기
+                  </a>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
@@ -403,14 +416,26 @@ function PlacePicker({
     <div>
       <label className="text-ink-700 mb-1 block text-[12px] font-medium">장소 (선택)</label>
       {place ? (
-        <div className="border-border-primary flex items-start justify-between gap-2 rounded-[10px] border px-3 py-2">
-          <div className="min-w-0">
-            <p className="text-ink-900 truncate text-[14px] font-medium">{place.name}</p>
-            <p className="text-ink-600 truncate text-[12px]">{place.address}</p>
+        <div className="border-border-primary rounded-[10px] border px-3 py-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-ink-900 truncate text-[14px] font-medium">{place.name}</p>
+              <p className="text-ink-600 truncate text-[12px]">{place.address}</p>
+            </div>
+            <button type="button" className="text-ink-500 text-[12px]" onClick={onClear}>
+              해제
+            </button>
           </div>
-          <button type="button" className="text-ink-500 text-[12px]" onClick={onClear}>
-            해제
-          </button>
+          {place.externalUrl && (
+            <a
+              href={place.externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent-orange mt-2 inline-block text-[12px] underline-offset-2 hover:underline"
+            >
+              📍 지도에서 보기
+            </a>
+          )}
         </div>
       ) : (
         <button

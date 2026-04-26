@@ -37,6 +37,8 @@ type ScheduleItemProps = {
   draggable?: boolean;
   onClick?: () => void;
   className?: string;
+  /** §6.13: place_external_url || 좌표 fallback. resolvePlaceLink() 호출 결과. null 이면 버튼 숨김. */
+  placeUrl?: string | null;
 };
 
 /**
@@ -52,6 +54,7 @@ export function ScheduleItem({
   draggable,
   onClick,
   className,
+  placeUrl,
 }: ScheduleItemProps) {
   return (
     <div
@@ -97,13 +100,29 @@ export function ScheduleItem({
               <span aria-hidden className="text-ink-400 shrink-0">
                 ·
               </span>
-              <MapPin
-                size={11}
-                strokeWidth={2}
-                className="text-ink-500 shrink-0"
-                aria-hidden
-              />
-              <span className="truncate">{placeName}</span>
+              {placeUrl ? (
+                <a
+                  href={placeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-accent-orange hover:text-accent-orange/80 inline-flex min-w-0 items-center gap-1 underline-offset-2 hover:underline"
+                  aria-label={`${placeName} — 지도에서 보기`}
+                >
+                  <MapPin size={11} strokeWidth={2} className="shrink-0" aria-hidden />
+                  <span className="truncate">{placeName}</span>
+                </a>
+              ) : (
+                <>
+                  <MapPin
+                    size={11}
+                    strokeWidth={2}
+                    className="text-ink-500 shrink-0"
+                    aria-hidden
+                  />
+                  <span className="truncate">{placeName}</span>
+                </>
+              )}
             </>
           )}
           {memo && (

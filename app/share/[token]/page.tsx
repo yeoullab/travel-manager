@@ -6,6 +6,7 @@ import { ScheduleItem, type ScheduleCategory } from "@/components/ui/schedule-it
 import { ExpenseRow, type ExpenseCategory } from "@/components/ui/expense-row";
 import { MapPanel } from "@/components/schedule/map-panel";
 import { getServerClient } from "@/lib/supabase/server-client";
+import { resolvePlaceLink } from "@/lib/maps/place-link";
 import { cn } from "@/lib/cn";
 
 type ScheduleItemShare = {
@@ -15,6 +16,7 @@ type ScheduleItemShare = {
   placeAddress: string | null;
   placeLat: number | null;
   placeLng: number | null;
+  placeExternalUrl: string | null;
   memo: string | null;
   url: string | null;
   categoryCode: string;
@@ -219,6 +221,13 @@ function ScheduleSection({
                         time={it.timeOfDay?.slice(0, 5) ?? undefined}
                         placeName={it.placeName ?? undefined}
                         memo={it.memo ?? undefined}
+                        placeUrl={resolvePlaceLink({
+                          placeExternalUrl: it.placeExternalUrl,
+                          placeLat: it.placeLat,
+                          placeLng: it.placeLng,
+                          placeName: it.placeName,
+                          isDomestic,
+                        })}
                       />
                     </div>
                   </li>
