@@ -107,19 +107,19 @@ async function loadSdk(): Promise<void> {
 }
 
 function renderPinElement(label: string): HTMLElement {
-  // Naver provider 의 renderMarkerHtml 과 동일한 28×28 peach (#dfa88f) 톤 — 카드 번호와 시각 매칭.
+  // Naver provider 의 renderMarkerHtml 과 동일한 22×22 accent-orange (#f54e00) 톤 — 카드 번호와 시각 매칭.
   const el = document.createElement("div");
   el.style.cssText = [
-    "background:#dfa88f",
+    "background:#f54e00",
     "color:#f2f1ed",
-    "width:28px",
-    "height:28px",
+    "width:22px",
+    "height:22px",
     "border-radius:50%",
     "display:flex",
     "align-items:center",
     "justify-content:center",
     "font-weight:600",
-    "font-size:12px",
+    "font-size:11px",
     "border:2px solid #fff",
     "cursor:pointer",
     "font-variant-numeric:tabular-nums",

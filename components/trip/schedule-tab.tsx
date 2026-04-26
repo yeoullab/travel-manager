@@ -264,7 +264,14 @@ export function ScheduleTab({ tripId }: Props) {
 
       <div className="mt-3 flex items-center justify-between">
         <p className="text-ink-600 text-[12px]">
-          {activeDayItems.length > 0 ? `${activeDayItems.length}개 일정` : "일정 없음"}
+          {activeDayItems.length > 0 ? (
+            <>
+              {activeDayItems.length}개 일정
+              <span className="text-ink-500 ml-2 text-[11px]">· 번호를 길게 눌러 순서 변경</span>
+            </>
+          ) : (
+            "일정 없음"
+          )}
         </p>
         <button
           type="button"
