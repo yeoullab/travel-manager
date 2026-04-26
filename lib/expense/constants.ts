@@ -3,7 +3,7 @@ export const EXPENSE_CATEGORIES = [
   { code: "transport", label: "교통" },
   { code: "lodging", label: "숙박" },
   { code: "shopping", label: "쇼핑" },
-  { code: "activity", label: "액티비티" },
+  { code: "activity", label: "관광" },
   { code: "other", label: "기타" },
 ] as const;
 

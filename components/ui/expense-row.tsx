@@ -8,7 +8,7 @@ const categoryLabel: Record<ExpenseCategory, string> = {
   transport: "교통",
   lodging: "숙박",
   shopping: "쇼핑",
-  activity: "액티비티",
+  activity: "관광",
   other: "기타",
 };
 
