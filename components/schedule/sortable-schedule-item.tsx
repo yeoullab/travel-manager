@@ -22,9 +22,6 @@ export function SortableScheduleItem({ item, index, onTap, registerRef }: Props)
     transition,
     opacity: isDragging ? 0.6 : 1,
     boxShadow: isDragging ? "0 12px 24px rgba(0,0,0,0.12)" : undefined,
-    // 모바일 long-press 가 브라우저 native scroll/zoom 보다 dnd-kit TouchSensor 에 먼저 가도록.
-    // dnd-kit 공식 권장: TouchSensor 사용 시 draggable 요소의 touch-action 을 none 으로.
-    touchAction: "none",
   };
 
   return (
@@ -35,13 +32,27 @@ export function SortableScheduleItem({ item, index, onTap, registerRef }: Props)
       }}
       style={style}
       className="flex items-start gap-2"
-      {...attributes}
-      {...listeners}
       onClick={() => onTap(item)}
     >
-      <div className="bg-surface-300 text-ink-700 mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold">
+      {/*
+        Drag handle 만 touch-action: none — 좌측 번호 칩.
+        나머지 카드 영역은 touch-action 기본값 (pan-x pan-y) 으로 페이지 스크롤 보장.
+        dnd-kit 공식 권장 패턴: handle 분리 + listeners 를 handle 에만 부착.
+      */}
+      {/*
+        카드 번호 = 지도 마커와 동일 시각: 28×28 원형, accent-orange 배경, 흰 글자, 흰 테두리.
+        ring-2 ring-cream 으로 마커의 border:2px solid #fff 와 매칭. shadow 도 마커와 비슷하게.
+      */}
+      <button
+        type="button"
+        aria-label="드래그하여 순서 변경"
+        className="bg-accent-orange text-cream ring-cream mt-2 flex h-7 w-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-full text-[13px] font-semibold shadow-[0_2px_4px_rgba(0,0,0,0.25)] ring-2 active:cursor-grabbing"
+        onClick={(e) => e.stopPropagation()}
+        {...attributes}
+        {...listeners}
+      >
         {index}
-      </div>
+      </button>
       <div className="min-w-0 flex-1 text-left">
         <ScheduleItemCard
           category={item.category_code as ScheduleCategory}
@@ -49,7 +60,6 @@ export function SortableScheduleItem({ item, index, onTap, registerRef }: Props)
           time={item.time_of_day ? item.time_of_day.slice(0, 5) : undefined}
           placeName={item.place_name ?? undefined}
           memo={item.memo ?? undefined}
-          draggable
         />
       </div>
     </li>
