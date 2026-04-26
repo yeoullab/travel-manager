@@ -2,8 +2,8 @@
 type: design-spec
 project: travel-manager
 date: 2026-04-20
-last-reviewed: 2026-04-25
-status: current (Phase 1~4 + §6.11 V1 implemented, plus original Phase 5/6/7 absorbed; Phase 8 PWA + §6.11 V2 custom categories + Maps prod outstanding)
+last-reviewed: 2026-04-26
+status: current (Phase 1~4 + §6.11 V1 + Phase 8 PWA implemented, plus original Phase 5/6/7 absorbed; §6.11 V2 custom categories + Maps prod outstanding)
 author: AI + human collaborative design
 supersedes: docs/superpowers/specs/2026-04-16-travel-manager-design.md
 merges: docs/specs/2026-04-19-phase2-trip-core-design.md
@@ -18,7 +18,7 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 
 ---
 
-## 0. Implementation Status (2026-04-25 기준 — re-audited)
+## 0. Implementation Status (2026-04-26 기준 — re-audited)
 
 | Phase | Scope | 상태 | Git tag |
 |---|---|---|---|
@@ -30,14 +30,14 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 | Phase 5 | (원안 `todos` + `records`) **→ Phase 4 에 흡수 완료**. 새 스코프 미정 — TBD | n/a | — |
 | Phase 6 | (원안 `guest_shares` + `/share/[token]` SSR) **→ Phase 4 에 흡수 완료**. 자동 가시성 손실 전환은 ADR-011 polling 으로 우회 | ✅ Complete (Phase 4 합산) | — |
 | Phase 7 | (원안 Realtime 전면 확장) **→ Phase 3+4 에서 7 채널 완성** (trips/schedule/group_members/groups/expenses/todos/records). 충돌 병합 V2 후보 | ✅ Complete (Phase 3+4 합산) | — |
-| Phase 8 | **(미완)** PWA (Workbox 쉘 프리캐시 + manifest.json + sw.js) + 마이크로 인터랙션 폴리시 | ⏳ Outstanding | — |
+| Phase 8 | PWA (`@serwist/turbopack` SW + `public/manifest.webmanifest` + 4 icons + `app/[path]/route.ts` Route Handler 가 `/sw.js` 노출 + `/offline` fallback + production-only `<ServiceWorkerRegistrar/>`). 마이크로 인터랙션 폴리시는 별도 plan | ✅ Complete | `phase-8-pwa` |
 | §6.11 V1 | 카테고리 관리 페이지 (`/settings/categories`) — 시스템 카테고리 6+6 read-only | ✅ Complete | tag `categories-v1` |
 | §6.11 V2 | 커스텀 카테고리 (CRUD + 그룹 fanout + RLS group_id 추가) | ⏳ Outstanding | — |
 | Maps prod | **(미완)** NCP/Google Maps prod 도메인 등록 + GIS prod origin + Vercel preview/prod 배포 (사용자 작업 영역) | ⏳ Outstanding | — |
 
-현재 main HEAD: `35332f5` (2026-04-25, 1 ahead of origin — push 사용자 수동). tsc 0 · lint 0 errors · unit 102/102 · integration 133/133 · build 14 routes · share-toggle + partner-realtime E2E PASS.
+현재 main HEAD: 2026-04-26 phase-8 commits (push 사용자 수동). tsc 0 · lint 0 errors · unit 117/117 · integration 137/138 (1 flake: share-toggle-realtime, isolation 재실행 시 PASS) · build 18 routes (`/offline` + `/[path]/sw.js` + `/[path]/sw.js.map` 추가) · E2E anonymous 7/7 + alice 22/22 + 3 사전 skip · serwist 44 precache entries (1629.63 KiB).
 
-### 0.1 Spec ↔ Code 실재성 매핑 (재감사 2026-04-25)
+### 0.1 Spec ↔ Code 실재성 매핑 (재감사 2026-04-26)
 
 | Spec 표 / 절 | 코드/마이그레이션 실재 | 비고 |
 |---|---|---|
@@ -50,7 +50,7 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 | ADR-010 Realtime gateway prefetches `useMyGroup` | `lib/realtime/use-realtime-gateway.ts::useMyGroup()` | 2026-04-25 |
 | ADR-011 share-toggle polling | `lib/trip/use-trip-detail.ts::refetchInterval=5000` + `use-trips-list.ts` | 2026-04-25 |
 | `/settings/categories` 페이지 | `app/settings/categories/page.tsx` (V1 read-only) | §6.11 V1 (tag `categories-v1`) |
-| `public/manifest.json`, `public/sw.js`, Workbox | **부재** | Phase 8 미구현 |
+| `public/manifest.webmanifest` + `public/icons/{icon-192,icon-512,maskable-512,apple-touch-icon-180}.png` + `app/sw.ts` + `app/[path]/route.ts` + `lib/pwa/runtime-caching.ts` + `components/pwa/service-worker-registrar.tsx` + `app/offline/page.tsx` | 전부 존재 | Phase 8 ✅ (tag `phase-8-pwa`). `@serwist/turbopack` Route Handler 패턴 — `/sw.js` 는 build artifact 가 아닌 라우트 응답. dev 비활성화는 registrar 의 `NODE_ENV` 가드로. ADR-012 |
 
 ---
 
@@ -728,7 +728,7 @@ travel-manager/
 | 5 | (원안 Todo + 기록) → Phase 4 흡수. 신규 스코프 TBD | n/a | — |
 | 6 | (원안 게스트 공유) → Phase 4 흡수 | n/a | — |
 | 7 | (원안 Realtime 전면 확장) → Phase 3+4 흡수 | n/a | — |
-| 8 | PWA (Workbox + manifest + sw.js) + 마이크로 인터랙션 폴리시 | ⏳ | — |
+| 8 | PWA — `@serwist/turbopack` SW + `manifest.webmanifest` + 4 icons + `app/[path]/route.ts` Route Handler 가 `/sw.js`+`/sw.js.map` 노출 + `/offline` fallback + production-only `<ServiceWorkerRegistrar/>` (마이크로 인터랙션 폴리시는 별도 plan) | ✅ | `phase-8-pwa` |
 | extra | `/settings/categories` 카테고리 관리 페이지 (§6.11) | ⏳ | — |
 | extra | Maps prod 도메인 등록 + GIS prod origin 등록 + Vercel preview/prod 배포 | ⏳ (사용자 작업) | — |
 
@@ -746,8 +746,7 @@ travel-manager/
 - 정산 (paid_by + 분담 기반 자동 계산, 통화별)
 - 통계/인사이트 (여행별/카테고리별/일별 차트)
 - 일정 공유 V2 (게스트 댓글, 만료, 접근 로그)
-- §6.11 카테고리 관리 페이지
-- Phase 8 PWA
+- §6.11 V2 커스텀 카테고리 (CRUD + group_id RLS + dissolve fanout)
 
 ### 미완 / 기술 부채 (Phase 3 이후 정리 후보)
 
@@ -815,3 +814,4 @@ V1 max_members=2. 확장 시:
 | 10 | V2 그룹 확장 시 `groups.name` 재도입 및 `check_active_group_uniqueness` 재검토 노트 |
 | **2026-04-25 re-audit** | §0 Implementation Status 전체 갱신 — Phase 3/4 ✅, 원안 Phase 5/6/7 모두 Phase 4 에 흡수 완료. Phase 8 PWA + §6.11 카테고리 관리 + Maps prod 만 미완. §0.1 Spec↔Code 실재성 매핑 표 신설. §5 Routing / §6.4 Realtime / §6.5~§6.12 / §9 Implementation Order 의 phase 표시 모두 동기화. ADR-009 (Naver+Google), ADR-010 (Realtime gateway prefetch), ADR-011 (share-toggle polling) 반영 |
 | **2026-04-25 categories V1** | §6.11 분리 — V1 read-only 페이지 (`/settings/categories`) 완료. tag `categories-v1`. plan: `docs/plans/2026-04-25-categories-management.md`. V2 커스텀 카테고리 (CRUD + group_id RLS + dissolve fanout) outstanding |
+| **2026-04-26 phase-8 PWA** | Phase 8 PWA 구현 완료 — `@serwist/turbopack@9.5.7` 기반 SW + `manifest.webmanifest` + 4 PNG icons + `app/[path]/route.ts` Route Handler (`/sw.js`+`/sw.js.map`) + `/offline` navigation fallback + production-only `<ServiceWorkerRegistrar/>`. runtime caching: Supabase REST/Realtime + Maps API NetworkOnly · 정적 자산 CacheFirst · HTML SWR · Pretendard CacheFirst. CSP `worker-src 'self'` 추가. dev 비활성화는 registrar 의 `NODE_ENV` 가드. plan: `docs/plans/2026-04-25-phase8-pwa.md`. tag `phase-8-pwa`. ADR-012 (`@serwist/next` → `@serwist/turbopack` pivot — Next 16 Turbopack 미지원 회피) |
