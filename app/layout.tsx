@@ -8,16 +8,16 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: {
-    default: "travel-manager",
-    template: "%s — travel-manager",
+    default: "트레블매니저",
+    template: "%s — 트레블매니저",
   },
   description: "커플·소그룹 여행 플래너 PWA",
-  applicationName: "travel-manager",
+  applicationName: "트레블매니저",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "travel-manager",
+    title: "트레블매니저",
   },
   icons: {
     icon: [

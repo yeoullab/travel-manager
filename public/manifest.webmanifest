@@ -1,6 +1,6 @@
 {
-  "name": "travel-manager",
-  "short_name": "trip-mgr",
+  "name": "트레블매니저",
+  "short_name": "트레블매니저",
   "description": "커플·소그룹 여행 플래너",
   "id": "/",
   "start_url": "/",
