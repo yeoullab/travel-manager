@@ -2,8 +2,8 @@
 type: design-spec
 project: travel-manager
 date: 2026-04-20
-last-reviewed: 2026-04-26 (저녁)
-status: current (Phase 1~4 + §6.11 V1 + Phase 8 PWA + production hotfixes implemented; §6.13 place URL V1 + §6.11 V2 + Maps prod outstanding for V1; §6.14+ V2 backlog)
+last-reviewed: 2026-04-26 (V1 complete)
+status: V1 GA — Phase 1~4 + §6.11 V1 + §6.13 V1 + Phase 8 PWA + production deploy + DB reset complete. V1 잔여 (사용자) = Maps prod 도메인 화이트리스트. V2 backlog = §6.11 V2 + §6.14+
 author: AI + human collaborative design
 supersedes: docs/superpowers/specs/2026-04-16-travel-manager-design.md
 merges: docs/specs/2026-04-19-phase2-trip-core-design.md
@@ -18,7 +18,7 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 
 ---
 
-## 0. Implementation Status (2026-04-26 저녁 기준 — re-audited + production hotfixes)
+## 0. Implementation Status (2026-04-26 V1 GA)
 
 | Phase | Scope | 상태 | Git tag |
 |---|---|---|---|
@@ -33,20 +33,24 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 | Phase 8 | PWA (`@serwist/turbopack` SW + `public/manifest.webmanifest` + 4 icons + `app/[path]/route.ts` Route Handler 가 `/sw.js` 노출 + `/offline` fallback + production-only `<ServiceWorkerRegistrar/>`). 마이크로 인터랙션 폴리시는 별도 plan | ✅ Complete | `phase-8-pwa` |
 | §6.11 V1 | 카테고리 관리 페이지 (`/settings/categories`) — 시스템 카테고리 6+6 read-only | ✅ Complete | tag `categories-v1` |
 | Production deploy | Vercel `travel-manager-yeoullab.vercel.app` prod 배포 + Supabase Auth URL + GIS prod origin 등록 + 4 환경변수 (Supabase 3 + Google Client ID) Production scope 등록 + 로그인·trip·일정·경비·todo·기록·게스트 공유 동작 확인 | ✅ Complete (2026-04-26) | — |
-| Production hotfixes (2026-04-26) | useTripMembers RLS 누수 fix · 액티비티→관광 · 일정 모달 버튼 재배치 · accent-orange light variant · 금액 1,000단위 콤마 · 모바일 long-press drag (TouchSensor + drag handle 분리) · 카드 압축 · 마커-카드번호 디자인 통일 + 톤다운 (ink-900 22px) · 게스트 지도 표시 (마이그레이션 0018) · 게스트 홍보배너 제거 · 새 PWA 아이콘 SVG · /login hero with-text SVG | ✅ Complete | (untagged, main 12 commits) |
-| §6.13 V1 | **장소 URL** — 검색 결과 선택 시 Naver Place / Google Maps Place URL 을 `place_external_url` 컬럼에 저장 → 일정 카드/모달에 "📍 지도에서 보기" 버튼 (영업시간/리뷰/사진 직접 노출). 좌표 fallback (옵션 C) 포함 | ⏳ V1 다음 세션 | — |
+| Production hotfixes (2026-04-26 저녁) | useTripMembers RLS 누수 fix · 액티비티→관광 · 일정 모달 버튼 재배치 · accent-orange light variant · 금액 1,000단위 콤마 · 모바일 long-press drag (TouchSensor + drag handle 분리) · 카드 압축 · 마커-카드번호 디자인 통일 + 톤다운 · 게스트 지도 표시 (마이그레이션 0018) · 게스트 홍보배너 제거 · 새 PWA 아이콘 SVG · /login hero with-text SVG | ✅ Complete | — |
+| §6.13 V1 | **장소 URL** — 검색 결과 선택 시 Naver Place / Google Maps Place URL 을 `place_external_url` 컬럼에 저장. 일정 카드 placeName 이 anchor 로 변환 (accent-orange) → Naver Place / Google Maps Place 페이지 (영업시간/리뷰/사진). 좌표 fallback (옵션 C) 포함. 마이그레이션 0019 (CHECK `^https?://`) + 0020 (RPC 12→13 파라미터 + guest RPC 갱신) | ✅ Complete | — |
+| Mobile drag handle pattern (2026-04-26 야간) | 좌측 번호 칩이 drag handle. 시각 22×22 accent-orange + 실제 hit area 44×44 (iOS HIG). touch-action:none 핸들에만 격리 → 카드 본문 vertical swipe 는 페이지 스크롤. "번호를 길게 눌러 순서 변경" 안내 문구 | ✅ Complete | — |
+| Trip edit silent RLS fix + tab UX (2026-04-26 야간) | useUpdateTrip 에 .select() 로 0 row 시 명시적 throw · DateShrinkConfirm 확인 시 form 복귀 · BottomTabBar optimistic activeKey + active:scale press feedback · 4탭 isLoading "불러오는 중…" → ListSkeleton (4행 shimmer) | ✅ Complete | — |
+| PWA 한글 라벨 (2026-04-26 야간) | manifest.name/short_name + appleWebApp.title 모두 "트레블매니저" — Android Chrome / iOS Safari 홈 화면 아이콘 라벨 통일 | ✅ Complete | — |
+| Prod DB reset (2026-04-26 야간) | 6 users · 12 trips · 25 schedule_items · 7 expenses · 4 todos · 1 record · 3 guest_shares · 2 groups → 1 user (yeoullab.biz) + 0 row everywhere. transaction safe, sherryjeon/wh1/wh2/alice/bob 테스트 계정 정리 | ✅ Complete | — |
+| **V1 GA** | 위 모든 항목 + DB clean → 실사용 시작 가능 상태 | ✅ Complete (2026-04-26) | `travel-manager-v1` (예정) |
+| Maps prod 도메인 화이트리스트 | NCP Naver Maps + Google Cloud Maps API 의 HTTP 리퍼러 / IP 제한에 prod 도메인 추가 | ⏳ V1 잔여 (사용자 작업) | — |
 | §6.11 V2 | 커스텀 카테고리 (CRUD + 그룹 fanout + RLS group_id 추가) | ⏳ V2 | — |
-| Maps prod 도메인 화이트리스트 | NCP Naver Maps + Google Cloud Maps API 의 HTTP 리퍼러 / IP 제한에 prod 도메인 추가 (현재 localhost 만) | ⏳ V1 잔여 (사용자 작업) | — |
 | §6.14+ V2 backlog | 정산 (paid_by 분담 자동 계산) · 통계/인사이트 · 게스트 댓글/만료/접근 로그 · 사진/미디어 (Supabase Storage) · 다중 그룹 (max_members > 2) · 카카오 로그인 · 환율 변환 · 데이터 내보내기 (CSV/PDF) · Activity Feed/Push · Day Tab 드래그 · 마이크로 인터랙션 폴리시 별도 plan · Background Sync/IndexedDB | V2 (미스코프) | — |
 
-현재 main HEAD: 2026-04-26 저녁 production hotfixes (origin 동기화 완료). tsc 0 · lint 0 errors · unit 126/126 (+9: format-amount-input) · integration 137/138 (1 flake: share-toggle-realtime, isolation 재실행 시 PASS) · build 18 routes · E2E anonymous 7/7 + alice 22/22 + 3 사전 skip · serwist 44 precache entries (1629.63 KiB) · production URL: https://travel-manager-yeoullab.vercel.app (Ready). 마이그레이션 0018 원격 미적용 — 다음 세션 첫 액션 (사용자: `supabase db push`).
+현재 main HEAD `7ffa043` (origin 동기화 완료). 마이그레이션 0001~0020 모두 원격 적용. tsc 0 · lint 0 errors · unit 134/134 · build 18 routes · production URL https://travel-manager-yeoullab.vercel.app · prod DB reset 후 yeoullab.biz@gmail.com 1 user 만 존재.
 
-### 0.1 Spec ↔ Code 실재성 매핑 (재감사 2026-04-26 저녁)
+### 0.1 Spec ↔ Code 실재성 매핑 (V1 GA 2026-04-26)
 
 | Spec 표 / 절 | 코드/마이그레이션 실재 | 비고 |
 |---|---|---|
-| `0001_profiles.sql` ~ `0017_trips_visibility_cleanup.sql` | 17 마이그레이션 모두 원격 적용 | 0017 은 ADR-011 cleanup |
-| `0018_guest_share_with_coords.sql` | 로컬만 — 원격 미적용 | 다음 세션 사용자 액션. 적용 전엔 게스트 페이지 지도 미렌더 (placeLat/Lng undefined fallback) |
+| `0001_profiles.sql` ~ `0020_schedule_rpc_place_external_url.sql` | 20 마이그레이션 모두 원격 적용 | 0017 ADR-011 cleanup · 0018 게스트 좌표 · 0019 place_external_url 컬럼 + CHECK · 0020 RPC 12→13 + guest RPC 갱신 |
 | `lib/{auth,profile,group,trip,schedule,expense,todo,record,guest,maps,realtime,query,store,supabase}` | 전부 존재 | Phase 4 까지 동선 모두 배선 |
 | `app/share/[token]/page.tsx` (SSR) | 존재, `get_guest_trip_data` anon RPC 호출 | Phase 4 Task 18 |
 | `lib/realtime/{trips,schedule,group-members,groups,expenses,todos,records}-channel.ts` | 7 채널 존재 | Phase 7 원안 충족 |
@@ -58,9 +62,19 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 | `public/manifest.webmanifest` + `public/icons/{icon-192,icon-512,maskable-512,apple-touch-icon-180}.png` + `app/sw.ts` + `app/[path]/route.ts` + `lib/pwa/runtime-caching.ts` + `components/pwa/service-worker-registrar.tsx` + `app/offline/page.tsx` | 전부 존재 | Phase 8 ✅ (tag `phase-8-pwa`). `@serwist/turbopack` Route Handler 패턴 — `/sw.js` 는 build artifact 가 아닌 라우트 응답. dev 비활성화는 registrar 의 `NODE_ENV` 가드로. ADR-012. 아이콘 SVG 는 사용자 제공 symbol-only (2026-04-26 저녁 교체) |
 | `lib/profile/use-trip-members.ts` | trips.group_id → group_members.user_id → profiles_public 경유 (보안) | 2026-04-26 fix. 기존 profiles_public 전체 SELECT 가 prod 사용자 누수 → group_members RLS 차단 경로로 수정 |
 | `lib/expense/format-amount-input.ts` + `tests/unit/format-amount-input.test.ts` | 1,000단위 콤마 포맷 헬퍼 (9 unit cases) | 2026-04-26 |
-| `components/schedule/sortable-schedule-item.tsx` drag handle 분리 + touch-action:none | 좌측 번호 button 만 drag handle, 카드 본문 페이지 스크롤 보장 | 2026-04-26 (TouchSensor + drag handle 패턴, dnd-kit 권장) |
+| `components/schedule/sortable-schedule-item.tsx` drag handle | 22×22 accent-orange 시각 칩 + 44×44 hit area (`<button h-11 w-11>`) + touch-action:none 핸들에만 격리 + "번호를 길게 눌러 순서 변경" 안내 (schedule-tab) | 2026-04-26 야간 (commit `bca4f8f`) — iOS HIG 권장 최소 터치 타겟 + 페이지 스크롤 보장 |
 | `app/login/page.tsx` hero | `/icons/icon-with-text.svg` 한 장 (next/image priority 220×220) | 2026-04-26. 기존 lucide Compass chip + h1 환영 문구 제거 |
-| `supabase/migrations/0018_guest_share_with_coords.sql` + `app/share/[token]/page.tsx` MapPanel | get_guest_trip_data 가 placeLat/placeLng 추가 반환, 게스트 페이지 day 별 지도 + 홍보배너 제거 | 2026-04-26. 0018 원격 미적용 (다음 세션) |
+| `supabase/migrations/0018_guest_share_with_coords.sql` + `app/share/[token]/page.tsx` MapPanel | get_guest_trip_data 가 placeLat/placeLng 추가 반환, 게스트 페이지 day 별 지도 + 홍보배너 제거 | 2026-04-26 (원격 적용 완료) |
+| `supabase/migrations/0019_*.sql` + `supabase/migrations/0020_*.sql` | schedule_items.place_external_url 컬럼 + CHECK ('^https?://') · create/update_schedule_item RPC 12→13 파라미터 (p_place_external_url) · get_guest_trip_data 가 schedule items JSON 에 placeExternalUrl 포함 | §6.13 V1 (commit `c666a85`) |
+| `lib/maps/place-link.ts` + `tests/unit/place-link.test.ts` | 옵션 A (저장된 URL) 우선 + 옵션 C (좌표 fallback) 헬퍼. 8 unit cases | §6.13 V1 |
+| `lib/maps/search/{naver,google}-search.ts` + `lib/maps/types.ts` | Naver `link` (https?://만) + Google `googleMapsUri` (또는 place_id 합성) → `PlaceResult.externalUrl` | §6.13 V1 |
+| `components/ui/schedule-item.tsx` `"use client"` | `<a onClick={stopPropagation}>` 가 RSC 직렬화 불가 → client component 화. `share/page.tsx` (Server Component) 에서 import 가능 회복 | 2026-04-26 야간 (commit `3bd34eb`, hotfix) |
+| `components/ui/bottom-tab-bar.tsx` optimistic activeKey | 클릭 즉시 setOptimisticKey + active:scale-[0.92] + active:bg-ink-200/40. router.push roundtrip 동안 시각 ack | 2026-04-26 야간 (commit `af2287f`) |
+| `components/ui/list-skeleton.tsx` | 4행 shimmer rect. schedule/expenses/todos/records 4탭 isLoading fallback 통일 | 2026-04-26 야간 |
+| `lib/trip/use-update-trip.ts` `.select('id')` + 빈 결과 throw | RLS 가 막혀 0 row updated 시 silent success → 명시적 Error 노출. partner 가 owner trip 수정 시도 시 토스트 표시 | 2026-04-26 야간 (commit `5fcf7ec`) |
+| `components/trip/edit-trip-modal.tsx` DateShrinkConfirm flow | 확인 클릭 시 setShowShrinkConfirm(false) 후 save() — form 영역 복귀해 isPending/saveError 노출 | 2026-04-26 야간 |
+| PWA 한글 라벨 | `public/manifest.webmanifest` name/short_name + `app/layout.tsx` title.default/template/applicationName/appleWebApp.title 모두 "트레블매니저". short_name 6자 (한글) → schema max(12) 통과 | 2026-04-26 야간 (commit `7ffa043`) |
+| Prod DB reset (2026-04-26) | yeoullab.biz@gmail.com 1 user 외 모든 auth.users + 모든 trips/groups/종속 데이터 transaction safe 삭제. 사후 검증 통과 (users=1, trips=0). 실사용 시작 가능 | 2026-04-26 V1 GA |
 
 ---
 
@@ -596,18 +610,19 @@ Top AppBar + 여행 상세 내 탭 전환 (일정 | 경비 | Todo | 기록 | 관
 - 마커 디자인: 24×24 ink-900 + cream + 1.5px 흰 테두리 (2026-04-26 톤다운). 일정 카드 좌측 번호 (22×22 ink-900 + cream) 와 시각 매칭
 - Vercel 배포 ✅, NCP/Google Cloud 콘솔 prod 도메인 등록 미완 (현재 localhost 만)
 
-### 6.13 Place External URL  [V1 ⏳ 다음 세션]
+### 6.13 Place External URL  [V1 ✅ 2026-04-26]
 
 **문제:** 일정에 추가한 장소를 다시 보려면 사용자가 외부 검색엔진에서 또 검색해야 함. 영업시간/리뷰/사진/메뉴/전화번호 같은 정보가 일정 카드에서 1클릭 거리에 없음.
 
-**V1 스코프 (옵션 A+C):**
-- DB: `schedule_items.place_external_url text` 컬럼 신설 (마이그레이션 0019 예정). 기존 `url` 은 사용자 메모용 (블로그 등) 으로 분리 유지
-- Naver: 지역검색 API 응답의 `link` 필드 (https://place.naver.com/restaurant/{id}) 저장
-- Google: Places API (New) 의 `googleMapsUri` 또는 `place_id` 기반 URL 저장
-- UI: 일정 카드/모달/게스트 페이지에 "📍 지도에서 보기" 버튼 1개. `place_external_url` 있으면 정식 place 페이지 (영업시간/리뷰/사진), 없으면 좌표 기반 일반 지도 검색 fallback (옵션 C), 좌표도 없으면 버튼 숨김
-- RPC: `create_schedule_item` / `update_schedule_item` 시그니처에 `p_place_external_url text default null` 추가. 기존 호출부 호환
-- 게스트 RPC `get_guest_trip_data` 응답에 `placeExternalUrl` 추가 (마이그레이션 0020)
-- 테스트: unit (좌표 fallback URL 생성 헬퍼) · integration (RPC 시그니처 회귀) · E2E (장소 검색 → 결과 선택 → 저장 → 카드 "지도에서 보기" 클릭 시 새 탭 검증)
+**V1 구현 (옵션 A + 좌표 fallback C):**
+- DB: `schedule_items.place_external_url text` 컬럼 (마이그레이션 0019). `^https?://` CHECK 제약으로 deeplink 차단. 기존 `url` 은 사용자 메모용 (블로그 등) 분리 유지
+- Naver: 지역검색 API 응답의 `link` 필드 — https?:// 스킴만 노출, `nmap://` 등 deeplink 는 undefined 처리
+- Google: Places API (New) 의 `googleMapsUri` 우선, 누락 시 `place_id` 기반 `https://www.google.com/maps/place/?q=place_id:{id}` 합성. FIELD_MASK 에 `googleMapsUri` 추가
+- UI: 일정 카드의 `placeName` 자체가 anchor 로 변환 (accent-orange + 외부 새 탭). place 정보 있으면 정식 place 페이지로, 없으면 좌표 기반 일반 지도 검색 fallback (`map.naver.com/v5/search` / `google.com/maps/search`), 좌표도 없으면 일반 텍스트
+- RPC: `create_schedule_item` / `update_schedule_item` 시그니처 12 → 13 (`p_place_external_url text default null`). 기존 호출부 호환
+- Guest RPC `get_guest_trip_data` 응답의 schedule items JSON 에 `placeExternalUrl` 추가 (마이그레이션 0020)
+- Helper: `lib/maps/place-link.ts::resolvePlaceLink(item: PlaceLinkInput): string | null` — 옵션 A 우선, 옵션 C fallback, 좌표 없음/NaN 시 null
+- 테스트: unit `tests/unit/place-link.test.ts` 8 cases · integration `tests/integration/schedule-rpc-with-place-external-url.test.ts` 5 cases + `get-guest-trip-data.test.ts` +1 case
 
 **V2 (별도):**
 - 장소 정보 사진/리뷰 인앱 노출 (place details API 캐싱)
@@ -859,3 +874,4 @@ V1 max_members=2. 확장 시:
 | **2026-04-26 phase-8 PWA** | Phase 8 PWA 구현 완료 — `@serwist/turbopack@9.5.7` 기반 SW + `manifest.webmanifest` + 4 PNG icons + `app/[path]/route.ts` Route Handler (`/sw.js`+`/sw.js.map`) + `/offline` navigation fallback + production-only `<ServiceWorkerRegistrar/>`. runtime caching: Supabase REST/Realtime + Maps API NetworkOnly · 정적 자산 CacheFirst · HTML SWR · Pretendard CacheFirst. CSP `worker-src 'self'` 추가. dev 비활성화는 registrar 의 `NODE_ENV` 가드. plan: `docs/plans/2026-04-25-phase8-pwa.md`. tag `phase-8-pwa`. ADR-012 (`@serwist/next` → `@serwist/turbopack` pivot — Next 16 Turbopack 미지원 회피) |
 | **2026-04-26 production deploy + hotfixes** | Vercel `travel-manager-yeoullab.vercel.app` prod 배포 완료 (Apr 17 mockup 정체 → Apr 26 phase-1~8 전체 반영). Supabase Auth URL + GIS prod origin 등록 완료, 환경변수 4개 (Supabase 3 + Google Client ID) Production scope 등록. **Production hotfix 12 commits** (사용자 push 완료): (a) **보안 fix** — `useTripMembers` 가 `profiles_public` 전체 SELECT 하던 RLS 누수를 `trips.group_id → group_members.user_id → profiles_public` 경로로 차단 (b) UX — '액티비티'→'관광' · 일정 모달 하단 버튼 재배치 + accent-orange light variant · 금액 1,000단위 콤마 포맷 (formatAmountInput 헬퍼 + unit 9 cases) · 모바일 long-press drag 회복 (TouchSensor + drag handle 분리, touch-action:none 좌측 번호 chip 만 적용해 페이지 스크롤 보장) · 일정 카드 압축 (메타 정보 1줄) · 카드번호↔지도마커 디자인 통일 (28×28 accent-orange + 흰테두리 + shadow → **22×22 ink-900 + cream** 톤다운, 마커는 24×24 + 흰테두리 1.5px) (c) 게스트 페이지 — 마이그레이션 0018 (`get_guest_trip_data` 가 placeLat/placeLng 반환) · day 별 MapPanel · 홍보배너 제거 (d) 브랜드 — 새 PWA 아이콘 SVG (사용자 제공 symbol-only) + 4 PNG 재생성 + `/login` hero with-text SVG (lucide Compass chip + h1 환영 문구 제거). **0018 원격 미적용 — 다음 세션 첫 액션** |
 | **2026-04-26 §6.13 V1 spec** | 장소 URL 절 신설 (옵션 A+C). `place_external_url` 컬럼 + Naver `link` / Google `googleMapsUri` 자동 저장 + "📍 지도에서 보기" 버튼 + 좌표 fallback. 마이그레이션 0019 (schedule_items 컬럼) + 0020 (게스트 RPC) + RPC 5개 시그니처 확장. **V1 잔여 작업 1순위 — 다음 세션** |
+| **2026-04-26 야간 V1 GA** | §6.13 V1 구현 완료 (commit `c666a85`). 마이그레이션 0019/0020 원격 적용. unit `place-link.test.ts` 8 + integration `schedule-rpc-with-place-external-url.test.ts` 5 + guest RPC +1. RSC hotfix (commit `3bd34eb`) `ScheduleItem` 을 client component 로 — `<a onClick={stopPropagation}>` 가 RSC 직렬화 불가하던 문제 해결. UI/UX 추가 fix: drag handle 패턴 (시각 22px / hit area 44px / "번호를 길게 눌러 순서 변경" 안내, commit `bca4f8f`) · 여행 정보 수정 silent RLS surface + DateShrinkConfirm form 복귀 (commit `5fcf7ec`) · BottomTabBar optimistic activeKey + active:scale press feedback + `ListSkeleton` 4탭 적용 (commit `af2287f`) · PWA 한글 라벨 "트레블매니저" (commit `7ffa043`). **Prod DB reset 2026-04-26 야간** — 6 users → 1 (yeoullab.biz), 12 trips → 0 + 모든 종속 데이터 클린. transaction safe (사후 검증 raise exception). **V1 GA — 실사용 시작 가능 상태** |
