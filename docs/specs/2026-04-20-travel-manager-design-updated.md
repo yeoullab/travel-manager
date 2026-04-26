@@ -2,8 +2,8 @@
 type: design-spec
 project: travel-manager
 date: 2026-04-20
-last-reviewed: 2026-04-26
-status: current (Phase 1~4 + §6.11 V1 + Phase 8 PWA implemented, plus original Phase 5/6/7 absorbed; §6.11 V2 custom categories + Maps prod outstanding)
+last-reviewed: 2026-04-26 (저녁)
+status: current (Phase 1~4 + §6.11 V1 + Phase 8 PWA + production hotfixes implemented; §6.13 place URL V1 + §6.11 V2 + Maps prod outstanding for V1; §6.14+ V2 backlog)
 author: AI + human collaborative design
 supersedes: docs/superpowers/specs/2026-04-16-travel-manager-design.md
 merges: docs/specs/2026-04-19-phase2-trip-core-design.md
@@ -18,7 +18,7 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 
 ---
 
-## 0. Implementation Status (2026-04-26 기준 — re-audited)
+## 0. Implementation Status (2026-04-26 저녁 기준 — re-audited + production hotfixes)
 
 | Phase | Scope | 상태 | Git tag |
 |---|---|---|---|
@@ -32,16 +32,21 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 | Phase 7 | (원안 Realtime 전면 확장) **→ Phase 3+4 에서 7 채널 완성** (trips/schedule/group_members/groups/expenses/todos/records). 충돌 병합 V2 후보 | ✅ Complete (Phase 3+4 합산) | — |
 | Phase 8 | PWA (`@serwist/turbopack` SW + `public/manifest.webmanifest` + 4 icons + `app/[path]/route.ts` Route Handler 가 `/sw.js` 노출 + `/offline` fallback + production-only `<ServiceWorkerRegistrar/>`). 마이크로 인터랙션 폴리시는 별도 plan | ✅ Complete | `phase-8-pwa` |
 | §6.11 V1 | 카테고리 관리 페이지 (`/settings/categories`) — 시스템 카테고리 6+6 read-only | ✅ Complete | tag `categories-v1` |
-| §6.11 V2 | 커스텀 카테고리 (CRUD + 그룹 fanout + RLS group_id 추가) | ⏳ Outstanding | — |
-| Maps prod | **(미완)** NCP/Google Maps prod 도메인 등록 + GIS prod origin + Vercel preview/prod 배포 (사용자 작업 영역) | ⏳ Outstanding | — |
+| Production deploy | Vercel `travel-manager-yeoullab.vercel.app` prod 배포 + Supabase Auth URL + GIS prod origin 등록 + 4 환경변수 (Supabase 3 + Google Client ID) Production scope 등록 + 로그인·trip·일정·경비·todo·기록·게스트 공유 동작 확인 | ✅ Complete (2026-04-26) | — |
+| Production hotfixes (2026-04-26) | useTripMembers RLS 누수 fix · 액티비티→관광 · 일정 모달 버튼 재배치 · accent-orange light variant · 금액 1,000단위 콤마 · 모바일 long-press drag (TouchSensor + drag handle 분리) · 카드 압축 · 마커-카드번호 디자인 통일 + 톤다운 (ink-900 22px) · 게스트 지도 표시 (마이그레이션 0018) · 게스트 홍보배너 제거 · 새 PWA 아이콘 SVG · /login hero with-text SVG | ✅ Complete | (untagged, main 12 commits) |
+| §6.13 V1 | **장소 URL** — 검색 결과 선택 시 Naver Place / Google Maps Place URL 을 `place_external_url` 컬럼에 저장 → 일정 카드/모달에 "📍 지도에서 보기" 버튼 (영업시간/리뷰/사진 직접 노출). 좌표 fallback (옵션 C) 포함 | ⏳ V1 다음 세션 | — |
+| §6.11 V2 | 커스텀 카테고리 (CRUD + 그룹 fanout + RLS group_id 추가) | ⏳ V2 | — |
+| Maps prod 도메인 화이트리스트 | NCP Naver Maps + Google Cloud Maps API 의 HTTP 리퍼러 / IP 제한에 prod 도메인 추가 (현재 localhost 만) | ⏳ V1 잔여 (사용자 작업) | — |
+| §6.14+ V2 backlog | 정산 (paid_by 분담 자동 계산) · 통계/인사이트 · 게스트 댓글/만료/접근 로그 · 사진/미디어 (Supabase Storage) · 다중 그룹 (max_members > 2) · 카카오 로그인 · 환율 변환 · 데이터 내보내기 (CSV/PDF) · Activity Feed/Push · Day Tab 드래그 · 마이크로 인터랙션 폴리시 별도 plan · Background Sync/IndexedDB | V2 (미스코프) | — |
 
-현재 main HEAD: 2026-04-26 phase-8 commits (push 사용자 수동). tsc 0 · lint 0 errors · unit 117/117 · integration 137/138 (1 flake: share-toggle-realtime, isolation 재실행 시 PASS) · build 18 routes (`/offline` + `/[path]/sw.js` + `/[path]/sw.js.map` 추가) · E2E anonymous 7/7 + alice 22/22 + 3 사전 skip · serwist 44 precache entries (1629.63 KiB).
+현재 main HEAD: 2026-04-26 저녁 production hotfixes (origin 동기화 완료). tsc 0 · lint 0 errors · unit 126/126 (+9: format-amount-input) · integration 137/138 (1 flake: share-toggle-realtime, isolation 재실행 시 PASS) · build 18 routes · E2E anonymous 7/7 + alice 22/22 + 3 사전 skip · serwist 44 precache entries (1629.63 KiB) · production URL: https://travel-manager-yeoullab.vercel.app (Ready). 마이그레이션 0018 원격 미적용 — 다음 세션 첫 액션 (사용자: `supabase db push`).
 
-### 0.1 Spec ↔ Code 실재성 매핑 (재감사 2026-04-26)
+### 0.1 Spec ↔ Code 실재성 매핑 (재감사 2026-04-26 저녁)
 
 | Spec 표 / 절 | 코드/마이그레이션 실재 | 비고 |
 |---|---|---|
 | `0001_profiles.sql` ~ `0017_trips_visibility_cleanup.sql` | 17 마이그레이션 모두 원격 적용 | 0017 은 ADR-011 cleanup |
+| `0018_guest_share_with_coords.sql` | 로컬만 — 원격 미적용 | 다음 세션 사용자 액션. 적용 전엔 게스트 페이지 지도 미렌더 (placeLat/Lng undefined fallback) |
 | `lib/{auth,profile,group,trip,schedule,expense,todo,record,guest,maps,realtime,query,store,supabase}` | 전부 존재 | Phase 4 까지 동선 모두 배선 |
 | `app/share/[token]/page.tsx` (SSR) | 존재, `get_guest_trip_data` anon RPC 호출 | Phase 4 Task 18 |
 | `lib/realtime/{trips,schedule,group-members,groups,expenses,todos,records}-channel.ts` | 7 채널 존재 | Phase 7 원안 충족 |
@@ -50,7 +55,12 @@ merges: docs/specs/2026-04-19-phase2-trip-core-design.md
 | ADR-010 Realtime gateway prefetches `useMyGroup` | `lib/realtime/use-realtime-gateway.ts::useMyGroup()` | 2026-04-25 |
 | ADR-011 share-toggle polling | `lib/trip/use-trip-detail.ts::refetchInterval=5000` + `use-trips-list.ts` | 2026-04-25 |
 | `/settings/categories` 페이지 | `app/settings/categories/page.tsx` (V1 read-only) | §6.11 V1 (tag `categories-v1`) |
-| `public/manifest.webmanifest` + `public/icons/{icon-192,icon-512,maskable-512,apple-touch-icon-180}.png` + `app/sw.ts` + `app/[path]/route.ts` + `lib/pwa/runtime-caching.ts` + `components/pwa/service-worker-registrar.tsx` + `app/offline/page.tsx` | 전부 존재 | Phase 8 ✅ (tag `phase-8-pwa`). `@serwist/turbopack` Route Handler 패턴 — `/sw.js` 는 build artifact 가 아닌 라우트 응답. dev 비활성화는 registrar 의 `NODE_ENV` 가드로. ADR-012 |
+| `public/manifest.webmanifest` + `public/icons/{icon-192,icon-512,maskable-512,apple-touch-icon-180}.png` + `app/sw.ts` + `app/[path]/route.ts` + `lib/pwa/runtime-caching.ts` + `components/pwa/service-worker-registrar.tsx` + `app/offline/page.tsx` | 전부 존재 | Phase 8 ✅ (tag `phase-8-pwa`). `@serwist/turbopack` Route Handler 패턴 — `/sw.js` 는 build artifact 가 아닌 라우트 응답. dev 비활성화는 registrar 의 `NODE_ENV` 가드로. ADR-012. 아이콘 SVG 는 사용자 제공 symbol-only (2026-04-26 저녁 교체) |
+| `lib/profile/use-trip-members.ts` | trips.group_id → group_members.user_id → profiles_public 경유 (보안) | 2026-04-26 fix. 기존 profiles_public 전체 SELECT 가 prod 사용자 누수 → group_members RLS 차단 경로로 수정 |
+| `lib/expense/format-amount-input.ts` + `tests/unit/format-amount-input.test.ts` | 1,000단위 콤마 포맷 헬퍼 (9 unit cases) | 2026-04-26 |
+| `components/schedule/sortable-schedule-item.tsx` drag handle 분리 + touch-action:none | 좌측 번호 button 만 drag handle, 카드 본문 페이지 스크롤 보장 | 2026-04-26 (TouchSensor + drag handle 패턴, dnd-kit 권장) |
+| `app/login/page.tsx` hero | `/icons/icon-with-text.svg` 한 장 (next/image priority 220×220) | 2026-04-26. 기존 lucide Compass chip + h1 환영 문구 제거 |
+| `supabase/migrations/0018_guest_share_with_coords.sql` + `app/share/[token]/page.tsx` MapPanel | get_guest_trip_data 가 placeLat/placeLng 추가 반환, 게스트 페이지 day 별 지도 + 홍보배너 제거 | 2026-04-26. 0018 원격 미적용 (다음 세션) |
 
 ---
 
@@ -579,11 +589,29 @@ Top AppBar + 여행 상세 내 탭 전환 (일정 | 경비 | Todo | 기록 | 관
 
 최초 스펙 유지 — 기본 카테고리 + 커스텀. 그룹 형성 시 개인 카테고리 fanout (trigger `on_group_dissolved` 에 `categories.group_id → null` 추가).
 
-### 6.12 Maps Integration  [Phase 3 ✅, prod 배포 ⏳]
+### 6.12 Maps Integration  [Phase 3 ✅, prod 배포 ✅, Maps API 도메인 화이트리스트 ⏳]
 
 - 국내/해외 분리. **ADR-009: Naver(국내) + Google(해외) 채택**.
 - 지도 SDK lazy load (일정 탭 진입 시) — `lib/maps/providers/{naver,google}.ts`
-- prod 도메인 등록 + Vercel 배포는 사용자 작업 영역 (미완)
+- 마커 디자인: 24×24 ink-900 + cream + 1.5px 흰 테두리 (2026-04-26 톤다운). 일정 카드 좌측 번호 (22×22 ink-900 + cream) 와 시각 매칭
+- Vercel 배포 ✅, NCP/Google Cloud 콘솔 prod 도메인 등록 미완 (현재 localhost 만)
+
+### 6.13 Place External URL  [V1 ⏳ 다음 세션]
+
+**문제:** 일정에 추가한 장소를 다시 보려면 사용자가 외부 검색엔진에서 또 검색해야 함. 영업시간/리뷰/사진/메뉴/전화번호 같은 정보가 일정 카드에서 1클릭 거리에 없음.
+
+**V1 스코프 (옵션 A+C):**
+- DB: `schedule_items.place_external_url text` 컬럼 신설 (마이그레이션 0019 예정). 기존 `url` 은 사용자 메모용 (블로그 등) 으로 분리 유지
+- Naver: 지역검색 API 응답의 `link` 필드 (https://place.naver.com/restaurant/{id}) 저장
+- Google: Places API (New) 의 `googleMapsUri` 또는 `place_id` 기반 URL 저장
+- UI: 일정 카드/모달/게스트 페이지에 "📍 지도에서 보기" 버튼 1개. `place_external_url` 있으면 정식 place 페이지 (영업시간/리뷰/사진), 없으면 좌표 기반 일반 지도 검색 fallback (옵션 C), 좌표도 없으면 버튼 숨김
+- RPC: `create_schedule_item` / `update_schedule_item` 시그니처에 `p_place_external_url text default null` 추가. 기존 호출부 호환
+- 게스트 RPC `get_guest_trip_data` 응답에 `placeExternalUrl` 추가 (마이그레이션 0020)
+- 테스트: unit (좌표 fallback URL 생성 헬퍼) · integration (RPC 시그니처 회귀) · E2E (장소 검색 → 결과 선택 → 저장 → 카드 "지도에서 보기" 클릭 시 새 탭 검증)
+
+**V2 (별도):**
+- 장소 정보 사진/리뷰 인앱 노출 (place details API 캐싱)
+- 즐겨찾기/북마크된 장소 재사용
 
 ---
 
@@ -741,12 +769,26 @@ travel-manager/
 - [x] Partner 측 share-toggle OFF 자동 Realtime 전환 — **ADR-011 5초 polling 으로 우회** (broadcast/INSERT 패턴 모두 CHANNEL_ERROR)
 - [x] `categories` 테이블 + 기본 카테고리 시드 — 0008 마이그레이션 (6 시드, 관리 페이지는 §6.11 미구현)
 
-### Phase 5+ 후보 (스펙 외, status.md 메모)
+### V1 잔여 (미완 — 우선순위 순)
+
+1. **§6.13 장소 URL** (다음 세션) — 옵션 A (`place_external_url` 컬럼) + 옵션 C (좌표 fallback). 마이그레이션 2개 + RPC 5개 시그니처 확장 + UI 1버튼 + 테스트
+2. **§6.11 V2 커스텀 카테고리** — `categories.group_id` 추가 + RLS 변경 + CRUD RPC 4종 + dissolve fanout + UI 색상 picker
+3. **Maps prod 도메인 화이트리스트** (사용자) — NCP `travel-manager-public` 키 + Google Cloud 양쪽
+
+### V2 backlog (V1 출시 이후)
 
 - 정산 (paid_by + 분담 기반 자동 계산, 통화별)
 - 통계/인사이트 (여행별/카테고리별/일별 차트)
 - 일정 공유 V2 (게스트 댓글, 만료, 접근 로그)
-- §6.11 V2 커스텀 카테고리 (CRUD + group_id RLS + dissolve fanout)
+- 사진/미디어 첨부 (Supabase Storage + media 테이블 + polymorphic FK)
+- 다중 그룹 (max_members > 2, role 확장 admin/viewer)
+- 카카오 로그인
+- 환율 변환
+- 데이터 내보내기 (CSV/PDF)
+- Activity Feed / Push 알림
+- Day Tab 드래그로 일정 이동
+- 마이크로 인터랙션 폴리시 (별도 plan)
+- Background Sync / IndexedDB 큐잉 mutation 재시도
 
 ### 미완 / 기술 부채 (Phase 3 이후 정리 후보)
 
@@ -815,3 +857,5 @@ V1 max_members=2. 확장 시:
 | **2026-04-25 re-audit** | §0 Implementation Status 전체 갱신 — Phase 3/4 ✅, 원안 Phase 5/6/7 모두 Phase 4 에 흡수 완료. Phase 8 PWA + §6.11 카테고리 관리 + Maps prod 만 미완. §0.1 Spec↔Code 실재성 매핑 표 신설. §5 Routing / §6.4 Realtime / §6.5~§6.12 / §9 Implementation Order 의 phase 표시 모두 동기화. ADR-009 (Naver+Google), ADR-010 (Realtime gateway prefetch), ADR-011 (share-toggle polling) 반영 |
 | **2026-04-25 categories V1** | §6.11 분리 — V1 read-only 페이지 (`/settings/categories`) 완료. tag `categories-v1`. plan: `docs/plans/2026-04-25-categories-management.md`. V2 커스텀 카테고리 (CRUD + group_id RLS + dissolve fanout) outstanding |
 | **2026-04-26 phase-8 PWA** | Phase 8 PWA 구현 완료 — `@serwist/turbopack@9.5.7` 기반 SW + `manifest.webmanifest` + 4 PNG icons + `app/[path]/route.ts` Route Handler (`/sw.js`+`/sw.js.map`) + `/offline` navigation fallback + production-only `<ServiceWorkerRegistrar/>`. runtime caching: Supabase REST/Realtime + Maps API NetworkOnly · 정적 자산 CacheFirst · HTML SWR · Pretendard CacheFirst. CSP `worker-src 'self'` 추가. dev 비활성화는 registrar 의 `NODE_ENV` 가드. plan: `docs/plans/2026-04-25-phase8-pwa.md`. tag `phase-8-pwa`. ADR-012 (`@serwist/next` → `@serwist/turbopack` pivot — Next 16 Turbopack 미지원 회피) |
+| **2026-04-26 production deploy + hotfixes** | Vercel `travel-manager-yeoullab.vercel.app` prod 배포 완료 (Apr 17 mockup 정체 → Apr 26 phase-1~8 전체 반영). Supabase Auth URL + GIS prod origin 등록 완료, 환경변수 4개 (Supabase 3 + Google Client ID) Production scope 등록. **Production hotfix 12 commits** (사용자 push 완료): (a) **보안 fix** — `useTripMembers` 가 `profiles_public` 전체 SELECT 하던 RLS 누수를 `trips.group_id → group_members.user_id → profiles_public` 경로로 차단 (b) UX — '액티비티'→'관광' · 일정 모달 하단 버튼 재배치 + accent-orange light variant · 금액 1,000단위 콤마 포맷 (formatAmountInput 헬퍼 + unit 9 cases) · 모바일 long-press drag 회복 (TouchSensor + drag handle 분리, touch-action:none 좌측 번호 chip 만 적용해 페이지 스크롤 보장) · 일정 카드 압축 (메타 정보 1줄) · 카드번호↔지도마커 디자인 통일 (28×28 accent-orange + 흰테두리 + shadow → **22×22 ink-900 + cream** 톤다운, 마커는 24×24 + 흰테두리 1.5px) (c) 게스트 페이지 — 마이그레이션 0018 (`get_guest_trip_data` 가 placeLat/placeLng 반환) · day 별 MapPanel · 홍보배너 제거 (d) 브랜드 — 새 PWA 아이콘 SVG (사용자 제공 symbol-only) + 4 PNG 재생성 + `/login` hero with-text SVG (lucide Compass chip + h1 환영 문구 제거). **0018 원격 미적용 — 다음 세션 첫 액션** |
+| **2026-04-26 §6.13 V1 spec** | 장소 URL 절 신설 (옵션 A+C). `place_external_url` 컬럼 + Naver `link` / Google `googleMapsUri` 자동 저장 + "📍 지도에서 보기" 버튼 + 좌표 fallback. 마이그레이션 0019 (schedule_items 컬럼) + 0020 (게스트 RPC) + RPC 5개 시그니처 확장. **V1 잔여 작업 1순위 — 다음 세션** |
