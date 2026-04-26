@@ -107,16 +107,25 @@ async function loadSdk(): Promise<void> {
 }
 
 function renderPinElement(label: string): HTMLElement {
-  const gm = gmaps();
-  if (!gm) throw new Error("google sdk not loaded");
-  const pin = new gm.marker.PinElement({
-    glyph: label,
-    background: "#F54E00",
-    borderColor: "#ffffff",
-    glyphColor: "#ffffff",
-    scale: 1,
-  });
-  return pin.element;
+  // Naver provider 의 renderMarkerHtml 과 동일한 28×28 원형 — 일정 카드 번호와 시각 매칭.
+  const el = document.createElement("div");
+  el.style.cssText = [
+    "background:#F54E00",
+    "color:#fff",
+    "width:28px",
+    "height:28px",
+    "border-radius:50%",
+    "display:flex",
+    "align-items:center",
+    "justify-content:center",
+    "font-weight:600",
+    "font-size:13px",
+    "box-shadow:0 2px 4px rgba(0,0,0,.25)",
+    "border:2px solid #fff",
+    "cursor:pointer",
+  ].join(";");
+  el.textContent = label;
+  return el;
 }
 
 function createMap(container: HTMLElement, options: MapOptions): MapHandle {
