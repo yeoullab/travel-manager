@@ -187,9 +187,10 @@ function ScheduleSection({ days, isDomestic }: { days: DaySchedule[]; isDomestic
                 v !== null,
             );
           return (
-            <div
+            <section
               key={d.dayNumber}
-              className="border-border-primary border-t pt-5 first:border-t-0 first:pt-0"
+              aria-label={`Day ${d.dayNumber} 일정`}
+              className="border-border-primary bg-surface-100 rounded-[12px] border p-3"
             >
               <div className="mb-3 flex items-center justify-between gap-3">
                 <span className="bg-accent-orange text-cream rounded-full px-2.5 py-1 text-[11px] font-semibold">
@@ -213,7 +214,7 @@ function ScheduleSection({ days, isDomestic }: { days: DaySchedule[]; isDomestic
                         placeName={it.placeName ?? undefined}
                         placeAddress={it.placeAddress ?? undefined}
                         memo={it.memo ?? undefined}
-                        wrapMemo
+                        compactMeta={false}
                         placeUrl={resolvePlaceLink({
                           placeExternalUrl: it.placeExternalUrl,
                           placeLat: it.placeLat,
@@ -227,7 +228,7 @@ function ScheduleSection({ days, isDomestic }: { days: DaySchedule[]; isDomestic
                   </li>
                 ))}
               </ul>
-            </div>
+            </section>
           );
         })}
       </div>

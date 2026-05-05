@@ -44,6 +44,7 @@ export default defineConfig({
         "todos-crud.spec.ts",
         "records-crud.spec.ts",
         "guest-share-flow.spec.ts",
+        "guest-share-readability.spec.ts",
         "settings-categories.spec.ts",
       ],
     },

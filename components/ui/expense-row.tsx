@@ -94,7 +94,7 @@ export function ExpenseRow({
               <p
                 className={cn(
                   "text-ink-600 min-w-0 flex-1 text-[12px]",
-                  wrapMemo ? "break-words whitespace-pre-wrap" : "truncate",
+                  wrapMemo ? "break-words leading-[1.5] whitespace-pre-wrap" : "truncate",
                 )}
               >
                 {memo}

@@ -37,6 +37,7 @@ type ScheduleItemProps = {
   placeName?: string;
   placeAddress?: string;
   memo?: string;
+  compactMeta?: boolean;
   wrapMemo?: boolean;
   draggable?: boolean;
   onClick?: () => void;
@@ -56,6 +57,7 @@ export function ScheduleItem({
   placeName,
   placeAddress,
   memo,
+  compactMeta,
   wrapMemo = false,
   draggable,
   onClick,
@@ -89,58 +91,102 @@ export function ScheduleItem({
           <p className="text-ink-900 truncate text-[15px] font-semibold">{title}</p>
           {time && <span className="text-ink-600 shrink-0 font-mono text-[12px]">{time}</span>}
         </div>
-        <div
-          className={cn(
-            "text-ink-600 mt-1 flex min-w-0 items-center gap-1.5 text-[12px]",
-            wrapMemo && "flex-wrap items-start",
-          )}
-        >
-          <span
-            aria-hidden
-            className={cn(
-              "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
-              categoryColor[category],
-            )}
-          />
-          <span className="shrink-0">{categoryLabel[category]}</span>
-          {placeName && (
-            <>
-              <span aria-hidden className="text-ink-400 shrink-0">
-                ·
-              </span>
-              {placeUrl ? (
+        {compactMeta === false ? (
+          <div className="text-ink-600 mt-1 flex flex-col gap-1 text-[12px]">
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                className={cn("inline-block h-1.5 w-1.5 rounded-full", categoryColor[category])}
+              />
+              {categoryLabel[category]}
+            </span>
+            {placeName &&
+              (placeUrl ? (
                 <a
                   href={placeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-accent-orange hover:text-accent-orange/80 inline-flex min-w-0 items-center gap-1 underline-offset-2 hover:underline"
+                  className="text-accent-orange hover:text-accent-orange/80 inline-flex min-w-0 items-start gap-1 underline-offset-2 hover:underline"
                   aria-label={`${placeName}${placeAddress ? `, ${placeAddress}` : ""} 지도에서 보기`}
                 >
-                  <MapPin size={11} strokeWidth={2} className="shrink-0" aria-hidden />
-                  <span className="truncate">{placeName}</span>
+                  <MapPin size={11} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
+                  <span className="break-words">{placeName}</span>
                 </a>
               ) : (
-                <>
-                  <MapPin size={11} strokeWidth={2} className="text-ink-500 shrink-0" aria-hidden />
-                  <span className="truncate">{placeName}</span>
-                </>
+                <span className="inline-flex min-w-0 items-start gap-1">
+                  <MapPin
+                    size={11}
+                    strokeWidth={2}
+                    className="text-ink-500 mt-0.5 shrink-0"
+                    aria-hidden
+                  />
+                  <span className="break-words">{placeName}</span>
+                </span>
+              ))}
+            {memo && <p className="break-words leading-[1.5] whitespace-pre-wrap">{memo}</p>}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "text-ink-600 mt-1 flex min-w-0 items-center gap-1.5 text-[12px]",
+              wrapMemo && "flex-wrap items-start",
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+                categoryColor[category],
               )}
-            </>
-          )}
-          {memo && (
-            <>
-              <span aria-hidden className="text-ink-400 shrink-0">
-                ·
-              </span>
-              <span
-                className={cn(wrapMemo ? "min-w-full break-words whitespace-pre-wrap" : "truncate")}
-              >
-                {memo}
-              </span>
-            </>
-          )}
-        </div>
+            />
+            <span className="shrink-0">{categoryLabel[category]}</span>
+            {placeName && (
+              <>
+                <span aria-hidden className="text-ink-400 shrink-0">
+                  ·
+                </span>
+                {placeUrl ? (
+                  <a
+                    href={placeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-accent-orange hover:text-accent-orange/80 inline-flex min-w-0 items-center gap-1 underline-offset-2 hover:underline"
+                    aria-label={`${placeName}${placeAddress ? `, ${placeAddress}` : ""} 지도에서 보기`}
+                  >
+                    <MapPin size={11} strokeWidth={2} className="shrink-0" aria-hidden />
+                    <span className="truncate">{placeName}</span>
+                  </a>
+                ) : (
+                  <>
+                    <MapPin
+                      size={11}
+                      strokeWidth={2}
+                      className="text-ink-500 shrink-0"
+                      aria-hidden
+                    />
+                    <span className="truncate">{placeName}</span>
+                  </>
+                )}
+              </>
+            )}
+            {memo && (
+              <>
+                <span aria-hidden className="text-ink-400 shrink-0">
+                  ·
+                </span>
+                <span
+                  className={cn(
+                    wrapMemo ? "min-w-full break-words whitespace-pre-wrap" : "truncate",
+                  )}
+                >
+                  {memo}
+                </span>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
