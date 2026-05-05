@@ -45,6 +45,7 @@ export default defineConfig({
         "records-crud.spec.ts",
         "guest-share-flow.spec.ts",
         "guest-share-readability.spec.ts",
+        "lodging-range-and-bulk-move.spec.ts",
         "settings-categories.spec.ts",
       ],
     },

@@ -19,7 +19,7 @@ export type ScheduleItemFormValue = {
   place: PlaceResult | null;
   // manual_place stage 에서만 채워짐 (place === null 상태로 title/주소만 수동 기입)
   placeAddressManual?: string | null;
-  lodgingEndDayId?: string | null;
+  lodgingRange?: { startDayId: string; endDayId: string } | null;
 };
 
 type FormStage = "category_select" | "other_form" | "place_search" | "manual_place";
@@ -135,6 +135,7 @@ export function ScheduleItemModal({
   const [url, setUrl] = useState<string>("");
   const [place, setPlace] = useState<PlaceResult | null>(null);
   const [addressManual, setAddressManual] = useState<string>("");
+  const [lodgingStartDayId, setLodgingStartDayId] = useState<string>("");
   const [lodgingEndDayId, setLodgingEndDayId] = useState<string>("");
 
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -149,7 +150,9 @@ export function ScheduleItemModal({
     setUrl(initial?.url ?? "");
     setPlace(initialPlaceFor(initial));
     setAddressManual(initialManualAddressFor(initial));
-    setLodgingEndDayId(currentDayId ?? initial?.trip_day_id ?? "");
+    const initialDayId = currentDayId ?? initial?.trip_day_id ?? "";
+    setLodgingStartDayId(initialDayId);
+    setLodgingEndDayId(initialDayId);
   }, [open, initial, currentDayId]);
 
   useEffect(() => {
@@ -163,7 +166,10 @@ export function ScheduleItemModal({
   function pickCategory(code: ScheduleCategory) {
     setCategoryCode(code);
     setStage(code === "other" ? "other_form" : "place_search");
-    if (code === "lodging") setLodgingEndDayId(currentDayId ?? "");
+    if (code === "lodging") {
+      setLodgingStartDayId(currentDayId ?? "");
+      setLodgingEndDayId(currentDayId ?? "");
+    }
   }
 
   function backToCategory() {
@@ -207,7 +213,13 @@ export function ScheduleItemModal({
       url: url.trim() || null,
       place,
       placeAddressManual: stage === "manual_place" ? addressManual.trim() || null : null,
-      lodgingEndDayId: categoryCode === "lodging" ? lodgingEndDayId || currentDayId || null : null,
+      lodgingRange:
+        mode === "create" && categoryCode === "lodging"
+          ? {
+              startDayId: lodgingStartDayId || currentDayId || "",
+              endDayId: lodgingEndDayId || lodgingStartDayId || currentDayId || "",
+            }
+          : null,
     });
   }
 
@@ -333,8 +345,10 @@ export function ScheduleItemModal({
               <LodgingRangeField
                 days={days}
                 currentDayId={currentDayId}
-                value={lodgingEndDayId || currentDayId || ""}
-                onChange={setLodgingEndDayId}
+                startValue={lodgingStartDayId || currentDayId || ""}
+                endValue={lodgingEndDayId || lodgingStartDayId || currentDayId || ""}
+                onStartChange={setLodgingStartDayId}
+                onEndChange={setLodgingEndDayId}
               />
             )}
           </>
@@ -371,8 +385,10 @@ export function ScheduleItemModal({
               <LodgingRangeField
                 days={days}
                 currentDayId={currentDayId}
-                value={lodgingEndDayId || currentDayId || ""}
-                onChange={setLodgingEndDayId}
+                startValue={lodgingStartDayId || currentDayId || ""}
+                endValue={lodgingEndDayId || lodgingStartDayId || currentDayId || ""}
+                onStartChange={setLodgingStartDayId}
+                onEndChange={setLodgingEndDayId}
               />
             )}
           </>
@@ -385,32 +401,52 @@ export function ScheduleItemModal({
 function LodgingRangeField({
   days,
   currentDayId,
-  value,
-  onChange,
+  startValue,
+  endValue,
+  onStartChange,
+  onEndChange,
 }: {
   days: TripDay[];
   currentDayId?: string | null;
-  value: string;
-  onChange: (value: string) => void;
+  startValue: string;
+  endValue: string;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
 }) {
   if (!currentDayId || days.length <= 1) return null;
+  const options = days.map((day) => (
+    <option key={day.id} value={day.id}>
+      Day {day.day_number} · {day.date}
+    </option>
+  ));
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor="lodging-end-day" className="text-ink-700 text-[13px] font-medium">
-        숙박 종료일
-      </label>
-      <select
-        id="lodging-end-day"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="border-border-primary bg-surface-100 text-ink-900 focus:border-border-medium h-11 rounded-[8px] border px-3 text-[15px] transition-colors duration-150 focus:shadow-[0_4px_12px_rgba(0,0,0,0.1)] focus:outline-none"
-      >
-        {days.map((day) => (
-          <option key={day.id} value={day.id}>
-            Day {day.day_number} · {day.date}
-          </option>
-        ))}
-      </select>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="lodging-start-day" className="text-ink-700 text-[13px] font-medium">
+          숙소 시작일
+        </label>
+        <select
+          id="lodging-start-day"
+          value={startValue}
+          onChange={(e) => onStartChange(e.target.value)}
+          className="border-border-primary bg-surface-100 text-ink-900 focus:border-border-medium h-11 rounded-[8px] border px-3 text-[15px] transition-colors duration-150 focus:shadow-[0_4px_12px_rgba(0,0,0,0.1)] focus:outline-none"
+        >
+          {options}
+        </select>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="lodging-end-day" className="text-ink-700 text-[13px] font-medium">
+          숙소 종료일
+        </label>
+        <select
+          id="lodging-end-day"
+          value={endValue}
+          onChange={(e) => onEndChange(e.target.value)}
+          className="border-border-primary bg-surface-100 text-ink-900 focus:border-border-medium h-11 rounded-[8px] border px-3 text-[15px] transition-colors duration-150 focus:shadow-[0_4px_12px_rgba(0,0,0,0.1)] focus:outline-none"
+        >
+          {options}
+        </select>
+      </div>
     </div>
   );
 }

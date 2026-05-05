@@ -229,8 +229,10 @@ export function ScheduleTab({ tripId }: Props) {
     if (modal.mode === "create") {
       if (
         value.categoryCode === "lodging" &&
-        value.lodgingEndDayId &&
-        value.lodgingEndDayId !== activeDayId
+        value.lodgingRange &&
+        value.lodgingRange.startDayId &&
+        value.lodgingRange.endDayId &&
+        value.lodgingRange.startDayId !== value.lodgingRange.endDayId
       ) {
         createLodgingRange.mutate(
           {
@@ -246,8 +248,8 @@ export function ScheduleTab({ tripId }: Props) {
             placeExternalId: base.placeExternalId,
             placeExternalUrl: base.placeExternalUrl,
             tripId,
-            startDayId: activeDayId,
-            endDayId: value.lodgingEndDayId,
+            startDayId: value.lodgingRange.startDayId,
+            endDayId: value.lodgingRange.endDayId,
           },
           {
             onSuccess: (ids) => {
