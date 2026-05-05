@@ -7,17 +7,23 @@ import { Loader2 } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
 import { requestGoogleIdToken } from "@/lib/auth/google-id-token";
 import { signInWithGoogle } from "@/lib/auth/sign-in";
+import { installGisPopupBlockedConsoleHandler } from "@/lib/auth/gis-popup-blocked";
 
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const buttonRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<"idle" | "signing" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "signing" | "error" | "popup_blocked">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!buttonRef.current) return;
     let cancelled = false;
+    const restoreConsole = installGisPopupBlockedConsoleHandler(() => {
+      if (cancelled) return;
+      setStatus("popup_blocked");
+      setErrorMsg("현재 브라우저에서 Google 로그인 팝업을 열 수 없어요.");
+    });
     (async () => {
       try {
         const { idToken, rawNonce } = await requestGoogleIdToken(buttonRef.current!);
@@ -35,6 +41,7 @@ function LoginInner() {
     })();
     return () => {
       cancelled = true;
+      restoreConsole();
     };
   }, [router, params]);
 
@@ -61,6 +68,17 @@ function LoginInner() {
       )}
       {status === "error" && errorMsg && (
         <p className="text-error mt-4 text-[13px]">{errorMsg}</p>
+      )}
+      {status === "popup_blocked" && errorMsg && (
+        <div className="text-error mt-4 space-y-1 text-[13px] leading-[1.55]">
+          <p>{errorMsg}</p>
+          <p>기본 브라우저에서 다시 열어주세요.</p>
+          {process.env.NODE_ENV !== "production" && (
+            <p className="text-ink-600">
+              Chrome에서 HTTP 431이 보이면 localhost 사이트 데이터를 삭제한 뒤 새로고침하세요.
+            </p>
+          )}
+        </div>
       )}
       <p className="text-ink-600 mt-6 text-[12px] leading-[1.55]">
         로그인 시 이용약관과 개인정보 처리방침에 동의하는 것으로 간주됩니다.
