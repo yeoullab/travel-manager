@@ -1318,7 +1318,7 @@ git commit -m "feat(schedule): move selected items between days"
 - Modify: `docs/specs/2026-05-05-v1-1-usability-fixes.md`
 - Modify: wiki files at `/Users/sohyun/Library/CloudStorage/SynologyDrive-home/앱/MY_AI_WIKI/projects/travel-manager/`
 
-- [ ] **Step 1: Run full local verification**
+- [x] **Step 1: Run full local verification**
 
 Run:
 
@@ -1338,7 +1338,7 @@ Expected:
 - Targeted integration tests pass.
 - Targeted E2E tests pass.
 
-- [ ] **Step 2: Update spec status**
+- [x] **Step 2: Update spec status**
 
 In `docs/specs/2026-05-05-v1-1-usability-fixes.md`, change:
 
@@ -1352,7 +1352,7 @@ Add a short `## 10. Implementation Notes` section with:
 - final verification commands,
 - known manual verification if any.
 
-- [ ] **Step 3: Update wiki**
+- [x] **Step 3: Update wiki**
 
 At `/wiki-end`, update:
 
@@ -1367,16 +1367,18 @@ Mention:
 - completed requirements 1-10,
 - any remaining Maps prod whitelist note if still unresolved.
 
-- [ ] **Step 4: Commit final docs**
+- [x] **Step 4: Commit final docs**
 
 Commit:
 
 ```bash
-git add -- docs/specs/2026-05-05-v1-1-usability-fixes.md
+git add -- docs/specs/2026-05-05-v1-1-usability-fixes.md docs/plans/2026-05-05-v1-1-usability-fixes.md
 git commit -m "docs: mark v1.1 usability fixes implemented"
 ```
 
 Do not commit wiki files from outside the repo.
+
+> 2026-05-05 local completion: Task 11 final verification passed from branch `codex/v1.1-usability-fixes`. Fresh checks: `npm test` (40 files / 161 tests), `npm run lint` (0 errors, existing warnings 9), `npm run build`, targeted integration on local Supabase `travel-manager-e2e-55321` (3 files / 11 tests), and targeted E2E on local Supabase `travel-manager-e2e-55321` (5/5). Spec status is now `implemented` with implementation notes, wiki status/handoff/session are updated, and this final docs commit records the plan checklist sync. Final integration coverage uses `tests/integration/schedule-v1-1-rpc.test.ts` instead of the draft `schedule-manual-place.test.ts` / `schedule-bulk-rpc.test.ts` filenames.
 
 ---
 

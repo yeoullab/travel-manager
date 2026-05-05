@@ -2,7 +2,7 @@
 type: design-spec
 project: travel-manager
 date: 2026-05-05
-status: approved-design
+status: implemented
 source: MY_AI_WIKI/projects/travel-manager/raw/ver1.v1 요구사항.md
 target-version: v1.1.0
 author: AI + human collaborative design
@@ -190,3 +190,27 @@ The app uses Next.js 16. Route `params` remain Promise-based in server pages. Cl
 - All Checkpoint A tests pass before Checkpoint B begins.
 - Full typecheck, lint, unit, targeted integration, and targeted E2E pass before release tagging.
 - Wiki `status.md`, `handoff.md`, and a new v1.1 session log are updated at `/wiki-end`.
+
+## 10. Implementation Notes
+
+### 10.1 Migration
+
+- Database changes are in `supabase/migrations/0021_schedule_manual_place_and_bulk.sql`.
+- The migration updates manual-place validity and schedule RPC signatures, then adds `create_lodging_schedule_items_for_range(...)` and `move_schedule_items_to_day(...)`.
+
+### 10.2 Final Verification
+
+Fresh Task 11 verification was run on 2026-05-05 from branch `codex/v1.1-usability-fixes`.
+
+- `npm test` -> 40 files / 161 tests passed.
+- `npm run lint` -> 0 errors, 9 existing warnings.
+- `npm run build` -> passed. Existing Next warnings remain: workspace-root inference and `middleware` to `proxy` deprecation.
+- `npm run test:integration -- tests/integration/schedule-v1-1-rpc.test.ts tests/integration/schedule-rpc-with-place-external-url.test.ts tests/integration/expenses-schedule-link.test.ts` -> 3 files / 11 tests passed against local Supabase `travel-manager-e2e-55321`.
+- `npm run test:e2e -- tests/e2e/manual-place-edit.spec.ts tests/e2e/expenses-from-schedule.spec.ts tests/e2e/guest-share-readability.spec.ts tests/e2e/lodging-range-and-bulk-move.spec.ts` -> 5 tests passed against local Supabase `travel-manager-e2e-55321`.
+
+The implementation plan originally referenced draft integration filenames `schedule-manual-place.test.ts` and `schedule-bulk-rpc.test.ts`. Final coverage lives in `tests/integration/schedule-v1-1-rpc.test.ts`.
+
+### 10.3 Manual Follow-Up
+
+- No additional v1.1 manual QA blocker was found in the local verification pass.
+- Existing V1 production setup follow-up remains: add the production domain to NCP Naver Maps and Google Cloud Maps API referrer allowlists so live production map SDK calls are not referrer-blocked. Coordinate storage and generated external map links are covered separately by automated tests.
