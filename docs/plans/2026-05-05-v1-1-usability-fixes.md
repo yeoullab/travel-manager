@@ -895,7 +895,7 @@ git commit -m "fix(share): improve guest schedule readability"
 - Modify: `app/settings/page.tsx`
 - Modify: `docs/specs/2026-05-05-v1-1-usability-fixes.md`
 
-- [ ] **Step 1: Update package version**
+- [x] **Step 1: Update package version**
 
 Change `package.json`:
 
@@ -903,7 +903,7 @@ Change `package.json`:
 "version": "1.1.0"
 ```
 
-- [ ] **Step 2: Create version module**
+- [x] **Step 2: Create version module**
 
 Create `lib/version.ts`:
 
@@ -914,7 +914,7 @@ export const APP_VERSION = pkg.version;
 export const APP_VERSION_LABEL = `v${APP_VERSION}`;
 ```
 
-- [ ] **Step 3: Update settings footer**
+- [x] **Step 3: Update settings footer**
 
 In `app/settings/page.tsx`, import:
 
@@ -930,7 +930,9 @@ Replace stale footer:
 </p>
 ```
 
-- [ ] **Step 4: Run Checkpoint A verification**
+- [x] **Step 4: Run Checkpoint A verification**
+
+> 2026-05-05 local completion: Task 7 committed as `76405c7 chore: display v1.1 app version`. Verification recorded in session log: `npm test` passed (39 files / 160 tests), `npm run lint` had 0 errors with existing warnings, and `npm run build` passed.
 
 Run:
 
@@ -942,7 +944,7 @@ npm run build
 
 Expected: unit tests pass, lint has 0 errors, build succeeds.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit:
 
@@ -961,7 +963,7 @@ git commit -m "chore: display v1.1 app version"
 - Modify: `lib/query/keys.ts`
 - Test: `tests/integration/schedule-bulk-rpc.test.ts`
 
-- [ ] **Step 1: Add failing integration test for lodging range**
+- [x] **Step 1: Add failing integration test for lodging range**
 
 In `tests/integration/schedule-bulk-rpc.test.ts`, add:
 
@@ -992,7 +994,7 @@ it("creates lodging items for every day in range", async () => {
 
 Use existing integration helper patterns to define `aliceC` and `createTripWithDays`.
 
-- [ ] **Step 2: Add RPC to migration**
+- [x] **Step 2: Add RPC to migration**
 
 Append `create_lodging_schedule_items_for_range` to `0021_schedule_manual_place_and_bulk.sql`.
 
@@ -1025,7 +1027,7 @@ Required behavior:
 - Append each item at `max(sort_order) + 1` for its day.
 - Return inserted ids ordered by day number.
 
-- [ ] **Step 3: Add hook**
+- [x] **Step 3: Add hook**
 
 Create `lib/schedule/use-create-lodging-schedule-items-for-range.ts`:
 
@@ -1071,7 +1073,9 @@ export function useCreateLodgingScheduleItemsForRange() {
 }
 ```
 
-- [ ] **Step 4: Run integration and commit**
+- [x] **Step 4: Run integration and commit**
+
+> 2026-05-05 local completion: Task 8 implementation was already present in the branch, so no new commit was created. Actual coverage lives in `tests/integration/schedule-v1-1-rpc.test.ts` rather than the draft `schedule-bulk-rpc.test.ts` name. Local Supabase verification passed: `npm run test:integration -- tests/integration/schedule-v1-1-rpc.test.ts` (4/4).
 
 Run:
 
@@ -1097,7 +1101,7 @@ git commit -m "feat(schedule): add lodging range creation rpc"
 - Modify: `components/trip/schedule-tab.tsx`
 - Test: `tests/e2e/lodging-range-and-bulk-move.spec.ts`
 
-- [ ] **Step 1: Add modal form fields**
+- [x] **Step 1: Add modal form fields**
 
 Extend `ScheduleItemFormValue`:
 
@@ -1120,7 +1124,7 @@ mode === "create" && categoryCode === "lodging" && stage !== "category_select"
 
 Use two native selects labeled `숙소 시작일`, `숙소 종료일`.
 
-- [ ] **Step 2: Wire mutation**
+- [x] **Step 2: Wire mutation**
 
 In `ScheduleTab`, import and initialize:
 
@@ -1130,7 +1134,7 @@ const createLodgingRange = useCreateLodgingScheduleItemsForRange();
 
 When `value.categoryCode === "lodging"` and `value.lodgingRange` covers more than one day, call `createLodgingRange.mutate`.
 
-- [ ] **Step 3: Add E2E lodging range case**
+- [x] **Step 3: Add E2E lodging range case**
 
 In `tests/e2e/lodging-range-and-bulk-move.spec.ts`:
 
@@ -1140,7 +1144,9 @@ In `tests/e2e/lodging-range-and-bulk-move.spec.ts`:
 - save,
 - assert the lodging title appears once on each day.
 
-- [ ] **Step 4: Run E2E and commit**
+- [x] **Step 4: Run E2E and commit**
+
+> 2026-05-05 local completion: Task 9 committed as `dcfab0b feat(schedule): create lodging across a date range`. Local Supabase E2E passed: `npm run test:e2e -- tests/e2e/lodging-range-and-bulk-move.spec.ts` (1/1). Additional checks passed: `npm run lint`, `./node_modules/.bin/tsc --noEmit`, `git diff --check`, and `npm run build`.
 
 Run:
 
@@ -1170,7 +1176,7 @@ git commit -m "feat(schedule): create lodging across a date range"
 - Test: `tests/integration/schedule-bulk-rpc.test.ts`
 - Test: `tests/e2e/lodging-range-and-bulk-move.spec.ts`
 
-- [ ] **Step 1: Add failing bulk move integration tests**
+- [x] **Step 1: Add failing bulk move integration tests**
 
 Add to `tests/integration/schedule-bulk-rpc.test.ts`:
 
@@ -1203,7 +1209,7 @@ it("rejects mixed-trip bulk moves", async () => {
 });
 ```
 
-- [ ] **Step 2: Add bulk move RPC**
+- [x] **Step 2: Add bulk move RPC**
 
 Append to migration:
 
@@ -1224,7 +1230,7 @@ Required behavior:
 - Move selected items to target day, appending them after the current max sort order in the order supplied by `p_item_ids`.
 - Recompact source days and target day sort_order to 1-based contiguous values.
 
-- [ ] **Step 3: Add hook**
+- [x] **Step 3: Add hook**
 
 Create `lib/schedule/use-move-schedule-items-to-day.ts`:
 
@@ -1257,7 +1263,7 @@ export function useMoveScheduleItemsToDay() {
 }
 ```
 
-- [ ] **Step 4: Add selection UI**
+- [x] **Step 4: Add selection UI**
 
 In `ScheduleTab`, add:
 
@@ -1274,7 +1280,7 @@ Show a small toolbar above the list when items exist:
 
 Pass `selectionMode`, `selected`, and `onToggleSelect` to list rows. Use checkboxes in `SortableScheduleItem`; keep drag disabled for selected rows.
 
-- [ ] **Step 5: Add E2E bulk move case**
+- [x] **Step 5: Add E2E bulk move case**
 
 In `tests/e2e/lodging-range-and-bulk-move.spec.ts`, add:
 
@@ -1284,7 +1290,9 @@ In `tests/e2e/lodging-range-and-bulk-move.spec.ts`, add:
 - move to Day 2,
 - assert Day 2 contains the two selected titles.
 
-- [ ] **Step 6: Run tests and commit**
+- [x] **Step 6: Run tests and commit**
+
+> 2026-05-05 local completion: Task 10 committed as `6d104a6 feat(schedule): finish bulk day move selection`. Core RPC/hook/optimistic helper were already included earlier; this completion pass added accessible checkbox selection UI and missing coverage. Verified: `npm test -- tests/unit/sortable-schedule-item-selection.test.ts tests/unit/apply-local-bulk-move.test.ts` passed (4/4), `./node_modules/.bin/tsc --noEmit` passed, `npm run lint` had 0 errors with existing warnings, `git diff --check` passed, Playwright discovery listed 2 tests in `tests/e2e/lodging-range-and-bulk-move.spec.ts`, and `npm run build` passed. Follow-up DB-backed checks also passed on local Supabase `travel-manager-e2e-55321`: `npm run test:integration -- tests/integration/schedule-v1-1-rpc.test.ts` (4/4) and `npm run test:e2e -- tests/e2e/lodging-range-and-bulk-move.spec.ts` (2/2).
 
 Run:
 
