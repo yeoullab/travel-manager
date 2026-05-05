@@ -63,6 +63,8 @@
 
 ## Task 1: Manual Place Link And Category Mapping Unit Layer
 
+Status: completed in `1b85263`; re-verified on 2026-05-05.
+
 **Files:**
 - Modify: `lib/maps/place-link.ts`
 - Modify: `lib/maps/types.ts`
@@ -70,7 +72,7 @@
 - Test: `tests/unit/place-link.test.ts`
 - Test: `tests/unit/schedule-expense-category-map.test.ts`
 
-- [ ] **Step 1: Add failing tests for manual address fallback**
+- [x] **Step 1: Add failing tests for manual address fallback**
 
 Add these cases to `tests/unit/place-link.test.ts`:
 
@@ -104,7 +106,7 @@ it("해외 수기 장소는 주소 기반 Google Maps 검색 URL을 반환한다
 });
 ```
 
-- [ ] **Step 2: Create failing category mapping tests**
+- [x] **Step 2: Create failing category mapping tests**
 
 Create `tests/unit/schedule-expense-category-map.test.ts`:
 
@@ -125,7 +127,7 @@ describe("expenseCategoryForScheduleCategory", () => {
 });
 ```
 
-- [ ] **Step 3: Run tests and verify they fail**
+- [x] **Step 3: Run tests and verify they fail**
 
 Run:
 
@@ -135,7 +137,7 @@ npm test -- tests/unit/place-link.test.ts tests/unit/schedule-expense-category-m
 
 Expected: FAIL because `placeAddress` is not accepted and `category-map.ts` does not exist.
 
-- [ ] **Step 4: Update place link input and implementation**
+- [x] **Step 4: Update place link input and implementation**
 
 Update `lib/maps/place-link.ts`:
 
@@ -181,7 +183,7 @@ export function resolvePlaceLink(item: PlaceLinkInput): string | null {
 }
 ```
 
-- [ ] **Step 5: Add category mapping module**
+- [x] **Step 5: Add category mapping module**
 
 Create `lib/schedule/category-map.ts`:
 
@@ -206,7 +208,7 @@ export function expenseCategoryForScheduleCategory(
 }
 ```
 
-- [ ] **Step 6: Run tests and commit**
+- [x] **Step 6: Run tests and commit**
 
 Run:
 
@@ -227,12 +229,14 @@ git commit -m "test: cover manual place links and category mapping"
 
 ## Task 2: Manual Place Database Contract
 
+Status: completed across `0390676` and `2825337`; re-verified on 2026-05-05. The final manual-place RPC coverage lives in `tests/integration/schedule-v1-1-rpc.test.ts` instead of the originally proposed `tests/integration/schedule-manual-place.test.ts`.
+
 **Files:**
 - Create: `supabase/migrations/0021_schedule_manual_place_and_bulk.sql`
 - Modify: `types/database.ts`
 - Test: `tests/integration/schedule-manual-place.test.ts`
 
-- [ ] **Step 1: Write failing integration tests**
+- [x] **Step 1: Write failing integration tests**
 
 Create `tests/integration/schedule-manual-place.test.ts` with owner setup matching existing integration helpers in `tests/integration/create-schedule-item.test.ts`:
 
@@ -271,7 +275,7 @@ describe("schedule manual place RPC", () => {
 
 Before implementation, adapt setup to the existing integration test fixture style rather than relying on `TEST_TRIP_DAY_ID`. The final test must create its own trip/day and authenticated client.
 
-- [ ] **Step 2: Run targeted integration test and verify it fails**
+- [x] **Step 2: Run targeted integration test and verify it fails**
 
 Run:
 
@@ -281,7 +285,7 @@ npm run test:integration -- tests/integration/schedule-manual-place.test.ts
 
 Expected: FAIL with `schedule_items_place_atomic` check violation.
 
-- [ ] **Step 3: Add migration**
+- [x] **Step 3: Add migration**
 
 Create `supabase/migrations/0021_schedule_manual_place_and_bulk.sql`.
 
@@ -336,7 +340,7 @@ if p_place_provider is not null then
 end if;
 ```
 
-- [ ] **Step 4: Apply migration and regenerate types**
+- [x] **Step 4: Apply migration and regenerate types**
 
 Run:
 
@@ -347,7 +351,7 @@ npm run db:types
 
 Expected: migration applies and `types/database.ts` includes unchanged `schedule_items` columns.
 
-- [ ] **Step 5: Run integration tests and commit**
+- [x] **Step 5: Run integration tests and commit**
 
 Run:
 
@@ -369,6 +373,8 @@ git commit -m "feat(db): support manual schedule places"
 
 ## Task 3: Manual Place Form Roundtrip
 
+Status: completed in `2825337`; re-verified on 2026-05-05.
+
 **Files:**
 - Modify: `lib/maps/types.ts`
 - Modify: `lib/schedule/use-create-schedule-item.ts`
@@ -379,7 +385,7 @@ git commit -m "feat(db): support manual schedule places"
 - Test: `tests/unit/schedule-item-modal-stage.test.ts`
 - Test: `tests/e2e/manual-place-edit.spec.ts`
 
-- [ ] **Step 1: Extend place typing**
+- [x] **Step 1: Extend place typing**
 
 Add to `lib/maps/types.ts`:
 
@@ -390,7 +396,7 @@ export type PlaceDraft =
   | { kind: "manual"; name: string; address: string };
 ```
 
-- [ ] **Step 2: Update stage tests**
+- [x] **Step 2: Update stage tests**
 
 Extend `tests/unit/schedule-item-modal-stage.test.ts`:
 
@@ -412,7 +418,7 @@ it("returns manual_place for place_name + place_address without coordinates", ()
 });
 ```
 
-- [ ] **Step 3: Run stage test and verify failure**
+- [x] **Step 3: Run stage test and verify failure**
 
 Run:
 
@@ -422,7 +428,7 @@ npm test -- tests/unit/schedule-item-modal-stage.test.ts
 
 Expected: FAIL because `initialStageFor` returns `place_search`.
 
-- [ ] **Step 4: Update modal form value**
+- [x] **Step 4: Update modal form value**
 
 Change `ScheduleItemFormValue` in `components/schedule/schedule-item-modal.tsx`:
 
@@ -476,7 +482,7 @@ onSubmit({
 });
 ```
 
-- [ ] **Step 5: Update ScheduleTab payload mapping**
+- [x] **Step 5: Update ScheduleTab payload mapping**
 
 In `components/trip/schedule-tab.tsx`, replace memo-prepend logic with:
 
@@ -515,11 +521,11 @@ const placeFields =
 
 Then spread `placeFields` into the mutation base.
 
-- [ ] **Step 6: Pass placeAddress to cards**
+- [x] **Step 6: Pass placeAddress to cards**
 
 Add `placeAddress?: string` to `ScheduleItemProps` in `components/ui/schedule-item.tsx`, and pass it to `resolvePlaceLink` at call sites.
 
-- [ ] **Step 7: Run tests and commit**
+- [x] **Step 7: Run tests and commit**
 
 Run:
 
