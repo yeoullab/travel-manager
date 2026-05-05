@@ -14,7 +14,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
 import { useMyGroup } from "@/lib/group/use-my-group";
 import { cn } from "@/lib/cn";
-import { APP_NAME, APP_VERSION } from "@/lib/version";
+import { APP_NAME, APP_VERSION_LABEL } from "@/lib/version";
 
 /**
  * 12 `/settings` — 설정 메뉴.
@@ -121,7 +121,7 @@ export default function SettingsPage() {
         </SettingsGroup>
 
         <p className="text-ink-500 mt-8 text-center text-[11px]">
-          {APP_NAME} · v{APP_VERSION}
+          {APP_NAME} · {APP_VERSION_LABEL}
         </p>
 
         <div className="mt-4 text-center">
