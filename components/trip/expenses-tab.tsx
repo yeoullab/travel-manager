@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, Wallet } from "lucide-react";
 import { ExpenseRow } from "@/components/ui/expense-row";
@@ -425,6 +425,7 @@ function ExpenseSheet({
   isDeleting,
 }: SheetProps) {
   const initialCurrency = tripCurrencies[0] ?? "KRW";
+  const amountInputId = useId();
   const [values, setValues] = useState<FormValue>(() =>
     buildInitialValues(mode, {
       myProfileId,
@@ -600,12 +601,15 @@ function ExpenseSheet({
         ) : (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-end justify-between gap-2">
-              <label className="text-ink-700 text-[13px] font-medium">금액</label>
+              <label htmlFor={amountInputId} className="text-ink-700 text-[13px] font-medium">
+                금액
+              </label>
               <span className="text-ink-600 text-[12px] font-medium tracking-wider uppercase">
                 {tripCurrencies[0] ?? "KRW"}
               </span>
             </div>
             <TextField
+              id={amountInputId}
               placeholder="0"
               inputMode="decimal"
               value={values.amount}

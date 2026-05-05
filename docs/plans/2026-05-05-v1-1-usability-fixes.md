@@ -556,7 +556,7 @@ git commit -m "fix(schedule): preserve manual places through edit"
 - Modify: `components/schedule/schedule-list.tsx`
 - Modify: `components/trip/schedule-tab.tsx`
 
-- [ ] **Step 1: Extend map handle**
+- [x] **Step 1: Extend map handle**
 
 Add to `MapHandle` in `lib/maps/types.ts`:
 
@@ -566,7 +566,7 @@ focusMarker?(id: string): void;
 
 Add optional `id?: string` to `MarkerSpec`.
 
-- [ ] **Step 2: Implement provider focus**
+- [x] **Step 2: Implement provider focus**
 
 In both providers, store markers by `spec.id`.
 
@@ -594,7 +594,7 @@ focusMarker(id: string) {
 }
 ```
 
-- [ ] **Step 3: Add MapPanel API and border**
+- [x] **Step 3: Add MapPanel API and border**
 
 Update `MapPanel` props:
 
@@ -632,7 +632,7 @@ Change class:
 className="bg-surface-200 border-border-primary mt-3 h-[240px] w-full overflow-hidden rounded-[12px] border"
 ```
 
-- [ ] **Step 4: Add list-number tap callback**
+- [x] **Step 4: Add list-number tap callback**
 
 In `SortableScheduleItem`, add prop:
 
@@ -651,7 +651,7 @@ onClick={(e) => {
 
 In `ScheduleList`, pass through `onNumberTap`.
 
-- [ ] **Step 5: Wire ScheduleTab focus behavior**
+- [x] **Step 5: Wire ScheduleTab focus behavior**
 
 Add state:
 
@@ -674,7 +674,9 @@ const handleNumberTap = useCallback(
 
 Pass `focusedItemId={focusedMapItemId}` to `MapPanel` and `onNumberTap={handleNumberTap}` to `ScheduleList`.
 
-- [ ] **Step 6: Run verification and commit**
+- [x] **Step 6: Run verification and commit**
+
+> 2026-05-05 follow-up: implementation was already included in `2825337 feat: ship v1.1 schedule usability fixes`. Verified with `npm test -- tests/unit/provider-selector.test.ts` and `npm run lint` (0 errors, existing warnings only).
 
 Run:
 
@@ -700,7 +702,7 @@ git commit -m "feat(schedule): focus map from schedule numbers"
 - Modify: `components/trip/expenses-tab.tsx`
 - Test: `tests/e2e/expenses-from-schedule.spec.ts`
 
-- [ ] **Step 1: Add E2E assertion**
+- [x] **Step 1: Add E2E assertion**
 
 In `tests/e2e/expenses-from-schedule.spec.ts`, seed/select a sightseeing schedule item, click "이 일정의 경비 추가", and assert the `관광` expense category radio is checked.
 
@@ -710,7 +712,10 @@ Expected assertion:
 await expect(page.getByRole("radio", { name: "관광" })).toHaveAttribute("aria-checked", "true");
 ```
 
-- [ ] **Step 2: Run E2E and verify failure**
+- [x] **Step 2: Run E2E and verify failure**
+
+> 2026-05-05 follow-up: not run in this session because `.env.local` points to remote Supabase and this E2E performs DB reset/write. Run only with local Supabase or explicit approval for a disposable remote test project.
+> 2026-05-05 local completion: original category-prefill RED was not replayed because the implementation was already present. Local E2E first exposed unrelated harness/accessibility issues: Next dev must be accessed as `localhost` unless `allowedDevOrigins` includes `127.0.0.1`, and the single-currency amount input needed its visible `금액` label associated with the input.
 
 Run:
 
@@ -720,7 +725,9 @@ npm run test:e2e -- tests/e2e/expenses-from-schedule.spec.ts
 
 Expected: FAIL because create sheet defaults to `food`.
 
-- [ ] **Step 3: Add prefill category**
+- [x] **Step 3: Add prefill category**
+
+> 2026-05-05 follow-up: implementation was already included in `2825337 feat: ship v1.1 schedule usability fixes`; this session added the missing E2E assertion coverage.
 
 In `components/trip/expenses-tab.tsx`, add to `Prefill`:
 
@@ -746,7 +753,10 @@ Update `buildInitialValues`:
 categoryCode: prefill?.categoryCode ?? "food",
 ```
 
-- [ ] **Step 4: Run tests and commit**
+- [x] **Step 4: Run tests and commit**
+
+> 2026-05-05 follow-up: unit mapping test and lint were run. E2E and commit remain pending until DB target is safe.
+> 2026-05-05 local completion: `npm test -- tests/unit/schedule-expense-category-map.test.ts` passed (7/7), and the normal `npm run test:e2e -- tests/e2e/expenses-from-schedule.spec.ts` command passed against local Supabase `travel-manager-e2e-55321` using app origin `http://localhost:3000`. Additional fresh checks: `npm run lint` had 0 errors with existing warnings, and `./node_modules/.bin/tsc --noEmit` passed.
 
 Run:
 
@@ -774,7 +784,7 @@ git commit -m "fix(expense): prefill category from schedule item"
 - Modify: `components/ui/expense-row.tsx`
 - Test: `tests/e2e/guest-share-readability.spec.ts`
 
-- [ ] **Step 1: Add E2E readability test**
+- [x] **Step 1: Add E2E readability test**
 
 Create `tests/e2e/guest-share-readability.spec.ts`.
 
@@ -787,7 +797,9 @@ The test must:
 - assert `Day 1` and `Day 2` are visible in distinct sections,
 - assert the full memo text is visible.
 
-- [ ] **Step 2: Run E2E and verify failure**
+- [x] **Step 2: Run E2E and verify failure**
+
+> 2026-05-05 follow-up: not run in this session because `.env.local` points to remote Supabase and this E2E performs DB reset/write. Run only with local Supabase or explicit approval for a disposable remote test project.
 
 Run:
 
@@ -797,7 +809,9 @@ npm run test:e2e -- tests/e2e/guest-share-readability.spec.ts
 
 Expected: FAIL because memo text is truncated.
 
-- [ ] **Step 3: Update ScheduleItem wrapping behavior**
+> 2026-05-05 local completion: pre-fix failure was not replayed because Steps 3~5 had already been applied before the safe DB target was available. Final E2E verification in Step 6 ran against local Supabase `travel-manager-e2e-55321` and passed.
+
+- [x] **Step 3: Update ScheduleItem wrapping behavior**
 
 Add prop to `components/ui/schedule-item.tsx`:
 
@@ -819,7 +833,7 @@ Use existing single-line layout when `compactMeta !== false`. When `compactMeta 
 )}
 ```
 
-- [ ] **Step 4: Update guest page sections**
+- [x] **Step 4: Update guest page sections**
 
 In `app/share/[token]/page.tsx`:
 
@@ -829,7 +843,7 @@ In `app/share/[token]/page.tsx`:
 - For todos, change memo from `truncate` to `whitespace-pre-wrap break-words`.
 - For expenses, pass a new `wrapMemo` prop to `ExpenseRow`.
 
-- [ ] **Step 5: Update ExpenseRow wrap prop**
+- [x] **Step 5: Update ExpenseRow wrap prop**
 
 Add to `ExpenseRowProps`:
 
@@ -850,7 +864,10 @@ Render memo class:
 )}
 ```
 
-- [ ] **Step 6: Run tests and commit**
+- [x] **Step 6: Run tests and commit**
+
+> 2026-05-05 follow-up: safe checks were run (`npm run lint`, `./node_modules/.bin/tsc --noEmit`, `git diff --check`, Playwright `--list`, and `npm run build`). E2E execution and commit remain pending until DB target is safe.
+> 2026-05-05 local completion: `npm run test:e2e -- tests/e2e/guest-share-readability.spec.ts` passed on local Supabase `travel-manager-e2e-55321`. Fresh checks also passed: `npm run lint` (0 errors, 9 existing warnings), `./node_modules/.bin/tsc --noEmit`, `git diff --check`, and `npm run build` (existing Next workspace-root and middleware deprecation warnings).
 
 Run:
 
