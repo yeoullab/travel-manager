@@ -198,4 +198,18 @@ describe("schedule v1.1 RPCs", () => {
       { title: "A", sort_order: 3 },
     ]);
   });
+
+  it("rejects bulk moves with items from another trip", async () => {
+    const a = await createTestTrip("bulk-move-source", 2);
+    const b = await createTestTrip("bulk-move-other-trip", 2);
+    const sourceItem = await createItem(a.days[0].id, "Source A");
+    const foreignItem = await createItem(b.days[0].id, "Foreign B");
+
+    const { error } = await rpc<undefined>("move_schedule_items_to_day", {
+      p_item_ids: [sourceItem, foreignItem],
+      p_target_day_id: a.days[1].id,
+    });
+
+    expect(error?.message).toMatch(/mixed_trip_items|target_day_mismatch/);
+  });
 });

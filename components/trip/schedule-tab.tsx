@@ -392,7 +392,7 @@ export function ScheduleTab({ tripId }: Props) {
             disabled={selectedCount === 0}
             onClick={() => setBulkMoveOpen(true)}
           >
-            일자 변경
+            이동
           </Button>
         </div>
       )}

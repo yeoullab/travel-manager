@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { seedTripWithItems } from "./helpers/db-seed";
 
 // alice storageState — playwright.config.ts "alice" project
 
@@ -40,4 +41,38 @@ test("숙소 일정을 날짜 범위 전체에 생성한다", async ({ page }) =
   await expect(page.getByText("연박 호텔", { exact: true }).first()).toBeVisible({
     timeout: 5_000,
   });
+});
+
+test("선택한 일정 여러 개를 다른 일자로 이동한다", async ({ page }) => {
+  const { tripId } = await seedTripWithItems({
+    title: "E2E Bulk Schedule Move",
+    startDate: "2026-12-10",
+    endDate: "2026-12-12",
+    isDomestic: true,
+    itemsByDay: {
+      1: ["Bulk-A", "Bulk-B", "Bulk-C"],
+      2: ["Day2-X"],
+    },
+  });
+
+  await page.goto(`/trips/${tripId}`);
+  await expect(page.getByText("Bulk-A", { exact: true })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Bulk-B", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bulk-C", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "선택" }).click();
+  await page.getByRole("checkbox", { name: "Bulk-A 선택" }).click();
+  await page.getByRole("checkbox", { name: "Bulk-B 선택" }).click();
+  await page.getByRole("button", { name: "이동" }).click();
+  await page.getByRole("button", { name: /Day 2/ }).click();
+
+  await page.getByRole("tab", { name: /Day 2/ }).click();
+  await expect(page.getByText("Bulk-A", { exact: true })).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("Bulk-B", { exact: true })).toBeVisible();
+  await expect(page.getByText("Day2-X", { exact: true })).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("tab", { name: /Day 2/ }).click();
+  await expect(page.getByText("Bulk-A", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bulk-B", { exact: true })).toBeVisible();
 });

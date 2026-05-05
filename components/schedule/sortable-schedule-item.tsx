@@ -35,7 +35,6 @@ export function SortableScheduleItem({
     id: item.id,
     disabled: selectionMode,
   });
-  const dragHandleProps = selectionMode ? {} : { ...attributes, ...listeners };
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -60,34 +59,36 @@ export function SortableScheduleItem({
         - 실제 hit area: 44×44 (button 자체, 투명 padding 으로 확장) — iOS HIG / Material 권장 최소 터치 타겟.
         - touch-action: none 은 핸들에만 → 카드 본문 vertical swipe 는 페이지 스크롤로 위임.
       */}
-      <button
-        type="button"
-        aria-label={
-          selectionMode
-            ? `${index}번 일정 선택`
-            : `${index}번 일정 지도에서 보기. 길게 눌러 순서 변경`
-        }
-        aria-pressed={selectionMode ? selected : undefined}
-        className={cn(
-          "flex h-11 w-11 shrink-0 items-center justify-center bg-transparent",
-          selectionMode ? "cursor-pointer" : "cursor-grab touch-none active:cursor-grabbing",
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (selectionMode) onToggleSelected?.(item);
-          else if (!isDragging) onNumberTap?.(item);
-        }}
-        {...dragHandleProps}
-      >
-        <span
-          className={cn(
-            "flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
-            selected ? "bg-ink-900 text-cream" : "bg-accent-orange text-cream",
-          )}
+      {selectionMode ? (
+        <label
+          className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center bg-transparent"
+          onClick={(e) => e.stopPropagation()}
         >
-          {selectionMode && selected ? "✓" : index}
-        </span>
-      </button>
+          <input
+            type="checkbox"
+            aria-label={`${item.title} 선택`}
+            checked={selected}
+            onChange={() => onToggleSelected?.(item)}
+            className="border-border-primary accent-ink-900 focus-visible:ring-accent-orange h-[22px] w-[22px] cursor-pointer rounded-[6px] border focus-visible:ring-2 focus-visible:ring-offset-2"
+          />
+        </label>
+      ) : (
+        <button
+          type="button"
+          aria-label={`${index}번 일정 지도에서 보기. 길게 눌러 순서 변경`}
+          className="flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center bg-transparent active:cursor-grabbing"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isDragging) onNumberTap?.(item);
+          }}
+          {...attributes}
+          {...listeners}
+        >
+          <span className="bg-accent-orange text-cream flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums">
+            {index}
+          </span>
+        </button>
+      )}
       <div
         className={cn(
           "min-w-0 flex-1 rounded-[8px] text-left",
