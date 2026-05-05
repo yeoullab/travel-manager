@@ -69,6 +69,47 @@ describe("resolvePlaceLink (§6.13)", () => {
         placeName: "수동 입력",
         isDomestic: true,
       }),
+    ).toBe(`https://map.naver.com/v5/search/${encodeURIComponent("수동 입력")}`);
+  });
+
+  it("국내 수기 장소는 주소 기반 Naver 검색 URL을 반환한다", () => {
+    const url = resolvePlaceLink({
+      placeExternalUrl: null,
+      placeLat: null,
+      placeLng: null,
+      placeName: "이름 모를 식당",
+      placeAddress: "서울특별시 종로구 세종대로 175",
+      isDomestic: true,
+    });
+    expect(url).toBe(
+      `https://map.naver.com/v5/search/${encodeURIComponent("서울특별시 종로구 세종대로 175")}`,
+    );
+  });
+
+  it("해외 수기 장소는 주소 기반 Google Maps 검색 URL을 반환한다", () => {
+    const url = resolvePlaceLink({
+      placeExternalUrl: null,
+      placeLat: null,
+      placeLng: null,
+      placeName: "Small cafe",
+      placeAddress: "1 Chome Shibuya Tokyo",
+      isDomestic: false,
+    });
+    expect(url).toBe(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("1 Chome Shibuya Tokyo")}`,
+    );
+  });
+
+  it("좌표와 검색어가 모두 없으면 null", () => {
+    expect(
+      resolvePlaceLink({
+        placeExternalUrl: null,
+        placeLat: null,
+        placeLng: null,
+        placeName: null,
+        placeAddress: null,
+        isDomestic: true,
+      }),
     ).toBeNull();
   });
 

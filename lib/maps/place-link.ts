@@ -19,8 +19,14 @@ export type PlaceLinkInput = {
   placeLat: number | null;
   placeLng: number | null;
   placeName?: string | null;
+  placeAddress?: string | null;
   isDomestic: boolean;
 };
+
+function cleanSearchText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+}
 
 export function resolvePlaceLink(item: PlaceLinkInput): string | null {
   // 옵션 A: 저장된 외부 URL 우선. https?:// 스킴만 (DB CHECK 와 동일 보장).
@@ -29,18 +35,24 @@ export function resolvePlaceLink(item: PlaceLinkInput): string | null {
   }
   // 옵션 C: 좌표 fallback. 좌표가 없거나 유한하지 않으면 버튼 숨김.
   if (
-    item.placeLat == null ||
-    item.placeLng == null ||
-    !Number.isFinite(item.placeLat) ||
-    !Number.isFinite(item.placeLng)
+    item.placeLat != null &&
+    item.placeLng != null &&
+    Number.isFinite(item.placeLat) &&
+    Number.isFinite(item.placeLng)
   ) {
-    return null;
+    if (item.isDomestic) {
+      // Naver Map 검색: 이름이 있으면 이름으로, 없으면 좌표로.
+      const q = encodeURIComponent(item.placeName || `${item.placeLat},${item.placeLng}`);
+      return `https://map.naver.com/v5/search/${q}`;
+    }
+    // Google Maps 좌표 기반 검색.
+    return `https://www.google.com/maps/search/?api=1&query=${item.placeLat},${item.placeLng}`;
   }
-  if (item.isDomestic) {
-    // Naver Map 검색: 이름이 있으면 이름으로, 없으면 좌표로.
-    const q = encodeURIComponent(item.placeName || `${item.placeLat},${item.placeLng}`);
-    return `https://map.naver.com/v5/search/${q}`;
-  }
-  // Google Maps 좌표 기반 검색.
-  return `https://www.google.com/maps/search/?api=1&query=${item.placeLat},${item.placeLng}`;
+
+  const query = cleanSearchText(item.placeAddress) ?? cleanSearchText(item.placeName);
+  if (!query) return null;
+  const encoded = encodeURIComponent(query);
+  return item.isDomestic
+    ? `https://map.naver.com/v5/search/${encoded}`
+    : `https://www.google.com/maps/search/?api=1&query=${encoded}`;
 }
