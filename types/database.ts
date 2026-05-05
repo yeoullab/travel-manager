@@ -628,6 +628,25 @@ export type Database = {
         }
         Returns: string
       }
+      create_lodging_schedule_items_for_range: {
+        Args: {
+          p_end_day_id: string
+          p_memo?: string
+          p_place_address?: string
+          p_place_external_id?: string
+          p_place_external_url?: string
+          p_place_lat?: number
+          p_place_lng?: number
+          p_place_name?: string
+          p_place_provider?: string
+          p_start_day_id: string
+          p_time_of_day?: string
+          p_title: string
+          p_trip_id: string
+          p_url?: string
+        }
+        Returns: string[]
+      }
       create_schedule_item: {
         Args: {
           p_category_code?: string
@@ -682,6 +701,10 @@ export type Database = {
           p_target_day_id: string
           p_target_position: number
         }
+        Returns: undefined
+      }
+      move_schedule_items_to_day: {
+        Args: { p_item_ids: string[]; p_target_day_id: string }
         Returns: undefined
       }
       query_publication_tables: {
