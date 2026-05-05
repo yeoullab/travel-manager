@@ -3,18 +3,22 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { AppBar } from "@/components/ui/app-bar";
+import { Button } from "@/components/ui/button";
 import { requestGoogleIdToken } from "@/lib/auth/google-id-token";
-import { signInWithGoogle } from "@/lib/auth/sign-in";
+import { signInWithGoogle, signInWithGoogleRedirect } from "@/lib/auth/sign-in";
 import { installGisPopupBlockedConsoleHandler } from "@/lib/auth/gis-popup-blocked";
 
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const buttonRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<"idle" | "signing" | "error" | "popup_blocked">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "signing" | "redirecting" | "error" | "popup_blocked"
+  >("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const redirectPath = params.get("redirect") ?? "/trips";
 
   useEffect(() => {
     if (!buttonRef.current) return;
@@ -31,8 +35,7 @@ function LoginInner() {
         setStatus("signing");
         await signInWithGoogle({ idToken, rawNonce });
         if (cancelled) return;
-        const redirect = params.get("redirect") ?? "/trips";
-        router.replace(redirect);
+        router.replace(redirectPath);
       } catch (err) {
         if (cancelled) return;
         setStatus("error");
@@ -43,7 +46,18 @@ function LoginInner() {
       cancelled = true;
       restoreConsole();
     };
-  }, [router, params]);
+  }, [router, redirectPath]);
+
+  async function handleRedirectSignIn() {
+    try {
+      setStatus("redirecting");
+      setErrorMsg(null);
+      await signInWithGoogleRedirect({ redirectPath });
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof Error ? err.message : "리다이렉트 로그인 실패");
+    }
+  }
 
   return (
     <div className="flex w-full max-w-[360px] flex-col items-center text-center">
@@ -66,13 +80,30 @@ function LoginInner() {
           <Loader2 size={14} className="animate-spin" /> 로그인 중...
         </p>
       )}
+      {status === "redirecting" && (
+        <p className="text-ink-600 mt-4 flex items-center justify-center gap-2 text-[13px]">
+          <Loader2 size={14} className="animate-spin" /> Google 로그인으로 이동 중...
+        </p>
+      )}
       {status === "error" && errorMsg && (
         <p className="text-error mt-4 text-[13px]">{errorMsg}</p>
       )}
       {status === "popup_blocked" && errorMsg && (
-        <div className="text-error mt-4 space-y-1 text-[13px] leading-[1.55]">
-          <p>{errorMsg}</p>
-          <p>기본 브라우저에서 다시 열어주세요.</p>
+        <div className="mt-4 w-full space-y-3 text-[13px] leading-[1.55]">
+          <div className="text-error space-y-1">
+            <p>{errorMsg}</p>
+            <p>팝업 없이 같은 탭에서 다시 시도해 주세요.</p>
+          </div>
+          <Button
+            type="button"
+            variant="light"
+            size="md"
+            fullWidth
+            onClick={handleRedirectSignIn}
+          >
+            <ExternalLink size={16} aria-hidden />
+            팝업 없이 Google 로그인
+          </Button>
           {process.env.NODE_ENV !== "production" && (
             <p className="text-ink-600">
               Chrome에서 HTTP 431이 보이면 localhost 사이트 데이터를 삭제한 뒤 새로고침하세요.
