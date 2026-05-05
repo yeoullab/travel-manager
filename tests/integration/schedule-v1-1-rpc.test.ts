@@ -15,6 +15,16 @@ let userC: SupabaseClient<Database>;
 const tripIds: string[] = [];
 
 type TripDay = { id: string; day_number: number };
+type RpcError = { message: string; code?: string; details?: string; hint?: string };
+type RpcArgs = Record<string, unknown>;
+
+function rpc<T>(fn: string, args: RpcArgs) {
+  const call = userC.rpc.bind(userC) as unknown as (
+    fn: string,
+    args: RpcArgs,
+  ) => Promise<{ data: T | null; error: RpcError | null }>;
+  return call(fn, args);
+}
 
 async function createTestTrip(title: string, days = 3) {
   const startDay = 1;
@@ -42,7 +52,7 @@ async function createTestTrip(title: string, days = 3) {
 }
 
 async function createItem(dayId: string, title: string, extra: Record<string, unknown> = {}) {
-  const { data: id, error } = await (userC as any).rpc("create_schedule_item", {
+  const { data: id, error } = await rpc<string>("create_schedule_item", {
     p_trip_day_id: dayId,
     p_title: title,
     ...extra,
@@ -60,11 +70,9 @@ beforeAll(async () => {
   if (u.error) throw u.error;
   userId = u.data.user!.id;
 
-  userC = createClient<Database>(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    { auth: { persistSession: false } },
-  );
+  userC = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+  });
   const signIn = await userC.auth.signInWithPassword({
     email: `schedule-v11+${STAMP}@test.local`,
     password: PWD,
@@ -90,7 +98,7 @@ describe("schedule v1.1 RPCs", () => {
       p_category_code: "sightseeing",
     });
 
-    const { error: updateError } = await (userC as any).rpc("update_schedule_item", {
+    const { error: updateError } = await rpc<undefined>("update_schedule_item", {
       p_item_id: id,
       p_title: "Manual stop edited",
       p_place_name: "을지로 수정 장소",
@@ -125,18 +133,15 @@ describe("schedule v1.1 RPCs", () => {
 
   it("creates lodging items for every day in a selected range", async () => {
     const trip = await createTestTrip("lodging-range", 3);
-    const { data: ids, error } = await (userC as any).rpc(
-      "create_lodging_schedule_items_for_range",
-      {
-        p_trip_id: trip.tripId,
-        p_start_day_id: trip.days[2].id,
-        p_end_day_id: trip.days[0].id,
-        p_title: "연박 숙소",
-        p_place_name: "연박 호텔",
-        p_place_address: "서울 중구 세종대로 1",
-        p_memo: "체크인 15:00",
-      },
-    );
+    const { data: ids, error } = await rpc<string[]>("create_lodging_schedule_items_for_range", {
+      p_trip_id: trip.tripId,
+      p_start_day_id: trip.days[2].id,
+      p_end_day_id: trip.days[0].id,
+      p_title: "연박 숙소",
+      p_place_name: "연박 호텔",
+      p_place_address: "서울 중구 세종대로 1",
+      p_memo: "체크인 15:00",
+    });
     expect(error).toBeNull();
     expect(ids).toHaveLength(3);
 
@@ -169,7 +174,7 @@ describe("schedule v1.1 RPCs", () => {
     await createItem(trip.days[0].id, "C");
     await createItem(trip.days[1].id, "Existing");
 
-    const { error } = await (userC as any).rpc("move_schedule_items_to_day", {
+    const { error } = await rpc<undefined>("move_schedule_items_to_day", {
       p_item_ids: [b, a],
       p_target_day_id: trip.days[1].id,
     });

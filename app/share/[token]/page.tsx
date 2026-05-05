@@ -103,11 +103,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function SharePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const data = await fetchGuestData(token);
   if (!data) notFound();
@@ -169,13 +165,7 @@ export default async function SharePage({
   );
 }
 
-function ScheduleSection({
-  days,
-  isDomestic,
-}: {
-  days: DaySchedule[];
-  isDomestic: boolean;
-}) {
+function ScheduleSection({ days, isDomestic }: { days: DaySchedule[]; isDomestic: boolean }) {
   const nonEmpty = days.filter((d) => d.items.length > 0);
   if (nonEmpty.length === 0) return null;
   return (
@@ -197,16 +187,17 @@ function ScheduleSection({
                 v !== null,
             );
           return (
-            <div key={d.dayNumber}>
-              <div className="mb-2 flex items-baseline gap-2">
-                <span className="bg-accent-orange text-cream rounded-full px-2 py-0.5 text-[11px] font-medium">
+            <div
+              key={d.dayNumber}
+              className="border-border-primary border-t pt-5 first:border-t-0 first:pt-0"
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="bg-accent-orange text-cream rounded-full px-2.5 py-1 text-[11px] font-semibold">
                   Day {d.dayNumber}
                 </span>
-                <span className="text-ink-600 font-mono text-[12px]">{d.date}</span>
+                <span className="text-ink-700 font-mono text-[12px]">{d.date}</span>
               </div>
-              {mapItems.length > 0 && (
-                <MapPanel isDomestic={isDomestic} items={mapItems} />
-              )}
+              {mapItems.length > 0 && <MapPanel isDomestic={isDomestic} items={mapItems} />}
               <ul className="mt-3 flex flex-col gap-2">
                 {d.items.map((it, idx) => (
                   <li key={`${d.dayNumber}-${idx}`} className="flex items-start gap-2">
@@ -220,12 +211,15 @@ function ScheduleSection({
                         title={it.title}
                         time={it.timeOfDay?.slice(0, 5) ?? undefined}
                         placeName={it.placeName ?? undefined}
+                        placeAddress={it.placeAddress ?? undefined}
                         memo={it.memo ?? undefined}
+                        wrapMemo
                         placeUrl={resolvePlaceLink({
                           placeExternalUrl: it.placeExternalUrl,
                           placeLat: it.placeLat,
                           placeLng: it.placeLng,
                           placeName: it.placeName,
+                          placeAddress: it.placeAddress,
                           isDomestic,
                         })}
                       />
@@ -254,6 +248,7 @@ function ExpensesSection({ items }: { items: ExpenseShare[] }) {
             amount={Number(e.amount)}
             currency={e.currency}
             memo={e.memo ?? undefined}
+            wrapMemo
           />
         ))}
       </div>
@@ -288,7 +283,11 @@ function TodosSection({ items }: { items: TodoShare[] }) {
               >
                 {t.title}
               </p>
-              {t.memo && <p className="text-ink-600 mt-0.5 truncate text-[12px]">{t.memo}</p>}
+              {t.memo && (
+                <p className="text-ink-600 mt-0.5 text-[12px] break-words whitespace-pre-wrap">
+                  {t.memo}
+                </p>
+              )}
             </div>
           </li>
         ))}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { TextField, TextArea } from "@/components/ui/text-field";
 import { cn } from "@/lib/cn";
 import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
+import type { TripDay } from "@/lib/trip/use-trip-days";
 import type { PlaceResult } from "@/lib/maps/types";
 import type { ScheduleCategory } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export type ScheduleItemFormValue = {
   place: PlaceResult | null;
   // manual_place stage 에서만 채워짐 (place === null 상태로 title/주소만 수동 기입)
   placeAddressManual?: string | null;
+  lodgingEndDayId?: string | null;
 };
 
 type FormStage = "category_select" | "other_form" | "place_search" | "manual_place";
@@ -34,6 +36,8 @@ type Props = {
   onOpenDayMove?: () => void;
   /** 편집 모드에서만 렌더 — 클릭 시 경비 탭 quickAdd URL 로 네비게이션. */
   onAddExpense?: () => void;
+  days?: TripDay[];
+  currentDayId?: string | null;
 };
 
 const CATEGORY_CODES: ScheduleCategory[] = [
@@ -67,10 +71,26 @@ export function initialStageFor(initial: ScheduleItem | null | undefined): FormS
   if (!initial) return "category_select";
   const code = (initial.category_code as ScheduleCategory) ?? "other";
   if (code === "other") return "other_form";
+  if (isManualPlace(initial)) return "manual_place";
   return "place_search";
 }
 
 export type { FormStage };
+
+function isManualPlace(initial: ScheduleItem): boolean {
+  return Boolean(
+    initial.place_name &&
+    initial.place_address &&
+    initial.place_lat == null &&
+    initial.place_lng == null &&
+    !initial.place_provider,
+  );
+}
+
+export function initialManualAddressFor(initial: ScheduleItem | null | undefined): string {
+  if (!initial || !isManualPlace(initial)) return "";
+  return initial.place_address ?? "";
+}
 
 function initialPlaceFor(initial: ScheduleItem | null | undefined): PlaceResult | null {
   if (
@@ -104,6 +124,8 @@ export function ScheduleItemModal({
   onOpenPlaceSearch,
   onOpenDayMove,
   onAddExpense,
+  days = [],
+  currentDayId,
 }: Props) {
   const [stage, setStage] = useState<FormStage>("category_select");
   const [categoryCode, setCategoryCode] = useState<ScheduleCategory>("other");
@@ -113,6 +135,7 @@ export function ScheduleItemModal({
   const [url, setUrl] = useState<string>("");
   const [place, setPlace] = useState<PlaceResult | null>(null);
   const [addressManual, setAddressManual] = useState<string>("");
+  const [lodgingEndDayId, setLodgingEndDayId] = useState<string>("");
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -125,8 +148,9 @@ export function ScheduleItemModal({
     setMemo(initial?.memo ?? "");
     setUrl(initial?.url ?? "");
     setPlace(initialPlaceFor(initial));
-    setAddressManual("");
-  }, [open, initial]);
+    setAddressManual(initialManualAddressFor(initial));
+    setLodgingEndDayId(currentDayId ?? initial?.trip_day_id ?? "");
+  }, [open, initial, currentDayId]);
 
   useEffect(() => {
     if (!pickedPlace) return;
@@ -139,6 +163,7 @@ export function ScheduleItemModal({
   function pickCategory(code: ScheduleCategory) {
     setCategoryCode(code);
     setStage(code === "other" ? "other_form" : "place_search");
+    if (code === "lodging") setLodgingEndDayId(currentDayId ?? "");
   }
 
   function backToCategory() {
@@ -181,7 +206,8 @@ export function ScheduleItemModal({
       memo: memo.trim() || null,
       url: url.trim() || null,
       place,
-      placeAddressManual: stage === "manual_place" ? (addressManual.trim() || null) : null,
+      placeAddressManual: stage === "manual_place" ? addressManual.trim() || null : null,
+      lodgingEndDayId: categoryCode === "lodging" ? lodgingEndDayId || currentDayId || null : null,
     });
   }
 
@@ -203,22 +229,12 @@ export function ScheduleItemModal({
           {mode === "edit" && (onDelete || onOpenDayMove) && (
             <div className="flex w-full gap-2">
               {onOpenDayMove && (
-                <Button
-                  fullWidth
-                  size="sm"
-                  variant="tertiary"
-                  onClick={onOpenDayMove}
-                >
+                <Button fullWidth size="sm" variant="tertiary" onClick={onOpenDayMove}>
                   다른 날로 이동
                 </Button>
               )}
               {onDelete && (
-                <Button
-                  fullWidth
-                  size="sm"
-                  variant="ghost"
-                  onClick={onDelete}
-                >
+                <Button fullWidth size="sm" variant="ghost" onClick={onDelete}>
                   삭제
                 </Button>
               )}
@@ -313,6 +329,14 @@ export function ScheduleItemModal({
               onMemo={setMemo}
               onUrl={setUrl}
             />
+            {mode === "create" && categoryCode === "lodging" && (
+              <LodgingRangeField
+                days={days}
+                currentDayId={currentDayId}
+                value={lodgingEndDayId || currentDayId || ""}
+                onChange={setLodgingEndDayId}
+              />
+            )}
           </>
         )}
 
@@ -343,10 +367,51 @@ export function ScheduleItemModal({
               onMemo={setMemo}
               onUrl={setUrl}
             />
+            {mode === "create" && categoryCode === "lodging" && (
+              <LodgingRangeField
+                days={days}
+                currentDayId={currentDayId}
+                value={lodgingEndDayId || currentDayId || ""}
+                onChange={setLodgingEndDayId}
+              />
+            )}
           </>
         )}
       </div>
     </BottomSheet>
+  );
+}
+
+function LodgingRangeField({
+  days,
+  currentDayId,
+  value,
+  onChange,
+}: {
+  days: TripDay[];
+  currentDayId?: string | null;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  if (!currentDayId || days.length <= 1) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="lodging-end-day" className="text-ink-700 text-[13px] font-medium">
+        숙박 종료일
+      </label>
+      <select
+        id="lodging-end-day"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="border-border-primary bg-surface-100 text-ink-900 focus:border-border-medium h-11 rounded-[8px] border px-3 text-[15px] transition-colors duration-150 focus:shadow-[0_4px_12px_rgba(0,0,0,0.1)] focus:outline-none"
+      >
+        {days.map((day) => (
+          <option key={day.id} value={day.id}>
+            Day {day.day_number} · {day.date}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
@@ -383,13 +448,7 @@ function CategoryChipGrid({
   );
 }
 
-function CategoryChipRow({
-  value,
-  onBack,
-}: {
-  value: ScheduleCategory;
-  onBack: () => void;
-}) {
+function CategoryChipRow({ value, onBack }: { value: ScheduleCategory; onBack: () => void }) {
   return (
     <div className="flex items-center justify-between">
       <div className="text-ink-700 inline-flex items-center gap-2 text-[13px]">

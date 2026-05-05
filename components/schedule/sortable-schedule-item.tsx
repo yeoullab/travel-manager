@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { ScheduleItem as ScheduleItemCard } from "@/components/ui/schedule-item";
 import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
 import type { ScheduleCategory } from "@/lib/types";
+import { cn } from "@/lib/cn";
 import { resolvePlaceLink } from "@/lib/maps/place-link";
 
 type Props = {
@@ -12,12 +13,29 @@ type Props = {
   index: number;
   isDomestic: boolean;
   onTap: (item: ScheduleItem) => void;
+  onNumberTap?: (item: ScheduleItem) => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelected?: (item: ScheduleItem) => void;
   registerRef?: (el: HTMLLIElement | null) => void;
 };
 
-export function SortableScheduleItem({ item, index, isDomestic, onTap, registerRef }: Props) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item.id });
+export function SortableScheduleItem({
+  item,
+  index,
+  isDomestic,
+  onTap,
+  onNumberTap,
+  selectionMode = false,
+  selected = false,
+  onToggleSelected,
+  registerRef,
+}: Props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+    disabled: selectionMode,
+  });
+  const dragHandleProps = selectionMode ? {} : { ...attributes, ...listeners };
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -34,7 +52,7 @@ export function SortableScheduleItem({ item, index, isDomestic, onTap, registerR
       }}
       style={style}
       className="flex items-stretch gap-1"
-      onClick={() => onTap(item)}
+      onClick={() => (selectionMode ? onToggleSelected?.(item) : onTap(item))}
     >
       {/*
         Drag handle.
@@ -44,28 +62,51 @@ export function SortableScheduleItem({ item, index, isDomestic, onTap, registerR
       */}
       <button
         type="button"
-        aria-label="길게 눌러 순서 변경"
-        className="flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center bg-transparent active:cursor-grabbing"
-        onClick={(e) => e.stopPropagation()}
-        {...attributes}
-        {...listeners}
+        aria-label={
+          selectionMode
+            ? `${index}번 일정 선택`
+            : `${index}번 일정 지도에서 보기. 길게 눌러 순서 변경`
+        }
+        aria-pressed={selectionMode ? selected : undefined}
+        className={cn(
+          "flex h-11 w-11 shrink-0 items-center justify-center bg-transparent",
+          selectionMode ? "cursor-pointer" : "cursor-grab touch-none active:cursor-grabbing",
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (selectionMode) onToggleSelected?.(item);
+          else if (!isDragging) onNumberTap?.(item);
+        }}
+        {...dragHandleProps}
       >
-        <span className="bg-accent-orange text-cream flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums">
-          {index}
+        <span
+          className={cn(
+            "flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+            selected ? "bg-ink-900 text-cream" : "bg-accent-orange text-cream",
+          )}
+        >
+          {selectionMode && selected ? "✓" : index}
         </span>
       </button>
-      <div className="min-w-0 flex-1 text-left">
+      <div
+        className={cn(
+          "min-w-0 flex-1 rounded-[8px] text-left",
+          selectionMode && selected && "ring-accent-orange/70 ring-2",
+        )}
+      >
         <ScheduleItemCard
           category={item.category_code as ScheduleCategory}
           title={item.title}
           time={item.time_of_day ? item.time_of_day.slice(0, 5) : undefined}
           placeName={item.place_name ?? undefined}
+          placeAddress={item.place_address ?? undefined}
           memo={item.memo ?? undefined}
           placeUrl={resolvePlaceLink({
             placeExternalUrl: item.place_external_url,
             placeLat: item.place_lat,
             placeLng: item.place_lng,
             placeName: item.place_name,
+            placeAddress: item.place_address,
             isDomestic,
           })}
         />

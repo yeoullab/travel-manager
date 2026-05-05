@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
 import { useMyGroup } from "@/lib/group/use-my-group";
 import { cn } from "@/lib/cn";
+import { APP_NAME, APP_VERSION } from "@/lib/version";
 
 /**
  * 12 `/settings` — 설정 메뉴.
@@ -120,7 +121,7 @@ export default function SettingsPage() {
         </SettingsGroup>
 
         <p className="text-ink-500 mt-8 text-center text-[11px]">
-          travel-manager · Phase 0 preview · v0.1.0
+          {APP_NAME} · v{APP_VERSION}
         </p>
 
         <div className="mt-4 text-center">

@@ -25,10 +25,8 @@ import {
   EXPENSE_CATEGORY_LABEL,
   type ExpenseCategoryCode,
 } from "@/lib/expense/constants";
-import {
-  formatAmountInput,
-  parseAmountInput,
-} from "@/lib/expense/format-amount-input";
+import { expenseCategoryForScheduleCategory } from "@/lib/schedule/category-map";
+import { formatAmountInput, parseAmountInput } from "@/lib/expense/format-amount-input";
 import {
   aggregateByCategory,
   aggregateByCurrency,
@@ -67,6 +65,7 @@ type Prefill = {
   title?: string;
   expenseDate?: string;
   scheduleItemId?: string;
+  categoryCode?: ExpenseCategoryCode;
 };
 
 type SheetMode =
@@ -150,6 +149,7 @@ export function ExpensesTab({ tripId }: Props) {
         title: item.title,
         expenseDate: day?.date,
         scheduleItemId: item.id,
+        categoryCode: expenseCategoryForScheduleCategory(item.category_code),
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -159,8 +159,7 @@ export function ExpensesTab({ tripId }: Props) {
   const totals = useMemo(() => aggregateByCurrency(expenses), [expenses]);
   const categoryTotals = useMemo(() => aggregateByCategory(expenses), [expenses]);
   const filtered = useMemo(
-    () =>
-      filter === "all" ? expenses : expenses.filter((e) => e.category_code === filter),
+    () => (filter === "all" ? expenses : expenses.filter((e) => e.category_code === filter)),
     [expenses, filter],
   );
   const byDate = useMemo(() => groupByDate(filtered), [filtered]);
@@ -426,10 +425,12 @@ function ExpenseSheet({
   isDeleting,
 }: SheetProps) {
   const initialCurrency = tripCurrencies[0] ?? "KRW";
-  const [values, setValues] = useState<FormValue>(() => buildInitialValues(mode, {
-    myProfileId,
-    initialCurrency,
-  }));
+  const [values, setValues] = useState<FormValue>(() =>
+    buildInitialValues(mode, {
+      myProfileId,
+      initialCurrency,
+    }),
+  );
   const [errors, setErrors] = useState<Partial<Record<keyof FormValue, string>>>({});
 
   // Re-init form when sheet opens or target expense changes.
@@ -463,8 +464,7 @@ function ExpenseSheet({
     if (!titleResult.success) next.title = titleResult.error.issues[0]?.message ?? "제목 오류";
 
     const amountResult = expenseAmountSchema.safeParse(parseAmountInput(values.amount));
-    if (!amountResult.success)
-      next.amount = amountResult.error.issues[0]?.message ?? "금액 오류";
+    if (!amountResult.success) next.amount = amountResult.error.issues[0]?.message ?? "금액 오류";
 
     const currencyResult = expenseCurrencySchema.safeParse(values.currency);
     if (!currencyResult.success)
@@ -530,11 +530,7 @@ function ExpenseSheet({
         {/* 카테고리 */}
         <div>
           <p className="text-ink-700 mb-2 text-[13px] font-medium">카테고리</p>
-          <div
-            role="radiogroup"
-            aria-label="경비 카테고리"
-            className="flex flex-wrap gap-2"
-          >
+          <div role="radiogroup" aria-label="경비 카테고리" className="flex flex-wrap gap-2">
             {EXPENSE_CATEGORIES.map((c) => {
               const active = values.categoryCode === c.code;
               return (
@@ -598,9 +594,7 @@ function ExpenseSheet({
                   </option>
                 ))}
               </select>
-              {errors.currency && (
-                <p className="text-error text-[12px]">{errors.currency}</p>
-              )}
+              {errors.currency && <p className="text-error text-[12px]">{errors.currency}</p>}
             </div>
           </div>
         ) : (
@@ -706,7 +700,7 @@ function buildInitialValues(
     title: prefill?.title ?? "",
     amount: "",
     currency: opts.initialCurrency,
-    categoryCode: "food",
+    categoryCode: prefill?.categoryCode ?? "food",
     paidBy: opts.myProfileId,
     memo: "",
     scheduleItemId: prefill?.scheduleItemId ?? null,

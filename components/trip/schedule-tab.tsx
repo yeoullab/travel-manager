@@ -12,7 +12,6 @@ import {
   useSensors,
   closestCenter,
   type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 
@@ -30,9 +29,12 @@ import { useUpdateScheduleItem } from "@/lib/schedule/use-update-schedule-item";
 import { useDeleteScheduleItem } from "@/lib/schedule/use-delete-schedule-item";
 import { useReorderScheduleItemsInDay } from "@/lib/schedule/use-reorder-schedule-items-in-day";
 import { useMoveScheduleItemAcrossDays } from "@/lib/schedule/use-move-schedule-item-across-days";
+import { useCreateLodgingScheduleItemsForRange } from "@/lib/schedule/use-create-lodging-schedule-items-for-range";
+import { useMoveScheduleItemsToDay } from "@/lib/schedule/use-move-schedule-items-to-day";
 import { useUiStore } from "@/lib/store/ui-store";
 import { providerForTrip } from "@/lib/maps/provider";
 import type { PlaceResult } from "@/lib/maps/types";
+import { buildScheduleMutationBase } from "@/lib/schedule/build-schedule-mutation-base";
 
 import { DayTabBar } from "@/components/schedule/day-tab-bar";
 import { ScheduleList } from "@/components/schedule/schedule-list";
@@ -60,6 +62,8 @@ export function ScheduleTab({ tripId }: Props) {
   const deleteItem = useDeleteScheduleItem();
   const reorder = useReorderScheduleItemsInDay();
   const move = useMoveScheduleItemAcrossDays();
+  const createLodgingRange = useCreateLodgingScheduleItemsForRange();
+  const moveMany = useMoveScheduleItemsToDay();
 
   const setDragging = useUiStore((s) => s.setDraggingSchedule);
   const showToast = useUiStore((s) => s.showToast);
@@ -72,6 +76,10 @@ export function ScheduleTab({ tripId }: Props) {
   const [placeSheetOpen, setPlaceSheetOpen] = useState(false);
   const [pickedPlace, setPickedPlace] = useState<PlaceResult | null>(null);
   const [dayMoveFor, setDayMoveFor] = useState<ScheduleItem | null>(null);
+  const [focusMapItemId, setFocusMapItemId] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
 
   const scheduleRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const registerItemRef = useCallback((id: string, el: HTMLLIElement | null) => {
@@ -82,6 +90,21 @@ export function ScheduleTab({ tripId }: Props) {
     const el = scheduleRefs.current[id];
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
+  const handleNumberTap = useCallback(
+    (item: ScheduleItem) => {
+      if (item.place_lat == null || item.place_lng == null) {
+        showToast("지도 좌표가 없는 일정이에요");
+        return;
+      }
+      setFocusMapItemId(item.id);
+      if (!mapOpen) {
+        const next = new URLSearchParams(params.toString());
+        next.set("map", "open");
+        router.push(`/trips/${tripId}?${next.toString()}`);
+      }
+    },
+    [mapOpen, params, router, showToast, tripId],
+  );
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -90,6 +113,12 @@ export function ScheduleTab({ tripId }: Props) {
       setActiveDayId(days[0].id);
     }
   }, [days, activeDayId]);
+
+  useEffect(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+    setBulkMoveOpen(false);
+  }, [activeDayId]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const sensors = useSensors(
@@ -109,7 +138,11 @@ export function ScheduleTab({ tripId }: Props) {
     return grouped;
   }, [items]);
 
-  const activeDayItems = activeDayId ? (itemsByDay[activeDayId] ?? []) : [];
+  const activeDayItems = useMemo(
+    () => (activeDayId ? (itemsByDay[activeDayId] ?? []) : []),
+    [activeDayId, itemsByDay],
+  );
+  const selectedCount = selectedIds.size;
 
   const mapItems = useMemo(() => {
     return activeDayItems
@@ -130,7 +163,7 @@ export function ScheduleTab({ tripId }: Props) {
     router.push(`/trips/${tripId}?${next.toString()}`);
   }
 
-  function handleDragStart(_e: DragStartEvent) {
+  function handleDragStart() {
     setDragging(true);
   }
 
@@ -169,6 +202,22 @@ export function ScheduleTab({ tripId }: Props) {
     setPickedPlace(null);
     setModal({ mode: "edit", initial: item });
   }
+  function toggleSelectionMode() {
+    if (selectionMode) {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } else {
+      setSelectionMode(true);
+    }
+  }
+  function toggleSelected(item: ScheduleItem) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.id)) next.delete(item.id);
+      else next.add(item.id);
+      return next;
+    });
+  }
   function closeModal() {
     setModal(null);
     setPickedPlace(null);
@@ -176,27 +225,40 @@ export function ScheduleTab({ tripId }: Props) {
 
   function handleSubmit(value: ScheduleItemFormValue) {
     if (!modal || !activeDayId) return;
-    // manual_place stage 에서 들어온 수동 주소는 lat/lng 부재로 DB place 필드에 넣을 수 없어
-    // memo 앞에 "주소: ..." 로 prepend (DB CHECK schedule_items_place_atomic 호환).
-    const memoMerged =
-      value.placeAddressManual && value.placeAddressManual.trim().length > 0
-        ? `주소: ${value.placeAddressManual.trim()}${value.memo ? `\n\n${value.memo}` : ""}`
-        : value.memo;
-    const base = {
-      title: value.title,
-      categoryCode: value.categoryCode,
-      timeOfDay: value.timeOfDay,
-      memo: memoMerged,
-      url: value.url,
-      placeName: value.place?.name ?? null,
-      placeAddress: value.place?.address ?? null,
-      placeLat: value.place?.lat ?? null,
-      placeLng: value.place?.lng ?? null,
-      placeProvider: value.place?.provider ?? null,
-      placeExternalId: value.place?.externalId ?? null,
-      placeExternalUrl: value.place?.externalUrl ?? null,
-    };
+    const base = buildScheduleMutationBase(value);
     if (modal.mode === "create") {
+      if (
+        value.categoryCode === "lodging" &&
+        value.lodgingEndDayId &&
+        value.lodgingEndDayId !== activeDayId
+      ) {
+        createLodgingRange.mutate(
+          {
+            title: base.title,
+            timeOfDay: base.timeOfDay,
+            memo: base.memo,
+            url: base.url,
+            placeName: base.placeName,
+            placeAddress: base.placeAddress,
+            placeLat: base.placeLat,
+            placeLng: base.placeLng,
+            placeProvider: base.placeProvider,
+            placeExternalId: base.placeExternalId,
+            placeExternalUrl: base.placeExternalUrl,
+            tripId,
+            startDayId: activeDayId,
+            endDayId: value.lodgingEndDayId,
+          },
+          {
+            onSuccess: (ids) => {
+              showToast(`${ids.length}일 숙소 일정을 추가했어요`, "success");
+              closeModal();
+            },
+            onError: (e) => showToast(`추가 실패: ${e instanceof Error ? e.message : ""}`, "error"),
+          },
+        );
+        return;
+      }
       createItem.mutate(
         { ...base, tripId, tripDayId: activeDayId },
         {
@@ -204,8 +266,7 @@ export function ScheduleTab({ tripId }: Props) {
             showToast("일정을 추가했어요", "success");
             closeModal();
           },
-          onError: (e) =>
-            showToast(`추가 실패: ${e instanceof Error ? e.message : ""}`, "error"),
+          onError: (e) => showToast(`추가 실패: ${e instanceof Error ? e.message : ""}`, "error"),
         },
       );
     } else if (modal.initial) {
@@ -216,8 +277,7 @@ export function ScheduleTab({ tripId }: Props) {
             showToast("저장했어요", "success");
             closeModal();
           },
-          onError: (e) =>
-            showToast(`저장 실패: ${e instanceof Error ? e.message : ""}`, "error"),
+          onError: (e) => showToast(`저장 실패: ${e instanceof Error ? e.message : ""}`, "error"),
         },
       );
     }
@@ -256,6 +316,25 @@ export function ScheduleTab({ tripId }: Props) {
     closeModal();
   }
 
+  function handleBulkMovePick(targetDayId: string) {
+    if (!activeDayId || selectedIds.size === 0) return;
+    const itemIds = activeDayItems
+      .filter((item) => selectedIds.has(item.id))
+      .map((item) => item.id);
+    moveMany.mutate(
+      { tripId, itemIds, targetDayId },
+      {
+        onSuccess: () => {
+          showToast(`${itemIds.length}개 일정을 이동했어요`, "success");
+          setSelectionMode(false);
+          setSelectedIds(new Set());
+          setBulkMoveOpen(false);
+        },
+        onError: (e) => showToast(`이동 실패: ${e instanceof Error ? e.message : ""}`, "error"),
+      },
+    );
+  }
+
   if (daysLoading || itemsLoading) {
     return <ListSkeleton rows={5} />;
   }
@@ -275,26 +354,53 @@ export function ScheduleTab({ tripId }: Props) {
             "일정 없음"
           )}
         </p>
-        <button
-          type="button"
-          onClick={toggleMap}
-          aria-pressed={mapOpen}
-          className="text-ink-700 hover:text-error flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-colors"
-        >
-          <MapIcon size={14} />
-          {mapOpen ? "지도 접기" : "지도 펼치기"}
-          <ChevronDown
-            size={14}
-            className={cn("transition-transform duration-200", mapOpen && "rotate-180")}
-          />
-        </button>
+        <div className="flex items-center gap-1">
+          {activeDayItems.length > 0 && (
+            <button
+              type="button"
+              onClick={toggleSelectionMode}
+              aria-pressed={selectionMode}
+              className="text-ink-700 hover:text-error h-9 rounded-full px-3 text-[13px] font-medium transition-colors"
+            >
+              {selectionMode ? "취소" : "선택"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={toggleMap}
+            aria-pressed={mapOpen}
+            className="text-ink-700 hover:text-error flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-colors"
+          >
+            <MapIcon size={14} />
+            {mapOpen ? "지도 접기" : "지도 펼치기"}
+            <ChevronDown
+              size={14}
+              className={cn("transition-transform duration-200", mapOpen && "rotate-180")}
+            />
+          </button>
+        </div>
       </div>
+
+      {selectionMode && (
+        <div className="border-border-primary bg-surface-100 mt-2 flex items-center justify-between rounded-[8px] border px-3 py-2">
+          <span className="text-ink-700 text-[13px] font-medium">{selectedCount}개 선택</span>
+          <Button
+            size="sm"
+            variant="light"
+            disabled={selectedCount === 0}
+            onClick={() => setBulkMoveOpen(true)}
+          >
+            일자 변경
+          </Button>
+        </div>
+      )}
 
       {mapOpen && trip && (
         <MapPanel
           isDomestic={trip.is_domestic}
           items={mapItems}
           onMarkerClick={handleMarkerClick}
+          focusItemId={focusMapItemId}
         />
       )}
 
@@ -320,7 +426,11 @@ export function ScheduleTab({ tripId }: Props) {
           <ScheduleList
             items={activeDayItems}
             isDomestic={trip?.is_domestic ?? true}
-            onTapItem={openEdit}
+            onTapItem={selectionMode ? toggleSelected : openEdit}
+            onTapNumber={handleNumberTap}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onToggleSelected={toggleSelected}
             registerItemRef={registerItemRef}
           />
         )}
@@ -339,14 +449,14 @@ export function ScheduleTab({ tripId }: Props) {
           onDelete={modal.mode === "edit" ? handleDelete : undefined}
           onOpenPlaceSearch={() => setPlaceSheetOpen(true)}
           onOpenDayMove={modal.mode === "edit" ? () => setDayMoveFor(modal.initial) : undefined}
+          days={days}
+          currentDayId={activeDayId}
           onAddExpense={
             modal.mode === "edit" && modal.initial
               ? () => {
                   const itemId = modal.initial!.id;
                   closeModal();
-                  router.push(
-                    `/trips/${tripId}?tab=expenses&quickAdd=scheduleItemId:${itemId}`,
-                  );
+                  router.push(`/trips/${tripId}?tab=expenses&quickAdd=scheduleItemId:${itemId}`);
                 }
               : undefined
           }
@@ -372,6 +482,13 @@ export function ScheduleTab({ tripId }: Props) {
         currentDayId={dayMoveFor?.trip_day_id ?? ""}
         onClose={() => setDayMoveFor(null)}
         onPick={handleDayMovePick}
+      />
+      <DayMoveSheet
+        open={bulkMoveOpen}
+        days={days}
+        currentDayId={activeDayId ?? ""}
+        onClose={() => setBulkMoveOpen(false)}
+        onPick={handleBulkMovePick}
       />
     </div>
   );

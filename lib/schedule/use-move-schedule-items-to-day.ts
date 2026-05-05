@@ -20,7 +20,8 @@ export function useMoveScheduleItemsToDay() {
 
   return useMutation({
     mutationFn: async (input: MoveScheduleItemsToDayInput): Promise<void> => {
-      const { error } = await supabase.rpc("move_schedule_items_to_day", {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).rpc("move_schedule_items_to_day", {
         p_item_ids: input.itemIds,
         p_target_day_id: input.targetDayId,
       });

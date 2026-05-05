@@ -35,7 +35,9 @@ type ScheduleItemProps = {
   title: string;
   time?: string;
   placeName?: string;
+  placeAddress?: string;
   memo?: string;
+  wrapMemo?: boolean;
   draggable?: boolean;
   onClick?: () => void;
   className?: string;
@@ -52,7 +54,9 @@ export function ScheduleItem({
   title,
   time,
   placeName,
+  placeAddress,
   memo,
+  wrapMemo = false,
   draggable,
   onClick,
   className,
@@ -83,12 +87,14 @@ export function ScheduleItem({
       <div className="min-w-0 flex-1 pl-2">
         <div className="flex items-start justify-between gap-2">
           <p className="text-ink-900 truncate text-[15px] font-semibold">{title}</p>
-          {time && (
-            <span className="text-ink-600 shrink-0 font-mono text-[12px]">{time}</span>
-          )}
+          {time && <span className="text-ink-600 shrink-0 font-mono text-[12px]">{time}</span>}
         </div>
-        {/* 부가 정보 한 줄: [카테고리 dot] 카테고리 · 장소 · 메모 (모두 truncate) */}
-        <div className="text-ink-600 mt-1 flex min-w-0 items-center gap-1.5 text-[12px]">
+        <div
+          className={cn(
+            "text-ink-600 mt-1 flex min-w-0 items-center gap-1.5 text-[12px]",
+            wrapMemo && "flex-wrap items-start",
+          )}
+        >
           <span
             aria-hidden
             className={cn(
@@ -109,19 +115,14 @@ export function ScheduleItem({
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className="text-accent-orange hover:text-accent-orange/80 inline-flex min-w-0 items-center gap-1 underline-offset-2 hover:underline"
-                  aria-label={`${placeName} — 지도에서 보기`}
+                  aria-label={`${placeName}${placeAddress ? `, ${placeAddress}` : ""} 지도에서 보기`}
                 >
                   <MapPin size={11} strokeWidth={2} className="shrink-0" aria-hidden />
                   <span className="truncate">{placeName}</span>
                 </a>
               ) : (
                 <>
-                  <MapPin
-                    size={11}
-                    strokeWidth={2}
-                    className="text-ink-500 shrink-0"
-                    aria-hidden
-                  />
+                  <MapPin size={11} strokeWidth={2} className="text-ink-500 shrink-0" aria-hidden />
                   <span className="truncate">{placeName}</span>
                 </>
               )}
@@ -132,7 +133,11 @@ export function ScheduleItem({
               <span aria-hidden className="text-ink-400 shrink-0">
                 ·
               </span>
-              <span className="truncate">{memo}</span>
+              <span
+                className={cn(wrapMemo ? "min-w-full break-words whitespace-pre-wrap" : "truncate")}
+              >
+                {memo}
+              </span>
             </>
           )}
         </div>

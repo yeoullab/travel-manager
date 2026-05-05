@@ -21,6 +21,7 @@ type ExpenseRowProps = {
   /** 결제자 칩 배경·글자 색 클래스. 생략 시 중립(회색) 톤. */
   paidByChip?: { bg: string; text: string };
   memo?: string;
+  wrapMemo?: boolean;
   onClick?: () => void;
   className?: string;
 };
@@ -53,6 +54,7 @@ export function ExpenseRow({
   paidByName,
   paidByChip,
   memo,
+  wrapMemo = false,
   onClick,
   className,
 }: ExpenseRowProps) {
@@ -88,7 +90,16 @@ export function ExpenseRow({
                 {paidByName}
               </span>
             )}
-            {memo && <p className="text-ink-600 min-w-0 flex-1 truncate text-[12px]">{memo}</p>}
+            {memo && (
+              <p
+                className={cn(
+                  "text-ink-600 min-w-0 flex-1 text-[12px]",
+                  wrapMemo ? "break-words whitespace-pre-wrap" : "truncate",
+                )}
+              >
+                {memo}
+              </p>
+            )}
           </div>
         )}
       </div>

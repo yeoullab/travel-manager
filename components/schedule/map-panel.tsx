@@ -10,9 +10,10 @@ type Props = {
   isDomestic: boolean;
   items: MapItem[];
   onMarkerClick?: (itemId: string) => void;
+  focusItemId?: string | null;
 };
 
-export function MapPanel({ isDomestic, items, onMarkerClick }: Props) {
+export function MapPanel({ isDomestic, items, onMarkerClick, focusItemId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<MapHandle | null>(null);
   const [ready, setReady] = useState(false);
@@ -53,10 +54,17 @@ export function MapPanel({ isDomestic, items, onMarkerClick }: Props) {
     handleRef.current.fitBounds(items.map((it) => ({ lat: it.place_lat, lng: it.place_lng })));
   }, [items, ready, onMarkerClick]);
 
+  useEffect(() => {
+    if (!ready || !handleRef.current || !focusItemId) return;
+    const item = items.find((it) => it.id === focusItemId);
+    if (!item) return;
+    handleRef.current.setCenter({ lat: item.place_lat, lng: item.place_lng });
+  }, [focusItemId, items, ready]);
+
   return (
     <div
       ref={containerRef}
-      className="bg-surface-200 mt-3 h-[240px] w-full overflow-hidden rounded-[12px]"
+      className="border-border-primary bg-surface-200 mt-3 h-[240px] w-full overflow-hidden rounded-[10px] border"
       aria-label="지도"
     />
   );
