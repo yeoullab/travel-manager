@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarX, ChevronDown, Map as MapIcon } from "lucide-react";
+import { CalendarX, Map as MapIcon } from "lucide-react";
 import {
   DndContext,
   PointerSensor,
@@ -388,26 +388,26 @@ export function ScheduleTab({ tripId }: Props) {
         data-testid="schedule-scroll-panel"
         className="min-w-0 lg:overflow-y-auto lg:pr-1"
       >
-        <DayTabBar
-          days={days}
-          activeDayId={activeDayId}
-          onSelect={setActiveDayId}
-          className="lg:top-0"
-        />
-
-        <div className="mt-2 flex items-center justify-end lg:hidden">
+        <div className="flex items-stretch gap-2">
+          <DayTabBar
+            days={days}
+            activeDayId={activeDayId}
+            onSelect={setActiveDayId}
+            className="min-w-0 flex-1 lg:top-0"
+          />
           <button
             type="button"
             onClick={toggleMap}
             aria-pressed={mapOpen}
-            className="text-ink-700 hover:text-error flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-colors"
+            aria-label={mapOpen ? "지도 접기" : "지도 펼치기"}
+            className={cn(
+              "mt-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] transition-colors lg:hidden",
+              mapOpen
+                ? "bg-accent-orange text-cream"
+                : "bg-surface-400 text-ink-700 hover:text-ink-900",
+            )}
           >
-            <MapIcon size={14} />
-            {mapOpen ? "지도 접기" : "지도 펼치기"}
-            <ChevronDown
-              size={14}
-              className={cn("transition-transform duration-200", mapOpen && "rotate-180")}
-            />
+            <MapIcon size={18} />
           </button>
         </div>
 
