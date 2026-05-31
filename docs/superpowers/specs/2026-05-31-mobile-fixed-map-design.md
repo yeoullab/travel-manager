@@ -149,3 +149,41 @@ always-visible sticky map is unchanged.
 - Map height is drag-adjustable on mobile and persists across sessions via localStorage.
 - `npm test`, `npm run lint`, `npm run build` pass.
 - Desktop layout and all existing schedule flows still pass.
+
+## 8. Implementation Notes
+
+Implemented on 2026-05-31 on branch `mobile-fixed-map` (branched from `main`), using
+subagent-driven development (5 tasks). The map toggle reuses the existing lucide `Map`
+icon (`MapIcon`) — no new icon/emoji.
+
+Static verification:
+
+- `npm test` → passed (45 files, 190 tests), including 6 new `use-resizable-height` tests.
+- `./node_modules/.bin/tsc --noEmit` → exit 0.
+- `npm run lint` → 0 errors (9 pre-existing warnings in `lib/mocks/*` and
+  `lib/schedule/use-schedule-list.ts`, unrelated).
+- `npm run build` → passed.
+
+Manual browser verification (Next.js dev preview on :3010, signed in as the E2E `alice`
+test user against the E2E-seeded trips — no real user data touched):
+
+- Mobile (375×812), map open: `[data-testid="schedule-scroll-panel"]` is
+  `display:flex; flex-direction:column; height:756px (812−56); overflow:hidden`. Children:
+  `shrink-0` header (54px), `shrink-0 lg:hidden` map block (map 280px default + handle),
+  and `flex-1 overflow-y-auto` list — the only scroll region. Map top stayed fixed (122px)
+  when the list region scrolled.
+- Drag-resize: dragging the `role="separator"` handle increased the map height and
+  persisted to `localStorage["travel-manager:map-height"]`; the value was restored on
+  reload (verified 470px round-trip).
+- One-row header confirmed visually: day tabs left, active orange `Map` icon pinned right.
+- Mobile, map closed: panel is `display:block; overflow:visible`, list wrapper
+  `overflow-y:visible` — normal page scroll, nothing clipped. Toggle label "지도 펼치기".
+- Desktop (1280×820): unchanged two-column grid; map in the right `aside` (668px,
+  full height); the mobile toggle icon is hidden (`display:none`). No console errors.
+
+The Naver Maps "Open API 인증 실패" message seen in the preview is the known
+maps-key-not-whitelisted-for-localhost item (tracked separately), not a layout issue.
+
+E2E (`tests/e2e/schedule-layout-and-selection.spec.ts`) was updated but not executed: the
+linked Supabase is the production database and the E2E `globalSetup` truncates all tables.
+The spec is ready to run against a disposable/local project.
