@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env, getServerEnv } from "@/lib/env";
@@ -11,6 +12,7 @@ const STAMP = Date.now();
 const PWD = "Test_Pwd_2026!";
 
 let userId = "";
+let foreignUserId = "";
 let userC: SupabaseClient<Database>;
 const tripIds: string[] = [];
 
@@ -19,17 +21,21 @@ type RpcError = { message: string; code?: string; details?: string; hint?: strin
 type RpcArgs = Record<string, unknown>;
 
 function rpc<T>(fn: string, args: RpcArgs) {
-  const call = userC.rpc.bind(userC) as unknown as (
+  return rpcFor<T>(userC, fn, args);
+}
+
+function rpcFor<T>(client: SupabaseClient<Database>, fn: string, args: RpcArgs) {
+  const call = client.rpc.bind(client) as unknown as (
     fn: string,
     args: RpcArgs,
   ) => Promise<{ data: T | null; error: RpcError | null }>;
   return call(fn, args);
 }
 
-async function createTestTrip(title: string, days = 3) {
+async function createTestTrip(title: string, days = 3, client = userC) {
   const startDay = 1;
   const endDay = String(startDay + days - 1).padStart(2, "0");
-  const { data: tripId, error: tripError } = await userC.rpc("create_trip", {
+  const { data: tripId, error: tripError } = await client.rpc("create_trip", {
     p_title: title,
     p_destination: "Seoul",
     p_start_date: "2026-09-01",
@@ -40,7 +46,7 @@ async function createTestTrip(title: string, days = 3) {
   expect(tripError).toBeNull();
   tripIds.push(tripId as string);
 
-  const { data: daysRows, error: daysError } = await userC
+  const { data: daysRows, error: daysError } = await client
     .from("trip_days")
     .select("id, day_number")
     .eq("trip_id", tripId as string)
@@ -51,8 +57,13 @@ async function createTestTrip(title: string, days = 3) {
   return { tripId: tripId as string, days: daysRows as TripDay[] };
 }
 
-async function createItem(dayId: string, title: string, extra: Record<string, unknown> = {}) {
-  const { data: id, error } = await rpc<string>("create_schedule_item", {
+async function createItem(
+  dayId: string,
+  title: string,
+  extra: Record<string, unknown> = {},
+  client = userC,
+) {
+  const { data: id, error } = await rpcFor<string>(client, "create_schedule_item", {
     p_trip_day_id: dayId,
     p_title: title,
     ...extra,
@@ -86,6 +97,9 @@ afterAll(async () => {
   }
   if (userId) {
     await admin.auth.admin.deleteUser(userId);
+  }
+  if (foreignUserId) {
+    await admin.auth.admin.deleteUser(foreignUserId);
   }
 });
 
@@ -211,5 +225,173 @@ describe("schedule v1.1 RPCs", () => {
     });
 
     expect(error?.message).toMatch(/mixed_trip_items|target_day_mismatch/);
+  });
+
+  it("deletes selected schedule items and recompacts each affected day", async () => {
+    const trip = await createTestTrip("bulk-delete", 2);
+    const a = await createItem(trip.days[0].id, "A");
+    const b = await createItem(trip.days[0].id, "B");
+    const c = await createItem(trip.days[0].id, "C");
+    const x = await createItem(trip.days[1].id, "X");
+    const y = await createItem(trip.days[1].id, "Y");
+
+    const { error } = await rpc<undefined>("delete_schedule_items", {
+      p_item_ids: [b, x],
+    });
+    expect(error).toBeNull();
+
+    const { data: day1Rows, error: day1Error } = await userC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", trip.days[0].id)
+      .order("sort_order");
+    expect(day1Error).toBeNull();
+    expect(day1Rows).toEqual([
+      { id: a, title: "A", sort_order: 1 },
+      { id: c, title: "C", sort_order: 2 },
+    ]);
+
+    const { data: day2Rows, error: day2Error } = await userC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", trip.days[1].id)
+      .order("sort_order");
+    expect(day2Error).toBeNull();
+    expect(day2Rows).toEqual([{ id: y, title: "Y", sort_order: 1 }]);
+  });
+
+  it("rejects bulk deletes when any selected id is missing and keeps rows unchanged", async () => {
+    const trip = await createTestTrip("bulk-delete-missing", 1);
+    const a = await createItem(trip.days[0].id, "A");
+    const b = await createItem(trip.days[0].id, "B");
+
+    const { error } = await rpc<undefined>("delete_schedule_items", {
+      p_item_ids: [a, randomUUID()],
+    });
+    expect(error?.message).toMatch(/missing_schedule_items/);
+
+    const { data: rows, error: rowsError } = await userC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", trip.days[0].id)
+      .order("sort_order");
+    expect(rowsError).toBeNull();
+    expect(rows).toEqual([
+      { id: a, title: "A", sort_order: 1 },
+      { id: b, title: "B", sort_order: 2 },
+    ]);
+  });
+
+  it("rejects duplicate selected ids and keeps rows unchanged", async () => {
+    const trip = await createTestTrip("bulk-delete-duplicates", 1);
+    const a = await createItem(trip.days[0].id, "A");
+    const b = await createItem(trip.days[0].id, "B");
+
+    const { error } = await rpc<undefined>("delete_schedule_items", {
+      p_item_ids: [a, a],
+    });
+    expect(error?.message).toMatch(/duplicate_item_ids/);
+
+    const { data: rows, error: rowsError } = await userC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", trip.days[0].id)
+      .order("sort_order");
+    expect(rowsError).toBeNull();
+    expect(rows).toEqual([
+      { id: a, title: "A", sort_order: 1 },
+      { id: b, title: "B", sort_order: 2 },
+    ]);
+  });
+
+  it("rejects empty bulk delete input", async () => {
+    const { error } = await rpc<undefined>("delete_schedule_items", {
+      p_item_ids: [],
+    });
+    expect(error?.message).toMatch(/empty_item_ids/);
+  });
+
+  it("rejects bulk deletes with items from multiple trips", async () => {
+    const aTrip = await createTestTrip("bulk-delete-trip-a", 1);
+    const bTrip = await createTestTrip("bulk-delete-trip-b", 1);
+    const a = await createItem(aTrip.days[0].id, "A");
+    const b = await createItem(bTrip.days[0].id, "B");
+
+    const { error } = await rpc<undefined>("delete_schedule_items", {
+      p_item_ids: [a, b],
+    });
+    expect(error?.message).toMatch(/mixed_trip_items/);
+
+    const { data: aRows, error: aRowsError } = await userC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", aTrip.days[0].id)
+      .order("sort_order");
+    expect(aRowsError).toBeNull();
+    expect(aRows).toEqual([{ id: a, title: "A", sort_order: 1 }]);
+
+    const { data: bRows, error: bRowsError } = await userC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", bTrip.days[0].id)
+      .order("sort_order");
+    expect(bRowsError).toBeNull();
+    expect(bRows).toEqual([{ id: b, title: "B", sort_order: 1 }]);
+  });
+
+  it("rejects bulk deletes with inaccessible items and keeps owned rows unchanged", async () => {
+    const u = await admin.auth.admin.createUser({
+      email: `schedule-v11-foreign+${STAMP}@test.local`,
+      password: PWD,
+      email_confirm: true,
+      // display_name falls back to email in handle_new_user(); this email exceeds
+      // the profiles_display_name_length (<=40) CHECK, so supply a short name.
+      user_metadata: { name: "Foreign User" },
+    });
+    if (u.error) throw u.error;
+    foreignUserId = u.data.user!.id;
+
+    const foreignC = createClient<Database>(
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        auth: { persistSession: false },
+      },
+    );
+    const signIn = await foreignC.auth.signInWithPassword({
+      email: `schedule-v11-foreign+${STAMP}@test.local`,
+      password: PWD,
+    });
+    if (signIn.error) throw signIn.error;
+
+    const ownedTrip = await createTestTrip("bulk-delete-owned-access", 1);
+    const ownedA = await createItem(ownedTrip.days[0].id, "Owned A");
+    const ownedB = await createItem(ownedTrip.days[0].id, "Owned B");
+    const foreignTrip = await createTestTrip("bulk-delete-foreign-access", 1, foreignC);
+    const foreignItem = await createItem(foreignTrip.days[0].id, "Foreign", {}, foreignC);
+
+    const { error } = await rpc<undefined>("delete_schedule_items", {
+      p_item_ids: [ownedA, foreignItem],
+    });
+    expect(error?.message).toMatch(/forbidden/);
+
+    const { data: ownedRows, error: ownedRowsError } = await userC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", ownedTrip.days[0].id)
+      .order("sort_order");
+    expect(ownedRowsError).toBeNull();
+    expect(ownedRows).toEqual([
+      { id: ownedA, title: "Owned A", sort_order: 1 },
+      { id: ownedB, title: "Owned B", sort_order: 2 },
+    ]);
+
+    const { data: foreignRows, error: foreignRowsError } = await foreignC
+      .from("schedule_items")
+      .select("id, title, sort_order")
+      .eq("trip_day_id", foreignTrip.days[0].id)
+      .order("sort_order");
+    expect(foreignRowsError).toBeNull();
+    expect(foreignRows).toEqual([{ id: foreignItem, title: "Foreign", sort_order: 1 }]);
   });
 });
