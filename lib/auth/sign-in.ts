@@ -40,9 +40,6 @@ export async function signInWithGoogleRedirect({
         window.location.origin,
         sanitizeAuthRedirectPath(redirectPath),
       ),
-      queryParams: {
-        prompt: "select_account",
-      },
     },
   });
   if (error) {

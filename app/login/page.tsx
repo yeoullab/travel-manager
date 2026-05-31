@@ -9,14 +9,15 @@ import { Button } from "@/components/ui/button";
 import { requestGoogleIdToken } from "@/lib/auth/google-id-token";
 import { signInWithGoogle, signInWithGoogleRedirect } from "@/lib/auth/sign-in";
 import { installGisPopupBlockedConsoleHandler } from "@/lib/auth/gis-popup-blocked";
+import { getBrowserClient } from "@/lib/supabase/browser-client";
 
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const buttonRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<
-    "idle" | "signing" | "redirecting" | "error" | "popup_blocked"
-  >("idle");
+    "checking" | "idle" | "signing" | "redirecting" | "error" | "popup_blocked"
+  >("checking");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const redirectPath = params.get("redirect") ?? "/trips";
 
@@ -28,8 +29,18 @@ function LoginInner() {
       setStatus("popup_blocked");
       setErrorMsg("현재 브라우저에서 Google 로그인 팝업을 열 수 없어요.");
     });
+
     (async () => {
       try {
+        const supabase = getBrowserClient();
+        const { data: userData } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (userData.user) {
+          router.replace(redirectPath);
+          return;
+        }
+
+        setStatus("idle");
         const { idToken, rawNonce } = await requestGoogleIdToken(buttonRef.current!);
         if (cancelled) return;
         setStatus("signing");
@@ -42,6 +53,7 @@ function LoginInner() {
         setErrorMsg(err instanceof Error ? err.message : "로그인 실패");
       }
     })();
+
     return () => {
       cancelled = true;
       restoreConsole();
@@ -75,6 +87,11 @@ function LoginInner() {
 
       <div ref={buttonRef} className="mt-10 w-full" aria-label="Google 로그인" />
 
+      {status === "checking" && (
+        <p className="text-ink-600 mt-4 flex items-center justify-center gap-2 text-[13px]">
+          <Loader2 size={14} className="animate-spin" /> 세션 확인 중...
+        </p>
+      )}
       {status === "signing" && (
         <p className="text-ink-600 mt-4 flex items-center justify-center gap-2 text-[13px]">
           <Loader2 size={14} className="animate-spin" /> 로그인 중...

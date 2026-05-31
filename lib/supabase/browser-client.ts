@@ -13,6 +13,13 @@ export function getBrowserClient(): SupabaseClient {
     client = createBrowserClient<Database>(
       env.NEXT_PUBLIC_SUPABASE_URL,
       env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+        },
+      },
     ) as SupabaseClient;
   }
   return client;

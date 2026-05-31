@@ -12,4 +12,12 @@ test.describe("로그인 가드", () => {
     const container = page.getByLabel("Google 로그인");
     await expect(container).toBeVisible();
   });
+
+  test("로그인 세션이 있으면 /login에서 /trips로 이동한다", async ({ browser }) => {
+    const ctx = await browser.newContext({ storageState: "tests/e2e/.auth/alice.json" });
+    const page = await ctx.newPage();
+    await page.goto("/login");
+    await expect(page).toHaveURL(/\/trips/, { timeout: 10_000 });
+    await ctx.close();
+  });
 });
