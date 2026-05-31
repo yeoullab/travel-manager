@@ -251,3 +251,14 @@ Redirect login should avoid forcing account choice unless the user explicitly ne
 ## 9. Open Follow-Up
 
 The `/design` route itself can remain as a development-only direct URL. This spec removes normal user-facing entry points to it; deleting the route is intentionally left for a separate cleanup if desired.
+
+## 10. Implementation Notes
+
+Final verification was run on 2026-05-31 from branch `codex-trip-map-usability`.
+
+- `npm test` -> passed (44 files, 184 tests).
+- `npm run lint` -> passed with no new errors (9 pre-existing warnings in `lib/mocks/*` and `lib/schedule/use-schedule-list.ts`, unrelated to this feature).
+- `npm run build` -> passed.
+- `npm run test:integration -- tests/integration/schedule-v1-1-rpc.test.ts` -> passed (10 tests) after applying migration `0022_schedule_bulk_delete.sql` to the linked remote Supabase via `supabase db push --linked`.
+  - During verification the added `rejects bulk deletes with inaccessible items` test failed with `Database error creating new user`. Root cause: the foreign test user's email (45 chars) was used as `display_name` by the `handle_new_user()` trigger, violating the `profiles_display_name_length` (<=40) CHECK. Fixed by passing a short `user_metadata.name` when creating the foreign user.
+- `npm run test:e2e -- ...` -> **not run.** The linked Supabase project (`yzbnxaphssnurbhahvkm`) is the production database with real user data, and the E2E `globalSetup` calls `truncateCascade()` which would wipe all `public.*` tables. Running it would require `E2E_ALLOW_REMOTE_DB_RESET=true` against production, which is destructive. E2E specs (`schedule-layout-and-selection.spec.ts`, updated `lodging-range-and-bulk-move.spec.ts`, `login.spec.ts`) are committed and ready to run against a disposable/local Supabase project.
