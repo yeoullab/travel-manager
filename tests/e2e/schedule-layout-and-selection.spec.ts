@@ -48,11 +48,38 @@ test("mobile schedule screen uses a compact day header and larger map area", asy
   const dayTab = page.getByRole("tab", { name: /Day 1/ });
   await expect(map).toBeVisible();
   await expect(dayTab).toBeVisible();
+
+  // Icon-only toggle, no text label.
+  await expect(page.getByText("지도 펼치기")).toHaveCount(0);
+  await expect(page.getByText("지도 접기")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "지도 접기" })).toBeVisible();
+
   const mapBox = await map.boundingBox();
   const tabBox = await dayTab.boundingBox();
-  expect(mapBox?.height).toBeGreaterThan(260);
+  expect(mapBox?.height).toBeGreaterThan(160);
   expect(tabBox?.height).toBeLessThanOrEqual(44);
-  await expect(page.getByText(/번호를 길게 눌러/)).toHaveCount(0);
+
+  // Map stays fixed while the schedule list scrolls.
+  const scrollPanel = page.getByTestId("schedule-scroll-panel");
+  const listRegion = scrollPanel.locator("> div").last();
+  const mapTopBefore = (await map.boundingBox())?.y ?? 0;
+  await listRegion.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  const mapTopAfter = (await map.boundingBox())?.y ?? 0;
+  expect(Math.round(mapTopAfter)).toBe(Math.round(mapTopBefore));
+
+  // Resize handle adjusts the map height.
+  const handle = page.getByRole("separator", { name: "지도 높이 조절" });
+  await expect(handle).toBeVisible();
+  const heightBefore = (await map.boundingBox())?.height ?? 0;
+  const hb = await handle.boundingBox();
+  await page.mouse.move((hb?.x ?? 0) + 5, (hb?.y ?? 0) + 3);
+  await page.mouse.down();
+  await page.mouse.move((hb?.x ?? 0) + 5, (hb?.y ?? 0) + 80);
+  await page.mouse.up();
+  const heightAfter = (await map.boundingBox())?.height ?? 0;
+  expect(heightAfter).toBeGreaterThan(heightBefore);
 });
 
 test("long-pressing a card selects items and moves them to another day", async ({ page }) => {
