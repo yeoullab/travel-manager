@@ -8,6 +8,7 @@ type Props = {
   items: ScheduleItem[];
   isDomestic: boolean;
   onTapItem: (item: ScheduleItem) => void;
+  onLongPressItem?: (item: ScheduleItem) => void;
   onTapNumber?: (item: ScheduleItem) => void;
   selectionMode?: boolean;
   selectedIds?: Set<string>;
@@ -19,6 +20,7 @@ export function ScheduleList({
   items,
   isDomestic,
   onTapItem,
+  onLongPressItem,
   onTapNumber,
   selectionMode = false,
   selectedIds,
@@ -35,6 +37,7 @@ export function ScheduleList({
             index={idx + 1}
             isDomestic={isDomestic}
             onTap={onTapItem}
+            onLongPress={onLongPressItem}
             onNumberTap={onTapNumber}
             selectionMode={selectionMode}
             selected={selectedIds?.has(item.id) ?? false}

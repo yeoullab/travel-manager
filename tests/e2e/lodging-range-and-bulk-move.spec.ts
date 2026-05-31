@@ -60,9 +60,14 @@ test("선택한 일정 여러 개를 다른 일자로 이동한다", async ({ pa
   await expect(page.getByText("Bulk-B", { exact: true })).toBeVisible();
   await expect(page.getByText("Bulk-C", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "선택" }).click();
-  await page.getByRole("checkbox", { name: "Bulk-A 선택" }).click();
-  await page.getByRole("checkbox", { name: "Bulk-B 선택" }).click();
+  const firstCard = page.getByTestId(/schedule-card-/).filter({ hasText: "Bulk-A" });
+  await firstCard.dispatchEvent("pointerdown", { clientX: 20, clientY: 20, button: 0 });
+  await page.waitForTimeout(500);
+  await firstCard.dispatchEvent("pointerup");
+  await expect(page.getByText("1개 선택")).toBeVisible();
+
+  await page.getByText("Bulk-B", { exact: true }).click();
+  await expect(page.getByText("2개 선택")).toBeVisible();
   await page.getByRole("button", { name: "이동" }).click();
   await page.getByRole("button", { name: /Day 2/ }).click();
 

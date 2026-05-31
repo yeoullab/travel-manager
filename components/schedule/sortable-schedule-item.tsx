@@ -7,12 +7,14 @@ import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
 import type { ScheduleCategory } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { resolvePlaceLink } from "@/lib/maps/place-link";
+import { useLongPress } from "@/lib/hooks/use-long-press";
 
 type Props = {
   item: ScheduleItem;
   index: number;
   isDomestic: boolean;
   onTap: (item: ScheduleItem) => void;
+  onLongPress?: (item: ScheduleItem) => void;
   onNumberTap?: (item: ScheduleItem) => void;
   selectionMode?: boolean;
   selected?: boolean;
@@ -25,6 +27,7 @@ export function SortableScheduleItem({
   index,
   isDomestic,
   onTap,
+  onLongPress,
   onNumberTap,
   selectionMode = false,
   selected = false,
@@ -43,6 +46,11 @@ export function SortableScheduleItem({
     boxShadow: isDragging ? "0 12px 24px rgba(0,0,0,0.12)" : undefined,
   };
 
+  const cardLongPress = useLongPress<HTMLDivElement>({
+    onLongPress: () => onLongPress?.(item),
+    disabled: selectionMode || !onLongPress,
+  });
+
   return (
     <li
       ref={(el) => {
@@ -51,7 +59,6 @@ export function SortableScheduleItem({
       }}
       style={style}
       className="flex items-stretch gap-1"
-      onClick={() => (selectionMode ? onToggleSelected?.(item) : onTap(item))}
     >
       {/*
         Drag handle.
@@ -90,11 +97,26 @@ export function SortableScheduleItem({
         </button>
       )}
       <div
+        data-testid={`schedule-card-${item.id}`}
         className={cn(
-          "min-w-0 flex-1 rounded-[8px] text-left",
+          "relative min-w-0 flex-1 rounded-[8px] text-left",
           selectionMode && selected && "ring-accent-orange/70 ring-2",
         )}
+        onClick={() => (selectionMode ? onToggleSelected?.(item) : onTap(item))}
+        {...cardLongPress}
       >
+        {!selectionMode && onLongPress && (
+          <button
+            type="button"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-2 focus:z-10 focus:h-9 focus:w-auto focus:rounded-full focus:bg-ink-900 focus:px-3 focus:text-[12px] focus:font-medium focus:text-cream focus:ring-2 focus:ring-accent-orange focus:ring-offset-2 focus:outline-none"
+            onClick={(e) => {
+              e.stopPropagation();
+              onLongPress(item);
+            }}
+          >
+            {item.title} 선택 모드 시작
+          </button>
+        )}
         <ScheduleItemCard
           category={item.category_code as ScheduleCategory}
           title={item.title}
