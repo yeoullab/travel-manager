@@ -54,13 +54,20 @@ with a single row:
 └─────────────────────────────────────────────┘
 ```
 
+> Note: the `🗺️` in the diagrams above and below is **placeholder art only**. The
+> actual control reuses the existing `MapIcon` (the lucide `Map` icon already imported
+> as `Map as MapIcon` in `schedule-tab.tsx`). No new icon or emoji is introduced.
+
 - The day tabs live in an `overflow-x-auto` region.
-- The toggle is **icon-only** (map icon), `flex-shrink-0`, pinned to the right of the
-  row so day overflow never covers it.
-- `aria-label` ("지도 펼치기" / "지도 접기") provides the accessible name; `aria-pressed`
-  reflects open state; accent color when open. The old text label is removed.
-- Desktop (`lg`): the toggle icon is hidden (`lg:hidden`) because the map is always shown
-  in the right column.
+- The toggle is **icon-only** — the existing `MapIcon` (lucide `Map`), `flex-shrink-0`,
+  pinned to the right of the row so day overflow never covers it.
+- The current text label (`지도 펼치기` / `지도 접기`) and the `ChevronDown` chevron are
+  removed. State is conveyed by `aria-pressed` plus accent color when open.
+- `aria-label` ("지도 펼치기" / "지도 접기") provides the accessible name. Touch target
+  ≥ 40px.
+- Header structure: `DayTabBar` (overflow-x-auto) and the toggle share one flex row. On
+  desktop (`lg`) only the **toggle icon** is hidden (`lg:hidden`); `DayTabBar` still
+  renders, and the map remains in the right column as today.
 
 ### 4.2 Mobile fixed map + scrollable list (open state)
 
@@ -80,11 +87,16 @@ When the map is **open** on mobile, the schedule area becomes a fixed vertical s
 └─────────────────────────────────┘
 ```
 
-- Mobile container becomes `flex flex-col` with a fixed viewport height
-  (`h-[calc(100dvh - app header)]`).
+- Mobile container becomes `flex flex-col` with a fixed viewport height. The app bar is
+  56px (the value already used as `top-14`/`56px` elsewhere in this tab); subtract it via
+  `h-[calc(100dvh-56px)]`. The FAB stays `fixed` and overlays the list, so it does not
+  reduce the scroll region. Verify the exact offset against the running app during
+  implementation (bottom safe-area inset may need inclusion).
 - Header (day tabs + icon) = `shrink-0`.
 - Map (open only) = `shrink-0`, height driven by the resize hook.
 - Schedule list = `flex-1 overflow-y-auto` — the only scrolling region.
+- The selection bar moves **inside** the scrollable list region as its first child,
+  `sticky top-0`, so it pins to the top of the scroll area (not the page) during scroll.
 
 When the map is **closed** on mobile: no fixed split. The schedule list takes the full
 height and behaves as today (normal page scroll). The fixed split is active only in the
