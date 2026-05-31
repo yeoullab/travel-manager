@@ -20,6 +20,7 @@ import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { Button } from "@/components/ui/button";
 import { Fab } from "@/components/ui/fab";
 import { cn } from "@/lib/cn";
+import { useResizableHeight } from "@/lib/hooks/use-resizable-height";
 
 import { useTripDetail } from "@/lib/trip/use-trip-detail";
 import { useTripDays } from "@/lib/trip/use-trip-days";
@@ -66,6 +67,13 @@ export function ScheduleTab({ tripId }: Props) {
   const move = useMoveScheduleItemAcrossDays();
   const createLodgingRange = useCreateLodgingScheduleItemsForRange();
   const moveMany = useMoveScheduleItemsToDay();
+
+  const mapResize = useResizableHeight({
+    storageKey: "travel-manager:map-height",
+    defaultHeight: 280,
+    min: 160,
+    max: 520,
+  });
 
   const setDragging = useUiStore((s) => s.setDraggingSchedule);
   const showToast = useUiStore((s) => s.showToast);
@@ -378,7 +386,7 @@ export function ScheduleTab({ tripId }: Props) {
       items={mapItems}
       onMarkerClick={handleMarkerClick}
       focusItemId={focusMapItemId}
-      className="h-[clamp(280px,34dvh,380px)] lg:mt-0 lg:h-full"
+      className="mt-0 h-full"
     />
   ) : null;
 
@@ -386,96 +394,124 @@ export function ScheduleTab({ tripId }: Props) {
     <div className="px-4 pb-28 lg:grid lg:h-[calc(100dvh-56px-80px)] lg:grid-cols-[minmax(0,560px)_minmax(420px,1fr)] lg:gap-4 lg:overflow-hidden lg:pb-4">
       <section
         data-testid="schedule-scroll-panel"
-        className="min-w-0 lg:overflow-y-auto lg:pr-1"
+        className={cn(
+          "min-w-0",
+          // Mobile: fixed-height flex column so only the list scrolls when the map is open.
+          mapOpen
+            ? "flex h-[calc(100dvh-56px)] flex-col overflow-hidden"
+            : "",
+          // Desktop: unchanged scroll column.
+          "lg:flex lg:h-auto lg:flex-col lg:overflow-y-auto lg:pr-1",
+        )}
       >
-        <div className="flex items-stretch gap-2">
-          <DayTabBar
-            days={days}
-            activeDayId={activeDayId}
-            onSelect={setActiveDayId}
-            className="min-w-0 flex-1 lg:top-0"
-          />
-          <button
-            type="button"
-            onClick={toggleMap}
-            aria-pressed={mapOpen}
-            aria-label={mapOpen ? "지도 접기" : "지도 펼치기"}
-            className={cn(
-              "mt-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] transition-colors lg:hidden",
-              mapOpen
-                ? "bg-accent-orange text-cream"
-                : "bg-surface-400 text-ink-700 hover:text-ink-900",
-            )}
-          >
-            <MapIcon size={18} />
-          </button>
+        <div className="shrink-0">
+          <div className="flex items-stretch gap-2">
+            <DayTabBar
+              days={days}
+              activeDayId={activeDayId}
+              onSelect={setActiveDayId}
+              className="min-w-0 flex-1 lg:top-0"
+            />
+            <button
+              type="button"
+              onClick={toggleMap}
+              aria-pressed={mapOpen}
+              aria-label={mapOpen ? "지도 접기" : "지도 펼치기"}
+              className={cn(
+                "mt-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] transition-colors lg:hidden",
+                mapOpen
+                  ? "bg-accent-orange text-cream"
+                  : "bg-surface-400 text-ink-700 hover:text-ink-900",
+              )}
+            >
+              <MapIcon size={18} />
+            </button>
+          </div>
         </div>
 
-        <div className="lg:hidden">{mapOpen && mapPanel}</div>
-
-        {selectionMode && (
-          <div className="border-border-primary bg-surface-100 sticky top-[calc(56px+env(safe-area-inset-top))] z-20 mt-2 flex items-center justify-between rounded-[8px] border px-3 py-2 lg:top-0">
-            <span className="text-ink-700 text-[13px] font-medium">{selectedCount}개 선택</span>
-            <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="light"
-                disabled={selectedCount === 0 || moveMany.isPending}
-                onClick={() => setBulkMoveOpen(true)}
-              >
-                이동
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={selectedCount === 0 || deleteMany.isPending}
-                onClick={handleBulkDelete}
-              >
-                삭제
-              </Button>
-              <button
-                type="button"
-                onClick={toggleSelectionMode}
-                className="text-ink-600 h-9 rounded-full px-2 text-[13px] font-medium"
-              >
-                취소
-              </button>
+        {mapOpen && mapPanel && (
+          <div className="shrink-0 lg:hidden">
+            <div style={{ height: mapResize.height }}>{mapPanel}</div>
+            <div
+              {...mapResize.handleProps}
+              aria-label="지도 높이 조절"
+              className="flex h-6 cursor-row-resize touch-none items-center justify-center"
+            >
+              <span className="bg-border-medium h-1 w-10 rounded-full" />
             </div>
           </div>
         )}
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          {activeDayItems.length === 0 ? (
-            <EmptyState
-              className="py-16"
-              icon={<CalendarX size={48} strokeWidth={1.5} />}
-              title="아직 일정이 없어요"
-              description="일정을 추가해 하루를 계획해보세요."
-              cta={
-                <Button variant="primary" onClick={openCreate}>
-                  + 일정 추가
-                </Button>
-              }
-            />
-          ) : (
-            <ScheduleList
-              items={activeDayItems}
-              isDomestic={trip?.is_domestic ?? true}
-              onTapItem={selectionMode ? toggleSelected : openEdit}
-              onLongPressItem={enterSelectionMode}
-              onTapNumber={handleNumberTap}
-              selectionMode={selectionMode}
-              selectedIds={selectedIds}
-              onToggleSelected={toggleSelected}
-              registerItemRef={registerItemRef}
-            />
+        <div
+          className={cn(
+            "min-w-0",
+            mapOpen ? "flex-1 overflow-y-auto" : "",
           )}
-        </DndContext>
+        >
+          {selectionMode && (
+            <div className="border-border-primary bg-surface-100 sticky top-0 z-20 mt-2 flex items-center justify-between rounded-[8px] border px-3 py-2">
+              <span className="text-ink-700 text-[13px] font-medium">{selectedCount}개 선택</span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="light"
+                  disabled={selectedCount === 0 || moveMany.isPending}
+                  onClick={() => setBulkMoveOpen(true)}
+                >
+                  이동
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={selectedCount === 0 || deleteMany.isPending}
+                  onClick={handleBulkDelete}
+                >
+                  삭제
+                </Button>
+                <button
+                  type="button"
+                  onClick={toggleSelectionMode}
+                  className="text-ink-600 h-9 rounded-full px-2 text-[13px] font-medium"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            {activeDayItems.length === 0 ? (
+              <EmptyState
+                className="py-16"
+                icon={<CalendarX size={48} strokeWidth={1.5} />}
+                title="아직 일정이 없어요"
+                description="일정을 추가해 하루를 계획해보세요."
+                cta={
+                  <Button variant="primary" onClick={openCreate}>
+                    + 일정 추가
+                  </Button>
+                }
+              />
+            ) : (
+              <ScheduleList
+                items={activeDayItems}
+                isDomestic={trip?.is_domestic ?? true}
+                onTapItem={selectionMode ? toggleSelected : openEdit}
+                onLongPressItem={enterSelectionMode}
+                onTapNumber={handleNumberTap}
+                selectionMode={selectionMode}
+                selectedIds={selectedIds}
+                onToggleSelected={toggleSelected}
+                registerItemRef={registerItemRef}
+              />
+            )}
+          </DndContext>
+        </div>
       </section>
 
       <aside className="hidden min-h-0 lg:block">
