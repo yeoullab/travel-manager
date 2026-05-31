@@ -52,11 +52,6 @@ export default function LandingPage() {
               시작하기
             </Button>
           </Link>
-          <Link href="/design" className="block w-full">
-            <Button size="md" fullWidth variant="ghost">
-              디자인 시스템 보기
-            </Button>
-          </Link>
         </div>
 
         <p className="text-ink-500 mt-10 text-[12px] leading-[1.5]">

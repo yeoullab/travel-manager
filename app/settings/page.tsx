@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -123,15 +122,6 @@ export default function SettingsPage() {
         <p className="text-ink-500 mt-8 text-center text-[11px]">
           {APP_NAME} · {APP_VERSION_LABEL}
         </p>
-
-        <div className="mt-4 text-center">
-          <Link
-            href="/design"
-            className="text-ink-600 hover:text-error text-[12px] underline-offset-2 hover:underline"
-          >
-            디자인 시스템 팔레트 보기
-          </Link>
-        </div>
       </main>
 
       <ConfirmDialog
