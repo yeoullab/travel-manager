@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { ScheduleTimeField } from "@/components/schedule/schedule-time-field";
 import { Button } from "@/components/ui/button";
 import { TextField, TextArea } from "@/components/ui/text-field";
 import { cn } from "@/lib/cn";
@@ -562,12 +563,7 @@ function CommonFields({
 }) {
   return (
     <>
-      <TextField
-        label="시간"
-        type="time"
-        value={timeOfDay}
-        onChange={(e) => onTime(e.target.value)}
-      />
+      <ScheduleTimeField value={timeOfDay} onChange={onTime} />
       <TextArea
         label="메모"
         rows={3}
