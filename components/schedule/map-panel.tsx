@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getMapsProvider, providerForTrip } from "@/lib/maps/provider";
 import type { MapHandle } from "@/lib/maps/types";
+import { cn } from "@/lib/cn";
 
 type MapItem = { id: string; place_lat: number; place_lng: number; label: string };
 
@@ -11,9 +12,10 @@ type Props = {
   items: MapItem[];
   onMarkerClick?: (itemId: string) => void;
   focusItemId?: string | null;
+  className?: string;
 };
 
-export function MapPanel({ isDomestic, items, onMarkerClick, focusItemId }: Props) {
+export function MapPanel({ isDomestic, items, onMarkerClick, focusItemId, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<MapHandle | null>(null);
   const [ready, setReady] = useState(false);
@@ -64,7 +66,10 @@ export function MapPanel({ isDomestic, items, onMarkerClick, focusItemId }: Prop
   return (
     <div
       ref={containerRef}
-      className="border-border-primary bg-surface-200 mt-3 h-[240px] w-full overflow-hidden rounded-[10px] border"
+      className={cn(
+        "border-border-primary bg-surface-200 mt-3 h-[240px] w-full overflow-hidden rounded-[10px] border",
+        className,
+      )}
       aria-label="지도"
     />
   );

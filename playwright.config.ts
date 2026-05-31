@@ -46,6 +46,7 @@ export default defineConfig({
         "guest-share-flow.spec.ts",
         "guest-share-readability.spec.ts",
         "lodging-range-and-bulk-move.spec.ts",
+        "schedule-layout-and-selection.spec.ts",
         "settings-categories.spec.ts",
       ],
     },

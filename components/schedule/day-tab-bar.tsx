@@ -7,16 +7,20 @@ type Props = {
   days: TripDay[];
   activeDayId: string | null;
   onSelect: (dayId: string) => void;
+  className?: string;
 };
 
-export function DayTabBar({ days, activeDayId, onSelect }: Props) {
+export function DayTabBar({ days, activeDayId, onSelect, className }: Props) {
   return (
     <div
-      className="bg-surface-200/90 sticky top-14 z-20 -mx-4 overflow-x-auto px-4 pt-3 pb-2 backdrop-blur-md"
+      className={cn(
+        "bg-surface-200/90 sticky top-14 z-20 -mx-4 overflow-x-auto px-4 pt-2 pb-1.5 backdrop-blur-md",
+        className,
+      )}
       role="tablist"
       aria-label="일자 선택"
     >
-      <ul className="flex gap-2">
+      <ul className="flex gap-1.5">
         {days.map((d) => {
           const active = d.id === activeDayId;
           return (
@@ -27,7 +31,7 @@ export function DayTabBar({ days, activeDayId, onSelect }: Props) {
                 aria-selected={active}
                 onClick={() => onSelect(d.id)}
                 className={cn(
-                  "flex h-12 min-w-[64px] flex-col items-center justify-center rounded-[10px] px-3 transition-colors duration-150",
+                  "flex h-10 min-w-[58px] flex-col items-center justify-center rounded-[8px] px-2.5 transition-colors duration-150",
                   active
                     ? "bg-accent-orange text-cream"
                     : "bg-surface-400 text-ink-700 hover:text-ink-900",
