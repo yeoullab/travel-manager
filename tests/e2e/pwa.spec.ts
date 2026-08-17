@@ -7,7 +7,7 @@ test.describe("PWA static assets", () => {
     const ct = res.headers()["content-type"] ?? "";
     expect(ct).toMatch(/manifest\+json|application\/json/);
     const body = await res.json();
-    expect(body.name).toBe("travel-manager");
+    expect(body.name).toBe("트레블매니저");
     expect(body.start_url).toBe("/");
     expect(Array.isArray(body.icons)).toBe(true);
   });

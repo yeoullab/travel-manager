@@ -33,7 +33,7 @@ test.describe("카테고리 분기 폼 (Phase 3 갭 복구)", () => {
     await page.getByLabel("제목").fill("기타 카테고리 일정");
     await page.getByRole("button", { name: "추가", exact: true }).click();
 
-    await expect(page.getByText("기타 카테고리 일정")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("기타 카테고리 일정", { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test("식당 카테고리 → 직접 입력 → 주소 + 제목 저장", async ({ page }) => {

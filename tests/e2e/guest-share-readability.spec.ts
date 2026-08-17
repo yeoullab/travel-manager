@@ -32,7 +32,7 @@ test("게스트 공유 일정은 Day별 섹션과 긴 메모를 읽기 좋게 �
   await page.getByLabel("제목").fill("Day 1 긴 메모 일정");
   await page.getByLabel("메모").fill(day1Memo);
   await page.getByRole("button", { name: "추가", exact: true }).click();
-  await expect(page.getByText("Day 1 긴 메모 일정")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("Day 1 긴 메모 일정", { exact: true })).toBeVisible({ timeout: 5_000 });
 
   await page.getByRole("tab", { name: /Day 2/ }).click();
   await page.getByLabel("일정 추가").click();
@@ -40,7 +40,7 @@ test("게스트 공유 일정은 Day별 섹션과 긴 메모를 읽기 좋게 �
   await page.getByLabel("제목").fill("Day 2 긴 메모 일정");
   await page.getByLabel("메모").fill(day2Memo);
   await page.getByRole("button", { name: "추가", exact: true }).click();
-  await expect(page.getByText("Day 2 긴 메모 일정")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("Day 2 긴 메모 일정", { exact: true })).toBeVisible({ timeout: 5_000 });
 
   await page.goto(`/trips/${tripId}?tab=manage`);
   await page.getByRole("button", { name: "게스트 링크 생성" }).click();

@@ -40,7 +40,7 @@ test("종료일 Day 4→Day 2 축소 → 확인 다이얼로그 → Day 2 에 6�
     // 일정 탭 → Day 2 (마지막 day) 에 6개 합병됨
     await page.goto(`/trips/${tripId}`);
     await page.getByRole("tab", { name: /Day 2/ }).click();
-    const items = page.locator("li[role='button']");
+    const items = page.locator('[data-testid^="schedule-card-"]');
     await expect(items).toHaveCount(6, { timeout: 10_000 });
 
     // Day 3 탭은 사라짐

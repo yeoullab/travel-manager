@@ -18,7 +18,7 @@ test("desktop schedule screen keeps the map visible while the schedule scrolls",
   await page.goto(`/trips/${tripId}`);
   await expect(page.getByText("Layout-1", { exact: true })).toBeVisible({ timeout: 10_000 });
 
-  const map = page.getByLabel("지도").first();
+  const map = page.getByLabel("지도", { exact: true });
   await expect(map).toBeVisible();
   const before = await map.boundingBox();
   expect(before?.height).toBeGreaterThan(400);
@@ -44,7 +44,7 @@ test("mobile schedule screen uses a compact day header and larger map area", asy
   await page.goto(`/trips/${tripId}?map=open`);
   await expect(page.getByText("Mobile-A", { exact: true })).toBeVisible({ timeout: 10_000 });
 
-  const map = page.getByLabel("지도").first();
+  const map = page.getByLabel("지도", { exact: true });
   const dayTab = page.getByRole("tab", { name: /Day 1/ });
   await expect(map).toBeVisible();
   await expect(dayTab).toBeVisible();

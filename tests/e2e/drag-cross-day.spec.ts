@@ -27,11 +27,11 @@ test.describe("다른 날로 이동 (cross-day, Spec §3.4)", () => {
     await page.goto(`/trips/${tripId}`);
 
     // Day 1 기본 선택 — 2개 아이템 확인
-    const items = page.locator("li[role='button']");
+    const items = page.locator('[data-testid^="schedule-card-"]');
     await expect(items).toHaveCount(2, { timeout: 10_000 });
 
     // Day1-A 클릭 → 일정 수정 모달 (other 카테고리 → "일정 (기타)" title)
-    await page.getByText("Day1-A").click();
+    await page.getByText("Day1-A", { exact: true }).click();
     await expect(page.getByText(/일정 \(기타\)/)).toBeVisible({ timeout: 5_000 });
 
     // "다른 날로 이동" 버튼 클릭
@@ -42,17 +42,17 @@ test.describe("다른 날로 이동 (cross-day, Spec §3.4)", () => {
 
     // Day 1 에 1개만 남음
     await expect(items).toHaveCount(1, { timeout: 5_000 });
-    await expect(page.getByText("Day1-B")).toBeVisible();
+    await expect(page.getByText("Day1-B", { exact: true })).toBeVisible();
 
     // Day 2 탭으로 이동 → 2개 (Day1-A + Day2-X)
     await page.getByRole("tab", { name: /Day 2/ }).click();
     await expect(items).toHaveCount(2, { timeout: 5_000 });
-    await expect(page.getByText("Day1-A")).toBeVisible();
+    await expect(page.getByText("Day1-A", { exact: true })).toBeVisible();
 
     // persist
     await page.reload();
     await page.getByRole("tab", { name: /Day 2/ }).click();
-    await expect(page.getByText("Day1-A")).toBeVisible();
+    await expect(page.getByText("Day1-A", { exact: true })).toBeVisible();
   });
 
   test("같은 trip 내 이동만 허용 — cross-trip 차단은 integration 에서 검증됨", () => {
