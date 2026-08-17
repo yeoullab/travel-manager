@@ -2,10 +2,17 @@ import { describe, it, expect } from "vitest";
 import { applyLocalReorder } from "@/lib/schedule/apply-local-reorder";
 import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
 
-function make(id: string, tripDayId: string, sortOrder: number): ScheduleItem {
+function make(
+  id: string,
+  tripDayId: string,
+  sortOrder: number,
+  isCandidate = false,
+): ScheduleItem {
   return {
     id,
     trip_day_id: tripDayId,
+    trip_id: "trip-1",
+    is_candidate: isCandidate,
     title: id,
     sort_order: sortOrder,
     time_of_day: null,
@@ -63,5 +70,20 @@ describe("applyLocalReorder", () => {
 
   it("set mismatch (다른 day item 포함) 시 throw", () => {
     expect(() => applyLocalReorder(base, D1, ["a", "b", "c", "x"])).toThrow(/set mismatch/i);
+  });
+
+  it("후보 파티션 재정렬은 같은 날 본 일정 sort_order 를 건드리지 않는다", () => {
+    const items = [
+      make("m1", D1, 1, false),
+      make("m2", D1, 2, false),
+      make("c1", D1, 1, true),
+      make("c2", D1, 2, true),
+    ];
+    const next = applyLocalReorder(items, D1, ["c2", "c1"]);
+    const find = (id: string) => next.find((i) => i.id === id)!;
+    expect(find("c2").sort_order).toBe(1);
+    expect(find("c1").sort_order).toBe(2);
+    expect(find("m1").sort_order).toBe(1);
+    expect(find("m2").sort_order).toBe(2);
   });
 });

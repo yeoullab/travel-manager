@@ -2,10 +2,17 @@ import { describe, expect, it } from "vitest";
 import { applyLocalBulkMove } from "@/lib/schedule/apply-local-bulk-move";
 import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
 
-function make(id: string, tripDayId: string, sortOrder: number): ScheduleItem {
+function make(
+  id: string,
+  tripDayId: string,
+  sortOrder: number,
+  isCandidate = false,
+): ScheduleItem {
   return {
     id,
     trip_day_id: tripDayId,
+    trip_id: "trip-1",
+    is_candidate: isCandidate,
     title: id,
     sort_order: sortOrder,
     time_of_day: null,
@@ -65,5 +72,24 @@ describe("applyLocalBulkMove", () => {
     const snap = JSON.parse(JSON.stringify(base));
     applyLocalBulkMove(base, ["a"], D2);
     expect(base).toEqual(snap);
+  });
+
+  it("후보 아이템 이동 시도는 에러 (main 전용)", () => {
+    const items = [make("c1", D1, 1, true)];
+    expect(() => applyLocalBulkMove(items, ["c1"], D2)).toThrow(/candidate/);
+  });
+
+  it("본 일정 벌크 이동은 후보 sort_order 에 영향을 주지 않는다", () => {
+    const items = [
+      make("m1", D1, 1, false),
+      make("c1", D1, 1, true),
+      make("c9", D2, 1, true),
+    ];
+    const next = applyLocalBulkMove(items, ["m1"], D2);
+    const find = (id: string) => next.find((i) => i.id === id)!;
+    expect(find("m1").trip_day_id).toBe(D2);
+    expect(find("m1").sort_order).toBe(1);
+    expect(find("c1").sort_order).toBe(1);
+    expect(find("c9").sort_order).toBe(1);
   });
 });
