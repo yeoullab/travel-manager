@@ -327,6 +327,7 @@ export type Database = {
           category_code: string
           created_at: string
           id: string
+          is_candidate: boolean
           memo: string | null
           place_address: string | null
           place_external_id: string | null
@@ -338,7 +339,8 @@ export type Database = {
           sort_order: number
           time_of_day: string | null
           title: string
-          trip_day_id: string
+          trip_day_id: string | null
+          trip_id: string
           updated_at: string
           url: string | null
         }
@@ -346,6 +348,7 @@ export type Database = {
           category_code?: string
           created_at?: string
           id?: string
+          is_candidate?: boolean
           memo?: string | null
           place_address?: string | null
           place_external_id?: string | null
@@ -357,7 +360,8 @@ export type Database = {
           sort_order: number
           time_of_day?: string | null
           title: string
-          trip_day_id: string
+          trip_day_id?: string | null
+          trip_id: string
           updated_at?: string
           url?: string | null
         }
@@ -365,6 +369,7 @@ export type Database = {
           category_code?: string
           created_at?: string
           id?: string
+          is_candidate?: boolean
           memo?: string | null
           place_address?: string | null
           place_external_id?: string | null
@@ -376,7 +381,8 @@ export type Database = {
           sort_order?: number
           time_of_day?: string | null
           title?: string
-          trip_day_id?: string
+          trip_day_id?: string | null
+          trip_id?: string
           updated_at?: string
           url?: string | null
         }
@@ -389,10 +395,17 @@ export type Database = {
             referencedColumns: ["code"]
           },
           {
-            foreignKeyName: "schedule_items_trip_day_id_fkey"
-            columns: ["trip_day_id"]
+            foreignKeyName: "schedule_items_day_trip_consistent"
+            columns: ["trip_day_id", "trip_id"]
             isOneToOne: false
             referencedRelation: "trip_days"
+            referencedColumns: ["id", "trip_id"]
+          },
+          {
+            foreignKeyName: "schedule_items_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
             referencedColumns: ["id"]
           },
         ]
@@ -619,15 +632,6 @@ export type Database = {
         Returns: string
       }
       create_invite: { Args: never; Returns: Json }
-      create_record: {
-        Args: {
-          p_content: string
-          p_date: string
-          p_title: string
-          p_trip_id: string
-        }
-        Returns: string
-      }
       create_lodging_schedule_items_for_range: {
         Args: {
           p_end_day_id: string
@@ -647,9 +651,19 @@ export type Database = {
         }
         Returns: string[]
       }
+      create_record: {
+        Args: {
+          p_content: string
+          p_date: string
+          p_title: string
+          p_trip_id: string
+        }
+        Returns: string
+      }
       create_schedule_item: {
         Args: {
           p_category_code?: string
+          p_is_candidate?: boolean
           p_memo?: string
           p_place_address?: string
           p_place_external_id?: string
@@ -661,6 +675,7 @@ export type Database = {
           p_time_of_day?: string
           p_title: string
           p_trip_day_id: string
+          p_trip_id?: string
           p_url?: string
         }
         Returns: string
@@ -688,6 +703,10 @@ export type Database = {
       delete_expense: { Args: { p_expense_id: string }; Returns: undefined }
       delete_record: { Args: { p_record_id: string }; Returns: undefined }
       delete_schedule_item: { Args: { p_item_id: string }; Returns: undefined }
+      delete_schedule_items: {
+        Args: { p_item_ids: string[] }
+        Returns: undefined
+      }
       delete_todo: { Args: { p_todo_id: string }; Returns: undefined }
       dissolve_group: { Args: never; Returns: undefined }
       get_guest_trip_data: { Args: { p_token: string }; Returns: Json }
@@ -720,6 +739,14 @@ export type Database = {
       replica_identity_of: { Args: { p_table: string }; Returns: unknown }
       resize_trip_days: {
         Args: { p_new_end: string; p_new_start: string; p_trip_id: string }
+        Returns: undefined
+      }
+      set_schedule_item_candidacy: {
+        Args: {
+          p_is_candidate: boolean
+          p_item_id: string
+          p_target_day_id?: string
+        }
         Returns: undefined
       }
       test_truncate_cascade: { Args: never; Returns: undefined }
