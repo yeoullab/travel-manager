@@ -1,10 +1,5 @@
 import type { MapsProvider, MapHandle, MapOptions, MarkerSpec, LatLng } from "../types";
-import {
-  buildMarkerElement,
-  closeAllMarkerTips,
-  isNoHoverDevice,
-  toggleMarkerTip,
-} from "./marker-dom";
+import { buildMarkerElement, closeAllMarkerTips, handleMarkerTap } from "./marker-dom";
 
 // Phase 1 `lib/auth/google-id-token.ts` 이 `Window.google = { accounts: ... }` 로 선언함.
 // 서로 다른 서브필드(maps vs accounts) 를 갖는 두 declaration 을 merge 하려면 같은 파일에서
@@ -144,11 +139,10 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
           map,
           content: el,
         });
-        // content DOM 클릭으로 토글 + onClick 을 함께 처리(중복 방지). 지도 click 으로 전파 차단.
+        // content DOM 클릭으로 탭 처리. 지도 click(팁 닫기) 으로 전파 차단.
         el.addEventListener("click", (e) => {
           e.stopPropagation();
-          if (spec.title && isNoHoverDevice()) toggleMarkerTip(el);
-          spec.onClick?.();
+          handleMarkerTap(el, spec);
         });
         markers.push(marker);
       });

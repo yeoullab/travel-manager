@@ -1,10 +1,5 @@
 import type { MapsProvider, MapHandle, MapOptions, MarkerSpec, LatLng } from "../types";
-import {
-  buildMarkerElement,
-  closeAllMarkerTips,
-  isNoHoverDevice,
-  toggleMarkerTip,
-} from "./marker-dom";
+import { buildMarkerElement, closeAllMarkerTips, handleMarkerTap } from "./marker-dom";
 
 declare global {
   interface Window {
@@ -91,11 +86,8 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
           icon: { content: buildMarkerElement(spec).outerHTML },
         });
         ns.Event.addListener(marker, "click", () => {
-          if (spec.title && isNoHoverDevice()) {
-            const node = marker.getElement?.()?.querySelector<HTMLElement>(".tm-marker");
-            if (node) toggleMarkerTip(node);
-          }
-          spec.onClick?.();
+          const node = marker.getElement?.()?.querySelector<HTMLElement>(".tm-marker");
+          handleMarkerTap(node, spec);
         });
         markers.push(marker);
       });

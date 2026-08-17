@@ -1,10 +1,25 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildMarkerElement,
   closeAllMarkerTips,
+  handleMarkerTap,
   toggleMarkerTip,
 } from "@/lib/maps/providers/marker-dom";
 import type { MarkerSpec } from "@/lib/maps/types";
+
+/** window.matchMedia 를 (hover:none) = mobile 여부로 세팅. */
+function setHover(noHover: boolean) {
+  window.matchMedia = ((q: string) => ({
+    matches: q.includes("hover: none") ? noHover : !noHover,
+    media: q,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    onchange: null,
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
 
 function spec(partial: Partial<MarkerSpec> = {}): MarkerSpec {
   return {
@@ -74,5 +89,31 @@ describe("toggleMarkerTip / closeAllMarkerTips", () => {
     toggleMarkerTip(el);
     closeAllMarkerTips();
     expect(el.classList.contains("tm-open")).toBe(false);
+  });
+});
+
+describe("handleMarkerTap", () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => closeAllMarkerTips());
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  it("모바일 탭: 툴팁만 열고 onClick(포커스 스크롤)은 억제한다", () => {
+    setHover(true); // (hover:none) = 모바일
+    const onClick = vi.fn();
+    const el = buildMarkerElement(spec());
+    handleMarkerTap(el, spec({ onClick }));
+    expect(el.classList.contains("tm-open")).toBe(true);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("데스크톱 클릭: onClick(리스트 스크롤)을 실행한다", () => {
+    setHover(false); // 호버 있는 기기
+    const onClick = vi.fn();
+    const el = buildMarkerElement(spec());
+    handleMarkerTap(el, spec({ onClick }));
+    expect(el.classList.contains("tm-open")).toBe(false);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
