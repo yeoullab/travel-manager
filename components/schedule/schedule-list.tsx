@@ -14,6 +14,7 @@ type Props = {
   selectedIds?: Set<string>;
   onToggleSelected?: (item: ScheduleItem) => void;
   registerItemRef?: (id: string, el: HTMLLIElement | null) => void;
+  variant?: "main" | "candidate";
 };
 
 export function ScheduleList({
@@ -26,6 +27,7 @@ export function ScheduleList({
   selectedIds,
   onToggleSelected,
   registerItemRef,
+  variant = "main",
 }: Props) {
   return (
     <ul className="mt-3 flex flex-col gap-2">
@@ -43,6 +45,7 @@ export function ScheduleList({
             selected={selectedIds?.has(item.id) ?? false}
             onToggleSelected={onToggleSelected}
             registerRef={(el) => registerItemRef?.(item.id, el)}
+            variant={variant}
           />
         ))}
       </SortableContext>

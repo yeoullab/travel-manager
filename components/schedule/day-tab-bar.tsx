@@ -7,10 +7,19 @@ type Props = {
   days: TripDay[];
   activeDayId: string | null;
   onSelect: (dayId: string) => void;
+  candidateActive?: boolean;
+  onSelectCandidates?: () => void;
   className?: string;
 };
 
-export function DayTabBar({ days, activeDayId, onSelect, className }: Props) {
+export function DayTabBar({
+  days,
+  activeDayId,
+  onSelect,
+  candidateActive,
+  onSelectCandidates,
+  className,
+}: Props) {
   return (
     <div
       className={cn(
@@ -52,6 +61,25 @@ export function DayTabBar({ days, activeDayId, onSelect, className }: Props) {
             </li>
           );
         })}
+        {onSelectCandidates && (
+          <li>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={candidateActive}
+              onClick={onSelectCandidates}
+              className={cn(
+                "flex h-10 min-w-[58px] flex-col items-center justify-center rounded-[8px] border-2 border-dashed px-2.5 transition-colors duration-150",
+                candidateActive
+                  ? "border-accent-orange bg-accent-orange/10 text-accent-orange"
+                  : "border-border-medium text-ink-700 hover:text-ink-900",
+              )}
+            >
+              <span className="text-[10px] font-medium tracking-wider uppercase">Plan B</span>
+              <span className="mt-0.5 text-[13px] font-semibold">후보</span>
+            </button>
+          </li>
+        )}
       </ul>
     </div>
   );

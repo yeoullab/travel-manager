@@ -40,6 +40,8 @@ import { buildScheduleMutationBase } from "@/lib/schedule/build-schedule-mutatio
 
 import { DayTabBar } from "@/components/schedule/day-tab-bar";
 import { ScheduleList } from "@/components/schedule/schedule-list";
+import { CandidateSection } from "@/components/schedule/candidate-section";
+import { CandidatePanel } from "@/components/schedule/candidate-panel";
 import {
   ScheduleItemModal,
   type ScheduleItemFormValue,
@@ -534,8 +536,13 @@ export function ScheduleTab({ tripId }: Props) {
           <div className="flex items-stretch gap-2">
             <DayTabBar
               days={days}
-              activeDayId={activeDayId}
-              onSelect={setActiveDayId}
+              activeDayId={view === "day" ? activeDayId : null}
+              onSelect={(dayId) => {
+                setView("day");
+                setActiveDayId(dayId);
+              }}
+              candidateActive={view === "candidates"}
+              onSelectCandidates={() => setView("candidates")}
               className="min-w-0 flex-1 lg:top-0"
             />
             <button
@@ -574,7 +581,7 @@ export function ScheduleTab({ tripId }: Props) {
             mapOpen ? "flex-1 overflow-y-auto" : "",
           )}
         >
-          {selectionMode && (
+          {view === "day" && selectionMode && (
             <div className="border-border-primary bg-surface-100 sticky top-0 z-20 mt-2 flex items-center justify-between rounded-[8px] border px-3 py-2">
               <span className="text-ink-700 text-[13px] font-medium">{selectedCount}개 선택</span>
               <div className="flex items-center gap-1.5">
@@ -605,38 +612,61 @@ export function ScheduleTab({ tripId }: Props) {
             </div>
           )}
 
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            {activeDayItems.length === 0 ? (
-              <EmptyState
-                className="py-16"
-                icon={<CalendarX size={48} strokeWidth={1.5} />}
-                title="아직 일정이 없어요"
-                description="일정을 추가해 하루를 계획해보세요."
-                cta={
-                  <Button variant="primary" onClick={openCreate}>
-                    + 일정 추가
-                  </Button>
-                }
-              />
-            ) : (
-              <ScheduleList
-                items={activeDayItems}
-                isDomestic={trip?.is_domestic ?? true}
-                onTapItem={selectionMode ? toggleSelected : openEdit}
-                onLongPressItem={enterSelectionMode}
-                onTapNumber={handleNumberTap}
-                selectionMode={selectionMode}
-                selectedIds={selectedIds}
-                onToggleSelected={toggleSelected}
-                registerItemRef={registerItemRef}
-              />
-            )}
-          </DndContext>
+          {view === "day" ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              {activeDayItems.length === 0 && activeDayCandidates.length === 0 ? (
+                <EmptyState
+                  className="py-16"
+                  icon={<CalendarX size={48} strokeWidth={1.5} />}
+                  title="아직 일정이 없어요"
+                  description="일정을 추가해 하루를 계획해보세요."
+                  cta={
+                    <Button variant="primary" onClick={openCreate}>
+                      + 일정 추가
+                    </Button>
+                  }
+                />
+              ) : (
+                <>
+                  <ScheduleList
+                    items={activeDayItems}
+                    isDomestic={trip?.is_domestic ?? true}
+                    onTapItem={selectionMode ? toggleSelected : openEdit}
+                    onLongPressItem={enterSelectionMode}
+                    onTapNumber={handleNumberTap}
+                    selectionMode={selectionMode}
+                    selectedIds={selectedIds}
+                    onToggleSelected={toggleSelected}
+                    registerItemRef={registerItemRef}
+                  />
+                  {activeDayCandidates.length > 0 && (
+                    <CandidateSection
+                      items={activeDayCandidates}
+                      isDomestic={trip?.is_domestic ?? true}
+                      onTapItem={openEdit}
+                      onTapNumber={handleNumberTap}
+                      registerItemRef={registerItemRef}
+                    />
+                  )}
+                </>
+              )}
+            </DndContext>
+          ) : (
+            <CandidatePanel
+              poolItems={poolItems}
+              candidatesByDay={candidatesByDay}
+              days={days}
+              isDomestic={trip?.is_domestic ?? true}
+              onTapItem={openEdit}
+              onTapNumber={handleNumberTap}
+              registerItemRef={registerItemRef}
+            />
+          )}
         </div>
       </section>
 

@@ -7,6 +7,7 @@ import type { ScheduleItem } from "@/lib/schedule/use-schedule-list";
 import type { ScheduleCategory } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { resolvePlaceLink } from "@/lib/maps/place-link";
+import { markerColorsFor } from "@/lib/maps/marker-colors";
 import { useLongPress } from "@/lib/hooks/use-long-press";
 
 type Props = {
@@ -20,6 +21,7 @@ type Props = {
   selected?: boolean;
   onToggleSelected?: (item: ScheduleItem) => void;
   registerRef?: (el: HTMLLIElement | null) => void;
+  variant?: "main" | "candidate";
 };
 
 export function SortableScheduleItem({
@@ -33,6 +35,7 @@ export function SortableScheduleItem({
   selected = false,
   onToggleSelected,
   registerRef,
+  variant = "main",
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -91,9 +94,21 @@ export function SortableScheduleItem({
           {...attributes}
           {...listeners}
         >
-          <span className="bg-accent-orange text-cream flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums">
-            {index}
-          </span>
+          {variant === "candidate" ? (
+            <span
+              className="flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-dashed bg-transparent text-[11px] font-semibold tabular-nums"
+              style={{
+                borderColor: markerColorsFor(item.category_code).fill,
+                color: markerColorsFor(item.category_code).fill,
+              }}
+            >
+              {index}
+            </span>
+          ) : (
+            <span className="bg-accent-orange text-cream flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums">
+              {index}
+            </span>
+          )}
         </button>
       )}
       <div
