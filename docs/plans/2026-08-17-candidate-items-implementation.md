@@ -17,7 +17,7 @@ spec: docs/specs/2026-08-17-candidate-items-and-category-colors-design.md
 
 **작업 순서 주의:** DB 마이그레이션(Task 1)이 모든 뒤 Task의 전제다. 마이그레이션 적용 전에는 통합 테스트가 성립하지 않으므로, DB 파트는 "마이그레이션 작성 → 적용 → 테스트로 검증" 순서로 진행한다 (일반 TDD 순서의 예외). 클라이언트 파트는 TDD를 따른다.
 
-**배포 호환성:** 마이그레이션은 배포 중인 V1 클라이언트와 하위 호환이다 — `create_schedule_item`의 신규 파라미터 2개는 default가 있어 기존 13-arg named 호출이 그대로 동작하고, 구 13-param 시그니처는 drop하므로 PostgREST 오버로드 모호성이 없다 (0009·0020과 동일한 drop+recreate 패턴).
+**배포 호환성:** `create_schedule_item`의 신규 파라미터 2개는 default가 있어 기존 named 호출이 동작한다. 단, 현재 V1의 `trip_days!inner` 조회를 보호하려면 기존 단일 `trip_day_id` FK를 제거하고 복합 FK로 **교체**해야 하며, `create_lodging_schedule_items_for_range`도 같은 마이그레이션에서 신규 `trip_id`를 저장하도록 재정의해야 한다. 통합 테스트·E2E는 `.env.local`을 통해 **linked 원격 DB**를 사용하므로, 원격 push는 Task 2에서 로컬 `db reset` 검증을 통과한 뒤 수행한다 (push 전 로컬 검증이 방어선).
 
 ---
 
@@ -40,6 +40,7 @@ spec: docs/specs/2026-08-17-candidate-items-and-category-colors-design.md
 | Modify | `lib/maps/types.ts` | MarkerSpec 확장 (color/textColor/variant) |
 | Modify | `lib/maps/providers/naver-provider.ts`, `google-provider.ts` | main/candidate 마커 렌더 |
 | Modify | `components/schedule/map-panel.tsx` | MapItem 확장, marker-colors 적용 |
+| Modify | `app/share/[token]/page.tsx` | 게스트 main 마커 category/variant 전달 + cafe 허용 |
 | Modify | `lib/schedule/use-schedule-list.ts` | inner join → `.eq("trip_id")` 직접 필터 |
 | Modify | `lib/schedule/use-create-schedule-item.ts` | p_is_candidate / p_trip_id 전달 |
 | Modify | `lib/schedule/apply-local-reorder.ts`, `apply-local-move.ts`, `apply-local-bulk-move.ts` | 파티션 인식 |
@@ -47,7 +48,10 @@ spec: docs/specs/2026-08-17-candidate-items-and-category-colors-design.md
 | Modify | `components/schedule/schedule-list.tsx`, `sortable-schedule-item.tsx` | candidate variant (hollow 배지) |
 | Modify | `components/schedule/day-move-sheet.tsx` | 제목 커스텀 + "전체 후보" 옵션 |
 | Modify | `components/trip/schedule-tab.tsx` | 파티션 분리, 뷰 전환, 지도 토글, 전환 액션 배선 |
+| Modify | `components/trip/date-shrink-confirm.tsx` | 기간 축소 시 본 일정/후보의 서로 다른 이동 목적지 안내 |
 | Test | `tests/integration/candidate-items-rpc.test.ts` 등 (Task 3–4) | RPC/RLS/게스트 검증 |
+| Modify/Test | `tests/unit/use-categories.test.ts`, `tests/unit/schedule-item-modal-stage.test.ts`, `tests/integration/rls-categories.test.ts`, `tests/e2e/settings-categories.spec.ts` | cafe 7종·신규 DB 필드 회귀 가드 |
+| Modify | `playwright.config.ts` | candidate-flow를 alice 프로젝트에서 실제 수집 |
 | Test | `tests/unit/marker-colors.test.ts` 외 갱신 다수 | 회귀 가드 |
 | Test | `tests/e2e/candidate-flow.spec.ts` | 등록→섹션→탭→승격 플로우 |
 
@@ -92,6 +96,11 @@ alter table public.schedule_items
   check (trip_day_id is not null or is_candidate);
 
 -- trip_id 비정규화 정합성: (trip_day_id, trip_id) 쌍이 trip_days와 일치해야 함.
+-- 기존 단일 FK를 남기면 PostgREST가 trip_days 관계를 2개로 감지하므로 반드시 교체한다.
+-- 복합 FK가 기존 on delete cascade 역할도 이어받는다.
+alter table public.schedule_items
+  drop constraint schedule_items_trip_day_id_fkey;
+
 -- MATCH SIMPLE 이므로 trip_day_id null(풀 후보)이면 제약 미적용 — 의도된 동작.
 create unique index trip_days_id_trip_id_key on public.trip_days(id, trip_id);
 alter table public.schedule_items
@@ -190,6 +199,7 @@ insert into public.categories (code, name, color_token, sort_order)
 -- 4. RPC 교체. 시그니처가 바뀌는 함수는 구 버전 drop (PostgREST 오버로드 모호성 방지,
 --    0009·0020 패턴). update/delete/reorder/move/resize/guest 는 시그니처 동일 →
 --    create or replace 만.
+--    sort_order를 읽거나 쓰는 RPC는 모두 trips 행을 FOR UPDATE로 잠근 뒤 계산한다.
 -- ══════════════════════════════════════════════════════════════════════
 
 drop function if exists public.create_schedule_item(
@@ -242,6 +252,17 @@ begin
   end if;
   if not public.can_access_trip(v_trip_id) then raise exception 'forbidden'; end if;
 
+  -- 같은 여행의 모든 sort_order mutation과 직렬화한다.
+  perform 1 from public.trips where id = v_trip_id for update;
+
+  -- 잠금 대기 중 resize로 day가 삭제될 수 있으므로 day 경로를 다시 검증한다.
+  if p_trip_day_id is not null and not exists (
+    select 1 from public.trip_days
+    where id = p_trip_day_id and trip_id = v_trip_id
+  ) then
+    raise exception 'trip_day_not_found';
+  end if;
+
   if p_place_provider is not null then
     if p_place_lat is null or p_place_lng is null then
       raise exception 'place_coordinate_required';
@@ -292,7 +313,107 @@ grant execute on function public.create_schedule_item(
 ) to authenticated;
 ```
 
-- [ ] **Step 4: `update_schedule_item` 교체 (시그니처 동일, dayless 대응)**
+- [ ] **Step 4: `create_lodging_schedule_items_for_range` 교체 (`trip_id` 저장 + 본 일정 파티션)**
+
+기존 함수는 `trip_id`를 INSERT하지 않으므로 신규 NOT NULL 스키마에서 즉시 실패한다. 시그니처는 유지하고 본 일정 전용으로 재정의한다:
+
+```sql
+create or replace function public.create_lodging_schedule_items_for_range(
+  p_trip_id            uuid,
+  p_start_day_id       uuid,
+  p_end_day_id         uuid,
+  p_title              text,
+  p_time_of_day        time without time zone default null,
+  p_place_name         text default null,
+  p_place_address      text default null,
+  p_place_lat          double precision default null,
+  p_place_lng          double precision default null,
+  p_place_provider     text default null,
+  p_place_external_id  text default null,
+  p_memo               text default null,
+  p_url                text default null,
+  p_place_external_url text default null
+) returns uuid[]
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid         uuid := auth.uid();
+  v_is_domestic boolean;
+  v_start_no    int;
+  v_end_no      int;
+  v_lo          int;
+  v_hi          int;
+  v_day         record;
+  v_next_order  int;
+  v_new_id      uuid;
+  v_ids         uuid[] := '{}';
+begin
+  if v_uid is null then raise exception 'unauthenticated'; end if;
+  if not public.can_access_trip(p_trip_id) then raise exception 'forbidden'; end if;
+
+  -- create/reorder/move/delete/candidacy와 동일한 여행 단위 잠금 규칙.
+  perform 1 from public.trips where id = p_trip_id for update;
+
+  select td.day_number, t.is_domestic into v_start_no, v_is_domestic
+    from public.trip_days td
+    join public.trips t on t.id = td.trip_id
+    where td.id = p_start_day_id and td.trip_id = p_trip_id;
+  if v_start_no is null then raise exception 'start_day_not_found'; end if;
+
+  select day_number into v_end_no
+    from public.trip_days
+    where id = p_end_day_id and trip_id = p_trip_id;
+  if v_end_no is null then raise exception 'end_day_not_found'; end if;
+
+  if p_place_provider is not null then
+    if p_place_lat is null or p_place_lng is null then
+      raise exception 'place_coordinate_required';
+    end if;
+    if v_is_domestic and p_place_provider != 'naver' then
+      raise exception 'place_provider_mismatch';
+    end if;
+    if not v_is_domestic and p_place_provider != 'google' then
+      raise exception 'place_provider_mismatch';
+    end if;
+  end if;
+
+  v_lo := least(v_start_no, v_end_no);
+  v_hi := greatest(v_start_no, v_end_no);
+
+  for v_day in
+    select id
+    from public.trip_days
+    where trip_id = p_trip_id and day_number between v_lo and v_hi
+    order by day_number
+  loop
+    select coalesce(max(sort_order), 0) + 1 into v_next_order
+      from public.schedule_items
+      where trip_day_id = v_day.id and is_candidate = false;
+
+    insert into public.schedule_items(
+      trip_day_id, trip_id, is_candidate, title, sort_order, time_of_day,
+      place_name, place_address, place_lat, place_lng,
+      place_provider, place_external_id, memo, url,
+      category_code, place_external_url
+    ) values (
+      v_day.id, p_trip_id, false, p_title, v_next_order, p_time_of_day,
+      p_place_name, p_place_address, p_place_lat, p_place_lng,
+      p_place_provider, p_place_external_id, p_memo, p_url,
+      'lodging', p_place_external_url
+    ) returning id into v_new_id;
+
+    v_ids := array_append(v_ids, v_new_id);
+  end loop;
+
+  return v_ids;
+end $$;
+```
+
+(시그니처가 유지되므로 기존 revoke/grant가 보존된다.)
+
+- [ ] **Step 5: `update_schedule_item` 교체 (시그니처 동일, dayless 대응)**
 
 ```sql
 create or replace function public.update_schedule_item(
@@ -360,7 +481,7 @@ end $$;
 
 (시그니처 동일 → revoke/grant 재선언 불필요. 이하 시그니처 유지 함수 모두 동일.)
 
-- [ ] **Step 5: `delete_schedule_item` 교체 (dayless + 파티션 재번호)**
+- [ ] **Step 6: `delete_schedule_item` 교체 (dayless + 파티션 재번호)**
 
 ```sql
 create or replace function public.delete_schedule_item(p_item_id uuid)
@@ -373,6 +494,7 @@ declare
   v_uid          uuid := auth.uid();
   v_day_id       uuid;
   v_trip_id      uuid;
+  v_locked_trip  uuid;
   v_is_candidate boolean;
 begin
   if v_uid is null then raise exception 'unauthenticated'; end if;
@@ -382,6 +504,16 @@ begin
     from public.schedule_items where id = p_item_id;
   if v_trip_id is null then raise exception 'schedule_item_not_found'; end if;
   if not public.can_access_trip(v_trip_id) then raise exception 'forbidden'; end if;
+
+  v_locked_trip := v_trip_id;
+  perform 1 from public.trips where id = v_locked_trip for update;
+
+  -- 잠금 전 값은 식별용일 뿐이다. mutation에 쓸 파티션을 잠금 후 다시 읽는다.
+  select trip_day_id, trip_id, is_candidate
+    into v_day_id, v_trip_id, v_is_candidate
+    from public.schedule_items where id = p_item_id;
+  if v_trip_id is null then raise exception 'schedule_item_not_found'; end if;
+  if v_trip_id != v_locked_trip then raise exception 'schedule_item_changed'; end if;
 
   delete from public.schedule_items where id = p_item_id;
 
@@ -408,7 +540,7 @@ begin
 end $$;
 ```
 
-- [ ] **Step 6: `delete_schedule_items` (bulk) 교체**
+- [ ] **Step 7: `delete_schedule_items` (bulk) 교체**
 
 trip_days inner join 제거(풀 후보 매칭 가능), trips 행 잠금으로 동시성 단순화, 파티션별 재번호:
 
@@ -425,6 +557,7 @@ declare
   v_matched_count int;
   v_trip_count int;
   v_trip_id uuid;
+  v_locked_trip_id uuid;
   v_inaccessible boolean;
 begin
   if auth.uid() is null then raise exception 'unauthenticated'; end if;
@@ -455,7 +588,23 @@ begin
   if v_inaccessible then raise exception 'forbidden'; end if;
 
   -- 여행 단위 직렬화 (파티션 재번호 경합 방지)
-  perform 1 from public.trips where id = v_trip_id for update;
+  v_locked_trip_id := v_trip_id;
+  perform 1 from public.trips where id = v_locked_trip_id for update;
+
+  -- 잠금 대기 중 대상이 이동/삭제됐을 수 있으므로 mutation 직전에 다시 검증한다.
+  select count(*), count(distinct si.trip_id), (array_agg(distinct si.trip_id))[1]
+    into v_matched_count, v_trip_count, v_trip_id
+    from public.schedule_items si
+    where si.id in (select distinct unnest(p_item_ids));
+  if v_matched_count <> v_expected_count then
+    raise exception 'missing_schedule_items';
+  end if;
+  if v_trip_count <> 1 or v_trip_id is null then
+    raise exception 'mixed_trip_items';
+  end if;
+  if v_trip_id != v_locked_trip_id then
+    raise exception 'schedule_items_changed';
+  end if;
 
   with removed as (
     delete from public.schedule_items si
@@ -484,7 +633,7 @@ begin
 end $$;
 ```
 
-- [ ] **Step 7: `reorder_schedule_items_in_day` 교체 (파티션 판정 + 파티션 개수 검증)**
+- [ ] **Step 8: `reorder_schedule_items_in_day` 교체 (파티션 판정 + 파티션 개수 검증)**
 
 ```sql
 create or replace function public.reorder_schedule_items_in_day(
@@ -498,6 +647,7 @@ as $$
 declare
   v_uid            uuid := auth.uid();
   v_trip_id        uuid;
+  v_locked_trip    uuid;
   v_expected_count int;
   v_provided_count int;
   v_all_cand       boolean;
@@ -509,6 +659,14 @@ begin
   select trip_id into v_trip_id from public.trip_days where id = p_trip_day_id;
   if v_trip_id is null then raise exception 'trip_day_not_found'; end if;
   if not public.can_access_trip(v_trip_id) then raise exception 'forbidden'; end if;
+
+  v_locked_trip := v_trip_id;
+  perform 1 from public.trips where id = v_locked_trip for update;
+
+  -- resize가 같은 잠금을 먼저 잡고 day를 삭제했을 수 있다.
+  select trip_id into v_trip_id from public.trip_days where id = p_trip_day_id;
+  if v_trip_id is null then raise exception 'trip_day_not_found'; end if;
+  if v_trip_id != v_locked_trip then raise exception 'trip_day_changed'; end if;
 
   v_provided_count := coalesce(array_length(p_item_ids, 1), 0);
   if v_provided_count = 0 then raise exception 'item_set_mismatch'; end if;
@@ -554,7 +712,7 @@ begin
 end $$;
 ```
 
-- [ ] **Step 8: move RPC 2종 교체 (본 일정 전용 가드 + 파티션 인식 재번호)**
+- [ ] **Step 9: move RPC 2종 교체 (본 일정 전용 가드 + 파티션 인식 재번호)**
 
 ```sql
 create or replace function public.move_schedule_item_across_days(
@@ -570,6 +728,7 @@ declare
   v_uid            uuid := auth.uid();
   v_source_day_id  uuid;
   v_source_trip_id uuid;
+  v_locked_trip_id uuid;
   v_is_candidate   boolean;
   v_target_trip_id uuid;
   v_target_count   int;
@@ -590,6 +749,21 @@ begin
   if not public.can_access_trip(v_source_trip_id) then
     raise exception 'forbidden';
   end if;
+
+  v_locked_trip_id := v_source_trip_id;
+  perform 1 from public.trips where id = v_locked_trip_id for update;
+
+  -- 잠금 전 source/day 값은 식별용이다. 실제 mutation 상태를 다시 읽는다.
+  select trip_day_id, trip_id, is_candidate
+    into v_source_day_id, v_source_trip_id, v_is_candidate
+    from public.schedule_items where id = p_item_id;
+  if v_source_trip_id is null then raise exception 'schedule_item_not_found'; end if;
+  if v_source_trip_id != v_locked_trip_id then raise exception 'schedule_item_changed'; end if;
+  if v_is_candidate then raise exception 'candidate_not_movable_here'; end if;
+
+  select trip_id into v_target_trip_id from public.trip_days where id = p_target_day_id;
+  if v_target_trip_id is null then raise exception 'target_day_not_found'; end if;
+  if v_target_trip_id != v_locked_trip_id then raise exception 'cannot_move_across_trips'; end if;
 
   if v_source_day_id = p_target_day_id then
     raise exception 'use_reorder_for_same_day';
@@ -648,6 +822,7 @@ as $$
 declare
   v_uid          uuid := auth.uid();
   v_target_trip  uuid;
+  v_locked_trip  uuid;
   v_item_count   int;
   v_unique_count int;
   v_current_max  int;
@@ -669,6 +844,15 @@ begin
     where id = p_target_day_id;
   if v_target_trip is null then raise exception 'target_day_not_found'; end if;
   if not public.can_access_trip(v_target_trip) then raise exception 'forbidden'; end if;
+
+  v_locked_trip := v_target_trip;
+  perform 1 from public.trips where id = v_locked_trip for update;
+
+  select trip_id into v_target_trip
+    from public.trip_days
+    where id = p_target_day_id;
+  if v_target_trip is null then raise exception 'target_day_not_found'; end if;
+  if v_target_trip != v_locked_trip then raise exception 'target_day_changed'; end if;
 
   select count(*) into v_item_count
     from public.schedule_items
@@ -729,7 +913,7 @@ begin
 end $$;
 ```
 
-- [ ] **Step 9: 신규 `set_schedule_item_candidacy` — "대상 파티션으로 이동" 단일 RPC**
+- [ ] **Step 10: 신규 `set_schedule_item_candidacy` — "대상 파티션으로 이동" 단일 RPC**
 
 ```sql
 -- 승격(후보→본)·강등(본→후보)·후보 일자 이동·풀 이동을 모두 담당.
@@ -747,6 +931,7 @@ as $$
 declare
   v_uid         uuid := auth.uid();
   v_trip_id     uuid;
+  v_locked_trip uuid;
   v_src_day     uuid;
   v_src_cand    boolean;
   v_target_trip uuid;
@@ -759,6 +944,16 @@ begin
     from public.schedule_items where id = p_item_id;
   if v_trip_id is null then raise exception 'schedule_item_not_found'; end if;
   if not public.can_access_trip(v_trip_id) then raise exception 'forbidden'; end if;
+
+  v_locked_trip := v_trip_id;
+  perform 1 from public.trips where id = v_locked_trip for update;
+
+  -- 잠금 대기 뒤 현재 파티션을 다시 읽는다.
+  select trip_id, trip_day_id, is_candidate
+    into v_trip_id, v_src_day, v_src_cand
+    from public.schedule_items where id = p_item_id;
+  if v_trip_id is null then raise exception 'schedule_item_not_found'; end if;
+  if v_trip_id != v_locked_trip then raise exception 'schedule_item_changed'; end if;
 
   if not p_is_candidate and p_target_day_id is null then
     raise exception 'target_day_required';
@@ -820,7 +1015,7 @@ revoke all on function public.set_schedule_item_candidacy(uuid, boolean, uuid) f
 grant execute on function public.set_schedule_item_candidacy(uuid, boolean, uuid) to authenticated;
 ```
 
-- [ ] **Step 10: `resize_trip_days` 교체 (축소 시 일자 후보 → 풀)**
+- [ ] **Step 11: `resize_trip_days` 교체 (축소 시 일자 후보 → 풀)**
 
 0006의 함수 전체를 재작성하되, 축소 분기만 바뀐다 (확장 분기·day date 갱신은 그대로):
 
@@ -851,6 +1046,8 @@ begin
     raise exception 'trip_not_found_or_forbidden';
   end if;
 
+  -- 이 UPDATE가 trips 행 잠금을 획득한다 — 다른 sort_order RPC들의
+  -- `for update` 잠금과 같은 잠금이므로 day 삭제·이동이 그들과 직렬화된다.
   update public.trips
     set start_date = p_new_start, end_date = p_new_end
     where id = p_trip_id;
@@ -935,7 +1132,7 @@ begin
 end $$;
 ```
 
-- [ ] **Step 11: `get_guest_trip_data` 교체 (후보 제외 필터)**
+- [ ] **Step 12: `get_guest_trip_data` 교체 (후보 제외 필터)**
 
 0020의 함수 전체를 그대로 재작성하되 items 서브쿼리 where 절만 바꾼다. 유일한 변경점:
 
@@ -946,7 +1143,7 @@ end $$;
 
 (0020의 `where si.trip_day_id = td.id` → `and si.is_candidate = false` 추가. trip/share/expenses/todos/records/return 블록은 0020과 글자 단위로 동일하게 복사. 파일 끝에 ROLLBACK 주석 블록 추가: `-- drop function if exists public.set_schedule_item_candidacy(uuid, boolean, uuid);` 등.)
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
 git add supabase/migrations/0023_candidate_items.sql
@@ -955,27 +1152,46 @@ git commit --no-verify -m "feat(db): candidate items schema + partition-aware RP
 
 ---
 
-### Task 2: 마이그레이션 적용 + 타입 재생성
+### Task 2: 마이그레이션 검증·적용 + 타입 재생성
 
 **Files:**
 - Modify: `types/database.ts` (자동 생성)
 
-- [ ] **Step 1: 마이그레이션 적용**
+**DB 대상 주의:** 이 저장소의 통합 테스트(`vitest.integration.config.ts`)와 E2E(dev 서버)는 모두
+`.env.local`의 `NEXT_PUBLIC_SUPABASE_URL` — 즉 **linked 원격 DB** — 를 사용한다. 로컬 스택으로
+우회하는 배선은 없다. 따라서 로컬 reset은 **SQL 검증용**이고, Task 3 이후의 테스트가 성립하려면
+이 Task에서 원격 push까지 완료해야 한다. 0023은 배포 중인 V1과 하위 호환으로 설계됐으므로
+(신규 파라미터 default, FK 교체, 게스트 RPC 시그니처 동일) 클라이언트 배포 전 원격 적용이 안전하다.
+
+- [ ] **Step 1: 로컬 Supabase에서 SQL 검증**
+
+전제: Docker + 로컬 Supabase 스택 (`supabase start`). 스택이 없으면 이 검증 단계만 건너뛰고
+Step 2의 dry-run을 유일한 사전 점검으로 삼는다.
+
+Run: `supabase db reset --local`
+Expected: 로컬 DB가 0001~0023을 처음부터 적용하고 seed까지 성공. 실패하면 SQL을 고친 뒤 재실행 — **원격 push 전에 여기서 전부 잡는다.**
+
+- [ ] **Step 2: linked 원격에 적용**
+
+Run: `supabase db push --dry-run`
+Expected: 적용 예정 목록에 `0023_candidate_items.sql`만 표시. 예상 밖 migration이 보이면 중단하고 원인 확인.
 
 Run: `supabase db push`
-Expected: `0023_candidate_items.sql` 적용 성공. 에러 시 SQL 수정 후 재시도 (부분 적용됐다면 supabase migration repair 후 재적용).
+Expected: `0023_candidate_items.sql` 적용 성공. 부분 적용으로 실패하면 `supabase migration repair` 후 재적용.
 
-- [ ] **Step 2: 타입 재생성**
+- [ ] **Step 3: 타입 재생성**
 
 Run: `pnpm db:types`
-Expected: `types/database.ts` 갱신 — `schedule_items.Row`에 `is_candidate: boolean`, `trip_id: string`, `trip_day_id: string | null`; Functions에 `set_schedule_item_candidacy` 추가.
+Expected: `types/database.ts` 갱신 — `schedule_items.Row`에 `is_candidate: boolean`, `trip_id: string`, `trip_day_id: string | null`; Functions에 `set_schedule_item_candidacy` 추가. (`db:types`는 `--linked`라 Step 2의 push가 선행되어야 반영된다.)
 
-- [ ] **Step 3: 타입 파급 확인**
+- [ ] **Step 4: 타입 파급 확인**
 
 Run: `pnpm exec tsc --noEmit` (또는 `pnpm lint`)
 Expected: `trip_day_id`가 nullable이 되면서 `schedule-tab.tsx`(itemsByDay 그룹핑), `apply-local-*` 등에서 컴파일 에러가 날 수 있다. **여기서는 고치지 말고 에러 목록만 기록** — Task 7·10에서 파티션 로직과 함께 수정한다. 에러가 안 나면 그대로 진행.
 
-- [ ] **Step 4: Commit**
+추가로 `app/share/[token]/page.tsx`의 `MapPanel` 인자, `tests/unit/schedule-item-modal-stage.test.ts`의 신규 필드 누락이 오류 목록에 포함되는지 확인하고 각각 Task 5·7에서 해결한다.
+
+- [ ] **Step 5: Commit**
 
 ```bash
 git add types/database.ts
@@ -1011,6 +1227,13 @@ let tripId = "";
 let day1Id = "";
 let day2Id = "";
 
+// Postgres 함수 인자에는 nullability 메타데이터가 없어 생성 타입이 null을 거부할 수 있다.
+// 이 저장소의 기존 integration 테스트와 같은 RPC 경계 캐스트를 한 곳에 모은다.
+function callRpc(name: string, args: Record<string, unknown>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (userC as any).rpc(name, args);
+}
+
 async function sortOrders(filter: {
   dayId?: string | null;
   isCandidate: boolean;
@@ -1042,7 +1265,7 @@ beforeAll(async () => {
   );
   await userC.auth.signInWithPassword({ email: `cand+${STAMP}@test.local`, password: PWD });
 
-  const { data: tid } = await userC.rpc("create_trip", {
+  const { data: tid } = await callRpc("create_trip", {
     p_title: "CandT",
     p_destination: "Tokyo",
     p_start_date: "2026-09-01",
@@ -1069,14 +1292,14 @@ describe("candidate creation partitions (0023)", () => {
   it("main / day-candidate / pool 이 각각 독립 시퀀스로 번호를 가진다", async () => {
     // 본 2 + 일자 후보 2 + 풀 2
     for (const t of ["m1", "m2"]) {
-      const { error } = await userC.rpc("create_schedule_item", {
+      const { error } = await callRpc("create_schedule_item", {
         p_trip_day_id: day1Id,
         p_title: t,
       });
       expect(error).toBeNull();
     }
     for (const t of ["c1", "c2"]) {
-      const { error } = await userC.rpc("create_schedule_item", {
+      const { error } = await callRpc("create_schedule_item", {
         p_trip_day_id: day1Id,
         p_title: t,
         p_is_candidate: true,
@@ -1084,7 +1307,7 @@ describe("candidate creation partitions (0023)", () => {
       expect(error).toBeNull();
     }
     for (const t of ["p1", "p2"]) {
-      const { error } = await userC.rpc("create_schedule_item", {
+      const { error } = await callRpc("create_schedule_item", {
         p_trip_day_id: null,
         p_title: t,
         p_is_candidate: true,
@@ -1101,7 +1324,7 @@ describe("candidate creation partitions (0023)", () => {
   });
 
   it("day 없이 is_candidate=false 는 에러", async () => {
-    const { error } = await userC.rpc("create_schedule_item", {
+    const { error } = await callRpc("create_schedule_item", {
       p_trip_day_id: null,
       p_title: "bad",
       p_is_candidate: false,
@@ -1111,7 +1334,7 @@ describe("candidate creation partitions (0023)", () => {
   });
 
   it("day 없이 trip_id 도 없으면 에러", async () => {
-    const { error } = await userC.rpc("create_schedule_item", {
+    const { error } = await callRpc("create_schedule_item", {
       p_trip_day_id: null,
       p_title: "bad2",
       p_is_candidate: true,
@@ -1124,7 +1347,7 @@ describe("set_schedule_item_candidacy", () => {
   it("강등: 본 → 같은 일자 후보 끝, 원 파티션 재압축", async () => {
     const mains = await sortOrders({ dayId: day1Id, isCandidate: false });
     const demoted = mains[0]; // m1 (sort 1)
-    const { error } = await userC.rpc("set_schedule_item_candidacy", {
+    const { error } = await callRpc("set_schedule_item_candidacy", {
       p_item_id: demoted.id,
       p_is_candidate: true,
       p_target_day_id: day1Id,
@@ -1142,7 +1365,7 @@ describe("set_schedule_item_candidacy", () => {
   it("승격: 후보 → 다른 일자 본 일정 끝", async () => {
     const cands = await sortOrders({ dayId: day1Id, isCandidate: true });
     const promoted = cands[0]; // c1
-    const { error } = await userC.rpc("set_schedule_item_candidacy", {
+    const { error } = await callRpc("set_schedule_item_candidacy", {
       p_item_id: promoted.id,
       p_is_candidate: false,
       p_target_day_id: day2Id,
@@ -1158,7 +1381,7 @@ describe("set_schedule_item_candidacy", () => {
   it("풀 이동: 일자 후보 → 풀 끝", async () => {
     const day1Cands = await sortOrders({ dayId: day1Id, isCandidate: true });
     const toPool = day1Cands[0]; // c2
-    const { error } = await userC.rpc("set_schedule_item_candidacy", {
+    const { error } = await callRpc("set_schedule_item_candidacy", {
       p_item_id: toPool.id,
       p_is_candidate: true,
       p_target_day_id: null,
@@ -1171,7 +1394,7 @@ describe("set_schedule_item_candidacy", () => {
 
   it("no-op: 이미 대상 파티션이면 에러 없이 순서 유지 (멱등)", async () => {
     const pool = await sortOrders({ dayId: null, isCandidate: true });
-    const { error } = await userC.rpc("set_schedule_item_candidacy", {
+    const { error } = await callRpc("set_schedule_item_candidacy", {
       p_item_id: pool[0].id,
       p_is_candidate: true,
       p_target_day_id: null,
@@ -1182,7 +1405,7 @@ describe("set_schedule_item_candidacy", () => {
 
   it("승격에 target day 누락 시 에러", async () => {
     const pool = await sortOrders({ dayId: null, isCandidate: true });
-    const { error } = await userC.rpc("set_schedule_item_candidacy", {
+    const { error } = await callRpc("set_schedule_item_candidacy", {
       p_item_id: pool[0].id,
       p_is_candidate: false,
     });
@@ -1196,7 +1419,7 @@ describe("partition-aware reorder / move / delete", () => {
     const cands = await sortOrders({ dayId: day1Id, isCandidate: true });
     expect(mains.length).toBeGreaterThan(0);
     expect(cands.length).toBeGreaterThan(0);
-    const { error } = await userC.rpc("reorder_schedule_items_in_day", {
+    const { error } = await callRpc("reorder_schedule_items_in_day", {
       p_trip_day_id: day1Id,
       p_item_ids: [mains[0].id, cands[0].id],
     });
@@ -1205,7 +1428,7 @@ describe("partition-aware reorder / move / delete", () => {
 
   it("reorder: 후보 파티션만 재정렬, 본 일정 순서는 영향 없음", async () => {
     // day1 후보를 2개로 만들고 역순 재정렬
-    await userC.rpc("create_schedule_item", {
+    await callRpc("create_schedule_item", {
       p_trip_day_id: day1Id,
       p_title: "c3",
       p_is_candidate: true,
@@ -1213,7 +1436,7 @@ describe("partition-aware reorder / move / delete", () => {
     const cands = await sortOrders({ dayId: day1Id, isCandidate: true });
     const mainsBefore = await sortOrders({ dayId: day1Id, isCandidate: false });
     const reversed = [...cands].reverse().map((r) => r.id);
-    const { error } = await userC.rpc("reorder_schedule_items_in_day", {
+    const { error } = await callRpc("reorder_schedule_items_in_day", {
       p_trip_day_id: day1Id,
       p_item_ids: reversed,
     });
@@ -1225,13 +1448,13 @@ describe("partition-aware reorder / move / delete", () => {
 
   it("move RPC 는 후보 입력을 거부한다", async () => {
     const cands = await sortOrders({ dayId: day1Id, isCandidate: true });
-    const { error: e1 } = await userC.rpc("move_schedule_item_across_days", {
+    const { error: e1 } = await callRpc("move_schedule_item_across_days", {
       p_item_id: cands[0].id,
       p_target_day_id: day2Id,
       p_target_position: 1,
     });
     expect(e1?.message).toMatch(/candidate_not_movable_here/);
-    const { error: e2 } = await userC.rpc("move_schedule_items_to_day", {
+    const { error: e2 } = await callRpc("move_schedule_items_to_day", {
       p_item_ids: [cands[0].id],
       p_target_day_id: day2Id,
     });
@@ -1241,13 +1464,13 @@ describe("partition-aware reorder / move / delete", () => {
   it("풀 후보 update / 단건 delete 가 동작한다", async () => {
     const pool = await sortOrders({ dayId: null, isCandidate: true });
     const target = pool[pool.length - 1];
-    const { error: ue } = await userC.rpc("update_schedule_item", {
+    const { error: ue } = await callRpc("update_schedule_item", {
       p_item_id: target.id,
       p_title: "pool-updated",
       p_category_code: "cafe",
     });
     expect(ue).toBeNull();
-    const { error: de } = await userC.rpc("delete_schedule_item", {
+    const { error: de } = await callRpc("delete_schedule_item", {
       p_item_id: target.id,
     });
     expect(de).toBeNull();
@@ -1257,17 +1480,17 @@ describe("partition-aware reorder / move / delete", () => {
 
   it("bulk delete: 풀 후보 + 본 일정 섞어 삭제해도 각 파티션이 재압축된다", async () => {
     // 풀 1개 + day1 본 1개 추가 후 함께 삭제
-    const { data: poolId } = await userC.rpc("create_schedule_item", {
+    const { data: poolId } = await callRpc("create_schedule_item", {
       p_trip_day_id: null,
       p_title: "bulk-pool",
       p_is_candidate: true,
       p_trip_id: tripId,
     });
-    const { data: mainId } = await userC.rpc("create_schedule_item", {
+    const { data: mainId } = await callRpc("create_schedule_item", {
       p_trip_day_id: day1Id,
       p_title: "bulk-main",
     });
-    const { error } = await userC.rpc("delete_schedule_items", {
+    const { error } = await callRpc("delete_schedule_items", {
       p_item_ids: [poolId as string, mainId as string],
     });
     expect(error).toBeNull();
@@ -1278,7 +1501,7 @@ describe("partition-aware reorder / move / delete", () => {
   });
 
   it("cafe 카테고리 FK insert 가 성공한다", async () => {
-    const { data: id, error } = await userC.rpc("create_schedule_item", {
+    const { data: id, error } = await callRpc("create_schedule_item", {
       p_trip_day_id: day1Id,
       p_title: "커피",
       p_category_code: "cafe",
@@ -1291,13 +1514,57 @@ describe("partition-aware reorder / move / delete", () => {
       .single();
     expect(row?.category_code).toBe("cafe");
   });
+
+  it("숙소 범위 생성은 trip_id를 저장하고 후보와 독립된 본 일정 번호를 쓴다", async () => {
+    await callRpc("create_schedule_item", {
+      p_trip_day_id: day1Id,
+      p_title: "candidate-before-lodging",
+      p_is_candidate: true,
+    });
+    const { data: ids, error } = await callRpc("create_lodging_schedule_items_for_range", {
+      p_trip_id: tripId,
+      p_start_day_id: day1Id,
+      p_end_day_id: day2Id,
+      p_title: "range-lodging",
+    });
+    expect(error).toBeNull();
+    expect(ids).toHaveLength(2);
+
+    const { data: rows, error: rowsError } = await userC
+      .from("schedule_items")
+      .select("trip_id, trip_day_id, is_candidate, sort_order")
+      .in("id", ids ?? []);
+    expect(rowsError).toBeNull();
+    expect(rows?.every((r) => r.trip_id === tripId && !r.is_candidate)).toBe(true);
+
+    const day1Main = await sortOrders({ dayId: day1Id, isCandidate: false });
+    expect(day1Main.map((r) => r.sort_order)).toEqual(day1Main.map((_, i) => i + 1));
+  });
+
+  it("같은 파티션 동시 생성 후 sort_order가 유일하고 연속이다", async () => {
+    const before = await sortOrders({ dayId: day2Id, isCandidate: true });
+    const results = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        callRpc("create_schedule_item", {
+          p_trip_day_id: day2Id,
+          p_title: `concurrent-${i}`,
+          p_is_candidate: true,
+        }),
+      ),
+    );
+    expect(results.every((r) => r.error === null)).toBe(true);
+
+    const after = await sortOrders({ dayId: day2Id, isCandidate: true });
+    expect(after).toHaveLength(before.length + 5);
+    expect(after.map((r) => r.sort_order)).toEqual(after.map((_, i) => i + 1));
+  });
 });
 ```
 
 - [ ] **Step 2: 실행 → 통과 확인**
 
 Run: `pnpm test:integration -- candidate-items-rpc`
-Expected: PASS 전건. 실패 시 마이그레이션 SQL을 수정하고 `supabase db push`로 재적용 후 재실행.
+Expected: PASS 전건. 실패 시 마이그레이션 SQL을 수정하고 `supabase db reset --local`로 로컬 검증 → 수정분을 반영하는 후속 migration(또는 0023이 아직 다른 곳에 공유되지 않았다면 `supabase migration repair` 후 재push)으로 원격에 재적용한 뒤 재실행한다.
 
 - [ ] **Step 3: Commit**
 
@@ -1445,12 +1712,19 @@ describe("게스트 공유: 후보 제외", () => {
     await alice.rpc("create_schedule_item", {
       p_trip_day_id: aliceDay1Id, p_title: "guest-hidden-cand", p_is_candidate: true,
     });
-    const { data: share } = await alice.rpc("create_guest_share", {
-      p_trip_id: aliceTripId,
-      p_show_schedule: true, p_show_expenses: false,
-      p_show_todos: false, p_show_records: false,
-    });
-    const token = (share as { token: string }).token;
+    const { data: share, error: shareError } = await alice
+      .from("guest_shares")
+      .insert({
+        trip_id: aliceTripId,
+        show_schedule: true,
+        show_expenses: false,
+        show_todos: false,
+        show_records: false,
+      })
+      .select("token")
+      .single();
+    expect(shareError).toBeNull();
+    const token = share!.token;
     const guest = anonClient();
     const { data } = await guest.rpc("get_guest_trip_data", { p_token: token });
     const json = JSON.stringify(data);
@@ -1460,7 +1734,7 @@ describe("게스트 공유: 후보 제외", () => {
 });
 ```
 
-**주의:** `create_guest_share`의 실제 시그니처·반환형은 `supabase/migrations/0016_guest_shares.sql`을 열어 확인하고 그 형태에 맞출 것 (기존 `tests/integration/get-guest-trip-data.test.ts`가 사용하는 호출을 그대로 복사하는 편이 안전하다).
+`guest_shares` 생성은 RPC가 아니라 현재 앱과 동일한 테이블 INSERT 경로를 사용한다 (`lib/guest/use-create-guest-share.ts`).
 
 - [ ] **Step 2: 실행 → 통과 확인**
 
@@ -1487,6 +1761,12 @@ git commit --no-verify -m "test(integration): candidate RLS forgery guard, resiz
 - Modify: `components/schedule/schedule-item-modal.tsx:44-69`
 - Modify: `lib/schedule/category-map.ts`
 - Modify: `lib/category/use-categories.ts` (CATEGORY_FALLBACK_LABEL)
+- Modify: `app/share/[token]/page.tsx` (SCHEDULE_CATEGORIES에 cafe)
+- Modify: `app/settings/categories/page.tsx` (7종 설명 + skeleton 개수)
+- Modify: `tests/unit/use-categories.test.ts`
+- Modify: `tests/unit/schedule-item-modal-stage.test.ts`
+- Modify: `tests/integration/rls-categories.test.ts`
+- Modify: `tests/e2e/settings-categories.spec.ts`
 
 - [ ] **Step 1: 회귀 가드 테스트를 먼저 갱신 (실패 상태로 만든다)**
 
@@ -1533,6 +1813,21 @@ it("cafe 는 지출 카테고리 food 로 매핑된다", () => {
   expect(expenseCategoryForScheduleCategory("cafe")).toBe("food");
 });
 ```
+
+`tests/unit/use-categories.test.ts`의 정확한 fallback 객체에 `cafe: "카페"`를 food 다음에 추가한다.
+
+`tests/unit/schedule-item-modal-stage.test.ts`:
+
+```typescript
+// mkItem 기본 Row에 타입 재생성으로 추가된 필드
+trip_id: "trip-1",
+is_candidate: false,
+
+// place_search 전수 케이스에도 cafe 포함
+for (const code of ["transport", "sightseeing", "food", "cafe", "lodging", "shopping"] as const) {
+```
+
+`tests/integration/rls-categories.test.ts`는 authenticated 결과를 7개로 바꾸고 code 순서에 `cafe`를 food 다음에 추가한다. `tests/e2e/settings-categories.spec.ts`도 테스트 이름을 "일정 7종 + 경비 6종"으로 바꾸고 일정 라벨 배열에 `"카페"`를 추가한다.
 
 - [ ] **Step 2: 실패 확인**
 
@@ -1642,15 +1937,22 @@ const CATEGORY_COLOR: Record<ScheduleCategory, string> = {
   cafe: "카페",
 ```
 
+`app/share/[token]/page.tsx`의 `SCHEDULE_CATEGORIES`에도 `"cafe"`를 food 다음에 추가해 공개된 cafe 본 일정이 `other`로 강등되지 않게 한다.
+
+`app/settings/categories/page.tsx`의 일정 카테고리 설명을 7종으로 고치고 `ScheduleSkeleton` 반복 횟수를 7로 변경한다.
+
 - [ ] **Step 4: 통과 확인**
 
 Run: `pnpm test -- schedule-category-mapping schedule-expense-category-map schedule-item-modal-stage use-categories`
-Expected: PASS (modal-stage·use-categories 테스트가 Record 완전성 때문에 깨졌다면 cafe 추가로 함께 해결).
+Expected: PASS.
+
+Run: `pnpm test:integration -- rls-categories`
+Expected: PASS — authenticated 사용자가 정확히 7개를 정렬 순서대로 조회.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add lib/types.ts app/globals.css components/ui/schedule-item.tsx components/schedule/schedule-item-modal.tsx lib/schedule/category-map.ts lib/category/use-categories.ts tests/unit/schedule-category-mapping.test.ts tests/unit/schedule-expense-category-map.test.ts
+git add -- lib/types.ts app/globals.css components/ui/schedule-item.tsx components/schedule/schedule-item-modal.tsx lib/schedule/category-map.ts lib/category/use-categories.ts 'app/share/[token]/page.tsx' app/settings/categories/page.tsx tests/unit/schedule-category-mapping.test.ts tests/unit/schedule-expense-category-map.test.ts tests/unit/use-categories.test.ts tests/unit/schedule-item-modal-stage.test.ts tests/integration/rls-categories.test.ts tests/e2e/settings-categories.spec.ts
 git commit --no-verify -m "feat(category): add cafe category, recolor food/shopping"
 ```
 
@@ -1756,6 +2058,7 @@ git commit --no-verify -m "feat(maps): category marker color source of truth"
 - Modify: `lib/maps/providers/naver-provider.ts:56-91`
 - Modify: `lib/maps/providers/google-provider.ts:109-159`
 - Modify: `components/schedule/map-panel.tsx`
+- Modify: `app/share/[token]/page.tsx`
 
 - [ ] **Step 1: MarkerSpec 확장**
 
@@ -1846,6 +2149,16 @@ type MapItem = {
   /** schedule_items.category_code */
   category: string;
   variant: MarkerVariant;
+  /** 후보 탭에서 중복 번호의 소속을 명시적으로 알릴 문구 */
+  contextLabel?: string;
+};
+
+type Props = {
+  isDomestic: boolean;
+  items: MapItem[];
+  onMarkerClick?: (itemId: string, contextLabel?: string) => void;
+  focusItemId?: string | null;
+  className?: string;
 };
 ```
 
@@ -1862,21 +2175,36 @@ type MapItem = {
           color: fill,
           textColor,
           variant: it.variant,
-          onClick: onMarkerClick ? () => onMarkerClick(it.id) : undefined,
+          onClick: onMarkerClick ? () => onMarkerClick(it.id, it.contextLabel) : undefined,
         };
       }),
     );
 ```
 
+게스트 공유 페이지의 `mapItems`도 새 필수 필드를 제공한다:
+
+```typescript
+return {
+  id: `${d.dayNumber}-${idx}`,
+  place_lat: it.placeLat,
+  place_lng: it.placeLng,
+  label: String(idx + 1),
+  category: it.categoryCode,
+  variant: "main" as const,
+};
+```
+
+해당 `.filter`의 type predicate에도 `category: string; variant: "main"`을 포함한다.
+
 - [ ] **Step 5: 타입 체크**
 
 Run: `pnpm exec tsc --noEmit`
-Expected: `schedule-tab.tsx`의 mapItems가 category/variant 누락으로 에러 — Task 10에서 해결하므로 이 시점에는 schedule-tab 에러만 남아 있어야 한다. provider/map-panel 자체 에러는 여기서 해결.
+Expected: `schedule-tab.tsx`의 mapItems가 category/variant 누락으로 에러 — Task 10에서 해결하므로 이 시점에는 schedule-tab 에러만 남아 있어야 한다. provider/map-panel/게스트 페이지 자체 에러는 여기서 해결.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add lib/maps/types.ts lib/maps/providers/naver-provider.ts lib/maps/providers/google-provider.ts components/schedule/map-panel.tsx
+git add -- lib/maps/types.ts lib/maps/providers/naver-provider.ts lib/maps/providers/google-provider.ts components/schedule/map-panel.tsx 'app/share/[token]/page.tsx'
 git commit --no-verify -m "feat(maps): category-colored main/candidate marker rendering"
 ```
 
@@ -2225,6 +2553,7 @@ git commit --no-verify -m "feat(schedule): partition-aware optimistic helpers"
 
 **Files:**
 - Modify: `components/trip/schedule-tab.tsx`
+- Modify: `components/trip/date-shrink-confirm.tsx`
 
 이 Task 는 schedule-tab 의 **데이터 계층**만 바꾼다 (UI 컴포넌트 연결은 Task 11–13). 완료 시점에 `tsc --noEmit` 이 깨끗해야 한다.
 
@@ -2306,16 +2635,31 @@ git commit --no-verify -m "feat(schedule): partition-aware optimistic helpers"
 
 ```typescript
   const mapItems = useMemo(() => {
-    type Entry = { it: ScheduleItem; label: string; variant: "main" | "candidate" };
+    type Entry = {
+      it: ScheduleItem;
+      label: string;
+      variant: "main" | "candidate";
+      contextLabel?: string;
+    };
     const entries: Entry[] = [];
     if (view === "candidates") {
       // 후보 탭 지도: 풀 + 모든 일자 후보, 그룹별 1..N (스펙 §6)
       poolItems.forEach((it, idx) =>
-        entries.push({ it, label: String(idx + 1), variant: "candidate" }),
+        entries.push({
+          it,
+          label: String(idx + 1),
+          variant: "candidate",
+          contextLabel: `전체 풀 후보 ${idx + 1}`,
+        }),
       );
       for (const d of days) {
         (candidatesByDay[d.id] ?? []).forEach((it, idx) =>
-          entries.push({ it, label: String(idx + 1), variant: "candidate" }),
+          entries.push({
+            it,
+            label: String(idx + 1),
+            variant: "candidate",
+            contextLabel: `Day ${d.day_number} 후보 ${idx + 1}`,
+          }),
         );
       }
     } else {
@@ -2330,15 +2674,29 @@ git commit --no-verify -m "feat(schedule): partition-aware optimistic helpers"
     }
     return entries
       .filter(({ it }) => it.place_lat != null && it.place_lng != null)
-      .map(({ it, label, variant }) => ({
+      .map(({ it, label, variant, contextLabel }) => ({
         id: it.id,
         place_lat: it.place_lat!,
         place_lng: it.place_lng!,
         label,
         category: it.category_code,
         variant,
+        contextLabel,
       }));
   }, [view, activeDayItems, activeDayCandidates, candidatesOnMap, poolItems, candidatesByDay, days]);
+```
+
+기존 `handleMarkerClick`은 카드 스크롤과 함께 후보 소속을 명시적으로 알린다. `MapPanel`이 두 번째 인자로 넘기는 `contextLabel`을 사용하므로 헤더가 화면 밖이어도 번호 소속을 확인할 수 있다:
+
+```typescript
+  const handleMarkerClick = useCallback(
+    (id: string, contextLabel?: string) => {
+      if (contextLabel) showToast(contextLabel);
+      const el = scheduleRefs.current[id];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    [showToast],
+  );
 ```
 
 - [ ] **Step 4: DragEnd 파티션 가드**
@@ -2422,6 +2780,14 @@ git commit --no-verify -m "feat(schedule): partition-aware optimistic helpers"
   ) : null;
 ```
 
+`components/trip/date-shrink-confirm.tsx`의 안내 문구도 실제 RPC 동작에 맞춘다:
+
+```tsx
+<p className="text-ink-700 text-[14px]">
+  Day {fromDay}~{toDay}의 본 일정은 마지막 Day로, 후보는 전체 후보로 이동해요
+</p>
+```
+
 - [ ] **Step 7: handleSubmit — 후보 생성 분기**
 
 create 분기 교체 (lodging range 분기는 그대로 두되 후보와 조합 금지 — 모달이 체크 시 range를 숨기지만 이중 방어):
@@ -2473,7 +2839,7 @@ Expected: PASS — `value.isCandidate`는 Task 12에서 폼 타입에 추가되�
 - [ ] **Step 9: Commit**
 
 ```bash
-git add components/trip/schedule-tab.tsx components/schedule/schedule-item-modal.tsx
+git add -- components/trip/schedule-tab.tsx components/trip/date-shrink-confirm.tsx components/schedule/schedule-item-modal.tsx
 git commit --no-verify -m "feat(schedule): partition-aware schedule tab data layer + map candidate toggle"
 ```
 
@@ -3123,6 +3489,7 @@ git commit --no-verify -m "feat(schedule): candidate registration toggle and pro
 
 **Files:**
 - Create: `tests/e2e/candidate-flow.spec.ts`
+- Modify: `playwright.config.ts`
 
 - [ ] **Step 1: 스펙 작성**
 
@@ -3193,7 +3560,8 @@ test.describe("후보 일정 플로우", () => {
     await section.getByRole("button", { name: /후보 \(1\)/ }).click();
     await section.getByText("후보 B").click();
     await page.getByRole("button", { name: "일정으로 승격" }).click();
-    await page.getByRole("button", { name: /Day 1/ }).last().click();
+    const promoteSheet = page.getByRole("dialog", { name: "일정으로 승격할 날짜" });
+    await promoteSheet.getByRole("button", { name: /Day 1/ }).click();
 
     // 본 일정 리스트에 후보 B 가 2번으로 합류, 후보 섹션은 사라짐
     await expect(page.getByText("일정으로 승격했어요")).toBeVisible({ timeout: 5_000 });
@@ -3205,17 +3573,28 @@ test.describe("후보 일정 플로우", () => {
 });
 ```
 
-**주의:** 승격 시트의 day 선택 셀렉터(`{ name: /Day 1/ }`)는 DayMoveSheet 렌더 구조에 맞춰 실행 시점에 조정할 것 — 실패하면 `page.getByRole("dialog")` 스코프로 좁혀서 재시도.
+승격 시트의 day 선택은 위처럼 처음부터 dialog로 범위를 좁혀 모호성을 없앤다. `Day 1` 텍스트의 전역 `.last()`에는 의존하지 않는다.
 
-- [ ] **Step 2: 실행 → 통과 확인**
+- [ ] **Step 2: Playwright alice 프로젝트에 테스트 등록**
+
+`playwright.config.ts`의 alice `testMatch` 배열에 추가:
+
+```typescript
+"candidate-flow.spec.ts",
+```
+
+- [ ] **Step 3: 수집 확인 후 실행 → 통과 확인**
+
+Run: `pnpm test:e2e -- candidate-flow --list`
+Expected: alice 프로젝트 아래 candidate-flow 테스트 3개가 출력됨. `No tests found`면 실행하지 말고 `testMatch`를 먼저 수정한다.
 
 Run: `pnpm test:e2e -- candidate-flow`
 Expected: PASS (dev 서버·seed 는 playwright global-setup 이 처리)
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add tests/e2e/candidate-flow.spec.ts
+git add -- tests/e2e/candidate-flow.spec.ts playwright.config.ts
 git commit --no-verify -m "test(e2e): candidate register/aggregate/promote flow"
 ```
 
@@ -3231,15 +3610,29 @@ pnpm lint && pnpm exec tsc --noEmit && pnpm test && pnpm test:integration && pnp
 ```
 Expected: 전건 PASS. 기존 e2e 중 `schedule-crud`, `drag-same-day`, `drag-cross-day`, `lodging-range-and-bulk-move`, `resize-with-items`, `guest-share-flow` 는 이번 변경의 회귀 위험 지점이므로 실패 시 우선 분석.
 
-- [ ] **Step 2: 위키/문서 갱신**
+- [ ] **Step 2: 애플리케이션 배포**
+
+migration `0023`은 Task 2에서 이미 원격에 적용됐고 하위 호환이므로, 여기서는 애플리케이션 배포만 남는다:
+
+1. `supabase migration list`로 원격에 `0023`이 적용되어 있는지 최종 확인
+2. 애플리케이션 배포
+3. 후보 생성/승격/게스트 공유 smoke test
+
+애플리케이션 배포는 외부 상태를 바꾸므로, 계획 실행자가 대상 프로젝트와 배포 승인을 다시 확인한 뒤 수행한다.
+
+- [ ] **Step 3: 위키/문서 갱신**
 
 - 위키 `projects/travel-manager` 상태 페이지에 이번 기능 반영 (경로는 `/Users/sohyun/` 하위 — CLAUDE.md의 `/Users/sh/`는 다른 머신용).
 - 스키마 변경이므로 위키 architecture 문서에 `schedule_items` 파티션 모델 한 줄 추가, 원본 상세는 스펙 문서 링크.
 
-- [ ] **Step 3: 최종 Commit**
+- [ ] **Step 4: 최종 Commit**
 
 ```bash
-git add -A
+git status --short
+git diff --check
+git add -- \
+  docs/specs/2026-08-17-candidate-items-and-category-colors-design.md \
+  docs/plans/2026-08-17-candidate-items-implementation.md
 git commit --no-verify -m "docs: candidate items feature wrap-up"
 ```
 
@@ -3247,7 +3640,10 @@ git commit --no-verify -m "docs: candidate items feature wrap-up"
 
 ## Self-Review Checklist (플랜 작성자용)
 
-- 스펙 §3(스키마·RLS·복합 FK) → Task 1 / §4(RPC 전체) → Task 1 / §5(카페·색) → Task 1 Step 2 + Task 5 / §6(마커) → Task 6–7 + Task 10 Step 3 / §7(목록 UI·모달·전환·클라이언트 경로) → Task 8–12 / §8(게스트) → Task 1 Step 11 + Task 4 / §9(테스트) → Task 3·4·5·6·9·13
-- 후보 탭 지도 "마커 탭 시 소속 표시"는 마커 클릭 → 소속 섹션 카드로 스크롤(registerItemRef 재사용)로 구현 — CandidatePanel 의 섹션 헤더가 소속을 보여준다
+- 스펙 §3(스키마·RLS·기존 FK 제거 후 복합 FK) → Task 1 / §4(RPC 전체·여행 잠금·잠금 후 재검증·숙소 RPC) → Task 1 / §5(카페·색) → Task 1 Step 2 + Task 5 / §6(마커) → Task 6–7 + Task 10 Step 3 / §7(목록 UI·모달·전환·날짜 축소 문구·클라이언트 경로) → Task 8–12 / §8(게스트 조회·게스트 MapPanel) → Task 1 Step 12 + Task 4·7 / §9(테스트) → Task 3·4·5·6·9·13
+- 후보 탭 지도 "마커 탭 시 소속 표시"는 `contextLabel`을 toast/label로 명시하고 해당 카드로 스크롤한다. 스크롤 위치만으로 소속을 암시하지 않는다.
 - 풀 후보 재정렬 V1 제외 → CandidatePanel 드래그 없음 + reorder RPC 는 day 필수 유지
 - 혼합 선택 이동 → 후보 행이 selectionMode 에 참여하지 않으므로 UI 레벨 차단 + RPC `candidate_not_movable_here` 이중 방어
+- 카테고리 7개 회귀 → `use-categories`, modal stage fixture, RLS category integration, settings category E2E를 모두 갱신
+- Playwright 수집 누락 방지 → alice `testMatch`에 `candidate-flow.spec.ts` 등록 후 `--list`로 3건 확인
+- 원격 반영 안전장치 → 통합 테스트·E2E가 linked 원격 DB를 사용하므로 push는 Task 2에서 수행하되, 그 전에 로컬 `db reset` 검증 + `db push --dry-run`으로 방어. 애플리케이션 배포는 전체 스위트 통과 후(Task 14)

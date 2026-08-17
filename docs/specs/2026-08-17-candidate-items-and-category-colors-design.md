@@ -72,12 +72,21 @@ alter table public.schedule_items
 `trip_id`는 비정규화 컬럼이므로 `trip_day_id`가 있는 행에서 두 값이 어긋나지 않도록 강제한다:
 
 ```sql
+-- 기존 단일 FK를 먼저 제거해 PostgREST 관계가 2개로 보이지 않게 한다.
+alter table public.schedule_items
+  drop constraint schedule_items_trip_day_id_fkey;
+
 -- trip_days(id, trip_id) 복합 unique 인덱스 후 복합 FK
 create unique index trip_days_id_trip_id_key on public.trip_days(id, trip_id);
 alter table public.schedule_items
   add constraint schedule_items_day_trip_consistent
-  foreign key (trip_day_id, trip_id) references public.trip_days(id, trip_id);
+  foreign key (trip_day_id, trip_id)
+  references public.trip_days(id, trip_id) on delete cascade;
 ```
+
+- 기존 단일 FK를 남기면 `schedule_items → trip_days` 관계가 2개가 되어 배포 중인 V1의
+  `trip_days!inner` 임베딩이 PostgREST 관계 모호성 오류를 낼 수 있다. 복합 FK가 기존
+  `on delete cascade` 역할까지 대체하므로 단일 FK는 반드시 교체한다.
 
 ### RLS
 
@@ -93,7 +102,8 @@ alter table public.schedule_items
 기존 RPC는 positional 시그니처 + grant 블록이 명시되어 있으므로 (`0021` 참조) 교체 + grant 갱신으로 처리한다.
 **시그니처가 바뀌는 함수는 구 오버로드를 반드시 drop 한다** — 구·신 오버로드가 공존하면 클라이언트가
 신규 인자를 생략한 named-args 호출 시 PostgREST 오버로드 모호성 에러(300)가 난다.
-(현재도 `create_schedule_item` 11-param(0006)·13-param(0021)이 공존 중 — 0023에서 함께 정리.)
+(현재 마이그레이션 체인의 최종 시그니처는 13-param 버전 하나다. 0023에서 이를 drop한 뒤
+15-param 버전으로 재생성한다.)
 
 ### 공통 원칙: 파티션 인식 재번호
 
@@ -104,6 +114,15 @@ alter table public.schedule_items
 `reorder_schedule_items_in_day`, `resize_trip_days`, 신규 `set_schedule_item_candidacy`.
 재번호 조건은 `(trip_day_id, is_candidate)` 또는 풀이면 `(trip_id, trip_day_id is null)`.
 
+### 공통 원칙: 정렬 변경 직렬화
+
+- `max(sort_order)+1` 계산과 재번호는 모두 같은 여행의 `trips` 행을 `for update`로 잠근 뒤 수행한다.
+- 적용 대상은 `create_schedule_item`, `create_lodging_schedule_items_for_range`, 단건·일괄 삭제,
+  reorder, 단건·일괄 day 이동, `set_schedule_item_candidacy`, `resize_trip_days`다.
+- 잠금 전 조회는 잠글 여행을 식별하는 용도로만 쓴다. 잠금을 얻은 뒤 day 존재 여부와 대상 행의
+  여행·day·후보 여부·개수를 다시 읽고 검증한 값으로 mutation한다. 단건과 일괄 RPC 모두 이 규칙을
+  따라야 검증과 mutation 사이의 TOCTOU 경쟁을 막을 수 있다.
+
 ### 공통 원칙: dayless 행 소유권 판정
 
 현행 update/delete/move RPC는 `trip_day_id`를 조회해 null이면 `schedule_item_not_found`를 던지고,
@@ -113,6 +132,7 @@ alter table public.schedule_items
 | RPC | 변경 |
 |---|---|
 | `create_schedule_item` | `p_is_candidate boolean default false`, `p_trip_id uuid default null` 추가 (구 오버로드 drop). `p_trip_day_id`가 null이면 풀 후보로 생성 — 이때 `p_is_candidate=false`면 에러(`dayless_must_be_candidate`), `is_domestic`은 `p_trip_id` 경유 조회. day가 있으면 `trip_id`는 day에서 파생해 항상 저장. `max(sort_order)+1`은 해당 파티션 내에서 계산 |
+| `create_lodging_schedule_items_for_range` | **변경 필요** — 신규 `trip_id not null`을 모든 INSERT에 저장하고 `is_candidate=false`를 명시한다. 각 day의 `max(sort_order)+1`은 본 일정 파티션만 계산한다. 후보와의 조합은 계속 지원하지 않는다 |
 | `update_schedule_item` | **변경 필요** — dayless 행 대응(위 공통 원칙). 후보 여부 전환은 전용 RPC |
 | `delete_schedule_item` / `delete_schedule_items` | **변경 필요** — dayless 행 대응(bulk는 `trip_days` inner join 제거) + 파티션 인식 재번호 |
 | `reorder_schedule_items_in_day` | 시그니처 유지. 전달된 아이템들의 `is_candidate` 플래그로 파티션 판정(본·후보 혼합 입력은 에러), 개수 검증(`item_set_mismatch`)도 **그 파티션의 개수**와 비교. 풀 후보 재정렬은 V1 미지원(시그니처상 불가, 클라이언트에서 노출 안 함) |
@@ -173,8 +193,9 @@ interface MarkerSpec {
 
 - **Day 탭 지도**: 본 일정 마커(카테고리 색, 1..N) 기본 표시. 지도 패널에 **"후보 보기" 토글** (기본 OFF) → ON 시 현재 일자 후보(1..M, hollow) 추가 표시. 토글 상태는 URL 쿼리(`?candidates=1`, 기존 `?map=open` 패턴과 동일).
 - **후보 탭 지도**: 전체 풀 후보 + 모든 일자 후보 표시 (모아보기와 일치). 본 일정은 표시하지 않는다.
+- **게스트 지도**: 후보는 제외하되 공개된 본 일정은 동일한 카테고리 색 main 마커를 사용한다. 게스트 호출부도 `category`와 `variant="main"`을 제공한다.
 - Day 지도에서 본 일정 번호와 후보 번호가 같은 숫자일 수 있으나(본 3, 후보 3) 스타일(채움 vs hollow)로 구분된다.
-- 후보 탭 지도에서는 그룹별 번호(풀 1..K, Day별 1..M)가 겹칠 수 있다 — 번호는 그대로 두고 **마커 탭 시 소속을 표시**한다 (예: "Day 2 후보 3" / "전체 풀 후보 1", `MarkerSpec.onClick` 활용).
+- 후보 탭 지도에서는 그룹별 번호(풀 1..K, Day별 1..M)가 겹칠 수 있다 — 번호는 그대로 두고 **마커 탭 시 소속을 명시적으로 표시**한다 (예: 토스트/선택 라벨로 "Day 2 후보 3" / "전체 풀 후보 1", `MarkerSpec.onClick` 활용). 카드 스크롤만으로 충족한 것으로 간주하지 않는다.
 
 ## 7. 목록 UI
 
@@ -209,6 +230,9 @@ interface MarkerSpec {
 | 후보 간 이동 | 일자 후보 ↔ 다른 일자 ↔ 풀 — 항목 단위 액션, 일자 선택 시트에 "전체 후보" 대상 추가. 전부 `set_schedule_item_candidacy` 사용 |
 | 다중 선택 이동 | **본 일정 전용 유지** — 선택에 후보가 포함되면 이동 액션 비활성 (RPC도 에러로 방어) |
 
+여행 기간 축소 확인 문구는 본 일정과 후보의 목적지가 다름을 명시한다. 예:
+"삭제되는 날짜의 본 일정은 마지막 Day로, 후보는 전체 후보로 이동해요."
+
 ### 데이터 조회·낙관적 업데이트 (클라이언트 변경)
 
 - `lib/schedule/use-schedule-list.ts`: 현재 `trip_days!inner` 조인으로 tripId 필터 → 풀 후보(`trip_day_id null`)가 결과에서 탈락한다. 신규 `trip_id` 컬럼으로 `.eq("trip_id", tripId)` 직접 필터로 교체 (조인 제거, 단순화).
@@ -223,7 +247,7 @@ interface MarkerSpec {
 ## 9. 테스트 계획
 
 - **유닛**: 카테고리 맵 7종(라벨·색·지출 매핑·모달 stage) 갱신 — `schedule-category-mapping.test.ts` 등 기존 회귀 가드 업데이트. `marker-colors` 결정 로직(밝은 배경 → dark text). 파티션별 번호 계산 로직. `apply-local-*` 낙관 헬퍼의 파티션 인식.
-- **통합**: 풀/일자 후보 생성 RPC(불법 조합 `dayless + is_candidate=false` 에러 포함), `set_schedule_item_candidacy` 승격·강등·풀 이동·no-op 멱등(원 파티션 재압축 포함), 파티션별 reorder(개수 검증·혼합 입력 에러), move RPC 후보 포함 시 에러, **풀 후보의 update/삭제(단건·bulk)**, `resize_trip_days` 축소 시 일자 후보 → 풀 이동, 게스트 RPC 후보 제외, `cafe` FK insert, **RLS 교차 소유 insert 시도 차단**("남의 trip_day_id + 내 trip_id" 직접 insert가 거부되는지).
+- **통합**: 풀/일자 후보 생성 RPC(불법 조합 `dayless + is_candidate=false` 에러 포함), 숙소 범위 생성의 `trip_id` 저장·본 일정 파티션 번호, `set_schedule_item_candidacy` 승격·강등·풀 이동·no-op 멱등(원 파티션 재압축 포함), 파티션별 reorder(개수 검증·혼합 입력 에러), move RPC 후보 포함 시 에러, **풀 후보의 update/삭제(단건·bulk)**, `resize_trip_days` 축소 시 일자 후보 → 풀 이동, 게스트 RPC 후보 제외, `cafe` FK insert, **RLS 교차 소유 insert 시도 차단**("남의 trip_day_id + 내 trip_id" 직접 insert가 거부되는지), 같은 파티션 동시 생성 후 `sort_order`가 1..N으로 유일·연속인지 검증.
 - **E2E**: 후보 등록 → Day 후보 섹션 표시 → 지도 후보 토글 → 승격 후 본 일정 번호 반영. 후보 탭 모아보기.
 
 ## 10. 구현 범위 밖 (명시적 제외)
