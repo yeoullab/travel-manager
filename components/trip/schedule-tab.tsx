@@ -33,6 +33,7 @@ import { useReorderScheduleItemsInDay } from "@/lib/schedule/use-reorder-schedul
 import { useMoveScheduleItemAcrossDays } from "@/lib/schedule/use-move-schedule-item-across-days";
 import { useCreateLodgingScheduleItemsForRange } from "@/lib/schedule/use-create-lodging-schedule-items-for-range";
 import { useMoveScheduleItemsToDay } from "@/lib/schedule/use-move-schedule-items-to-day";
+import { useSetScheduleItemCandidacy } from "@/lib/schedule/use-set-schedule-item-candidacy";
 import { useUiStore } from "@/lib/store/ui-store";
 import { providerForTrip } from "@/lib/maps/provider";
 import type { PlaceResult } from "@/lib/maps/types";
@@ -71,6 +72,7 @@ export function ScheduleTab({ tripId }: Props) {
   const move = useMoveScheduleItemAcrossDays();
   const createLodgingRange = useCreateLodgingScheduleItemsForRange();
   const moveMany = useMoveScheduleItemsToDay();
+  const candidacy = useSetScheduleItemCandidacy();
 
   const mapResize = useResizableHeight({
     storageKey: "travel-manager:map-height",
@@ -94,6 +96,10 @@ export function ScheduleTab({ tripId }: Props) {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+  const [candidacySheet, setCandidacySheet] = useState<{
+    item: ScheduleItem;
+    mode: "promote" | "move";
+  } | null>(null);
 
   const scheduleRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const registerItemRef = useCallback((id: string, el: HTMLLIElement | null) => {
@@ -491,6 +497,28 @@ export function ScheduleTab({ tripId }: Props) {
     );
   }
 
+  function runCandidacy(
+    itemId: string,
+    isCandidate: boolean,
+    targetDayId: string | null,
+    msg: string,
+  ) {
+    candidacy.mutate(
+      { tripId, itemId, isCandidate, targetDayId },
+      {
+        onSuccess: () => showToast(msg, "success"),
+        onError: (e) => showToast(`실패: ${e instanceof Error ? e.message : ""}`, "error"),
+      },
+    );
+    setCandidacySheet(null);
+    closeModal();
+  }
+
+  function handleDemote() {
+    if (!modal?.initial) return;
+    runCandidacy(modal.initial.id, true, modal.initial.trip_day_id, "후보로 옮겼어요");
+  }
+
   if (daysLoading || itemsLoading) {
     return <ListSkeleton rows={5} />;
   }
@@ -682,11 +710,31 @@ export function ScheduleTab({ tripId }: Props) {
           mode={modal.mode}
           initial={modal.initial}
           pickedPlace={pickedPlace}
+          candidateMode={view === "candidates" ? "pool-fixed" : "day-toggle"}
           onClose={closeModal}
           onSubmit={handleSubmit}
           onDelete={modal.mode === "edit" ? handleDelete : undefined}
           onOpenPlaceSearch={() => setPlaceSheetOpen(true)}
-          onOpenDayMove={modal.mode === "edit" ? () => setDayMoveFor(modal.initial) : undefined}
+          onOpenDayMove={
+            modal.mode === "edit" && modal.initial && !modal.initial.is_candidate
+              ? () => setDayMoveFor(modal.initial)
+              : undefined
+          }
+          onDemoteToCandidate={
+            modal.mode === "edit" && modal.initial && !modal.initial.is_candidate
+              ? handleDemote
+              : undefined
+          }
+          onPromoteToSchedule={
+            modal.mode === "edit" && modal.initial?.is_candidate
+              ? () => setCandidacySheet({ item: modal.initial!, mode: "promote" })
+              : undefined
+          }
+          onMoveCandidate={
+            modal.mode === "edit" && modal.initial?.is_candidate
+              ? () => setCandidacySheet({ item: modal.initial!, mode: "move" })
+              : undefined
+          }
           days={days}
           currentDayId={activeDayId}
           onAddExpense={
@@ -727,6 +775,32 @@ export function ScheduleTab({ tripId }: Props) {
         currentDayId={activeDayId ?? ""}
         onClose={() => setBulkMoveOpen(false)}
         onPick={handleBulkMovePick}
+      />
+      <DayMoveSheet
+        open={candidacySheet?.mode === "promote"}
+        days={days}
+        currentDayId=""
+        title="일정으로 승격할 날짜"
+        onClose={() => setCandidacySheet(null)}
+        onPick={(dayId) => {
+          if (!candidacySheet) return;
+          runCandidacy(candidacySheet.item.id, false, dayId, "일정으로 승격했어요");
+        }}
+      />
+      <DayMoveSheet
+        open={candidacySheet?.mode === "move"}
+        days={days}
+        currentDayId={candidacySheet?.item.trip_day_id ?? ""}
+        title="후보 이동"
+        onClose={() => setCandidacySheet(null)}
+        onPick={(dayId) => {
+          if (!candidacySheet) return;
+          runCandidacy(candidacySheet.item.id, true, dayId, "후보를 이동했어요");
+        }}
+        onPickPool={() => {
+          if (!candidacySheet) return;
+          runCandidacy(candidacySheet.item.id, true, null, "전체 후보로 이동했어요");
+        }}
       />
     </div>
   );

@@ -39,6 +39,12 @@ type Props = {
   onOpenDayMove?: () => void;
   /** 편집 모드에서만 렌더 — 클릭 시 경비 탭 quickAdd URL 로 네비게이션. */
   onAddExpense?: () => void;
+  /** create 모드: "day-toggle" 이면 후보 체크박스 노출, "pool-fixed" 면 자동 풀 후보(체크박스 없음) */
+  candidateMode?: "day-toggle" | "pool-fixed";
+  /** edit 모드 전환 액션 (본 일정이면 demote, 후보면 promote/move) */
+  onDemoteToCandidate?: () => void;
+  onPromoteToSchedule?: () => void;
+  onMoveCandidate?: () => void;
   days?: TripDay[];
   currentDayId?: string | null;
 };
@@ -130,6 +136,10 @@ export function ScheduleItemModal({
   onOpenPlaceSearch,
   onOpenDayMove,
   onAddExpense,
+  candidateMode,
+  onDemoteToCandidate,
+  onPromoteToSchedule,
+  onMoveCandidate,
   days = [],
   currentDayId,
 }: Props) {
@@ -143,10 +153,12 @@ export function ScheduleItemModal({
   const [addressManual, setAddressManual] = useState<string>("");
   const [lodgingStartDayId, setLodgingStartDayId] = useState<string>("");
   const [lodgingEndDayId, setLodgingEndDayId] = useState<string>("");
+  const [isCandidate, setIsCandidate] = useState(false);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) return;
+    setIsCandidate(false);
     const startCat = (initial?.category_code as ScheduleCategory) ?? "other";
     setCategoryCode(startCat);
     setStage(initialStageFor(initial));
@@ -220,12 +232,13 @@ export function ScheduleItemModal({
       place,
       placeAddressManual: stage === "manual_place" ? addressManual.trim() || null : null,
       lodgingRange:
-        mode === "create" && categoryCode === "lodging"
+        mode === "create" && categoryCode === "lodging" && !isCandidate
           ? {
               startDayId: lodgingStartDayId || currentDayId || "",
               endDayId: lodgingEndDayId || lodgingStartDayId || currentDayId || "",
             }
           : null,
+      isCandidate: candidateMode === "pool-fixed" ? true : isCandidate,
     });
   }
 
@@ -244,8 +257,23 @@ export function ScheduleItemModal({
           <Button fullWidth variant="primary" disabled={!canSave} onClick={submit}>
             {mode === "create" ? "추가" : "저장"}
           </Button>
-          {mode === "edit" && (onDelete || onOpenDayMove) && (
-            <div className="flex w-full gap-2">
+          {mode === "edit" && (
+            <div className="flex w-full flex-wrap gap-2">
+              {onDemoteToCandidate && (
+                <Button fullWidth size="sm" variant="tertiary" onClick={onDemoteToCandidate}>
+                  후보로 빼기
+                </Button>
+              )}
+              {onPromoteToSchedule && (
+                <Button fullWidth size="sm" variant="tertiary" onClick={onPromoteToSchedule}>
+                  일정으로 승격
+                </Button>
+              )}
+              {onMoveCandidate && (
+                <Button fullWidth size="sm" variant="tertiary" onClick={onMoveCandidate}>
+                  후보 이동
+                </Button>
+              )}
               {onOpenDayMove && (
                 <Button fullWidth size="sm" variant="tertiary" onClick={onOpenDayMove}>
                   다른 날로 이동
@@ -347,7 +375,7 @@ export function ScheduleItemModal({
               onMemo={setMemo}
               onUrl={setUrl}
             />
-            {mode === "create" && categoryCode === "lodging" && (
+            {mode === "create" && categoryCode === "lodging" && !isCandidate && (
               <LodgingRangeField
                 days={days}
                 currentDayId={currentDayId}
@@ -387,7 +415,7 @@ export function ScheduleItemModal({
               onMemo={setMemo}
               onUrl={setUrl}
             />
-            {mode === "create" && categoryCode === "lodging" && (
+            {mode === "create" && categoryCode === "lodging" && !isCandidate && (
               <LodgingRangeField
                 days={days}
                 currentDayId={currentDayId}
@@ -398,6 +426,18 @@ export function ScheduleItemModal({
               />
             )}
           </>
+        )}
+
+        {mode === "create" && candidateMode === "day-toggle" && stage !== "category_select" && (
+          <label className="text-ink-700 flex items-center gap-2 text-[13px]">
+            <input
+              type="checkbox"
+              checked={isCandidate}
+              onChange={(e) => setIsCandidate(e.target.checked)}
+              className="accent-ink-900 h-4 w-4"
+            />
+            후보로 등록 (본 일정 번호에 넣지 않음)
+          </label>
         )}
       </div>
     </BottomSheet>
