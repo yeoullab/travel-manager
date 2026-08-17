@@ -1,4 +1,10 @@
 import type { MapsProvider, MapHandle, MapOptions, MarkerSpec, LatLng } from "../types";
+import {
+  buildMarkerElement,
+  closeAllMarkerTips,
+  isNoHoverDevice,
+  toggleMarkerTip,
+} from "./marker-dom";
 
 // Phase 1 `lib/auth/google-id-token.ts` 이 `Window.google = { accounts: ... }` 로 선언함.
 // 서로 다른 서브필드(maps vs accounts) 를 갖는 두 declaration 을 merge 하려면 같은 파일에서
@@ -21,6 +27,7 @@ function gmaps(): GoogleMapsNamespace | undefined {
 interface GoogleMapInstance {
   setCenter(latlng: unknown): void;
   fitBounds(bounds: unknown): void;
+  addListener(type: string, fn: () => void): void;
 }
 interface GoogleBounds {
   extend(latlng: unknown): void;
@@ -106,36 +113,6 @@ async function loadSdk(): Promise<void> {
   return loadPromise;
 }
 
-function renderPinElement(spec: MarkerSpec): HTMLElement {
-  // Naver 렌더러와 동일 규칙: main 카테고리색 채움 / candidate 크림 바탕 + 카테고리색 점선.
-  const el = document.createElement("div");
-  const base = [
-    // 최소 22×22 (짧은 라벨 원형, 긴 라벨 알약형 — 후보탭 "1-1"/"P-1" 대응).
-    "min-width:22px",
-    "height:22px",
-    "padding:0 5px",
-    "box-sizing:border-box",
-    "border-radius:11px",
-    "display:flex",
-    "align-items:center",
-    "justify-content:center",
-    "font-weight:600",
-    "font-size:11px",
-    "cursor:pointer",
-    "white-space:nowrap",
-    "font-variant-numeric:tabular-nums",
-    "box-shadow:0 2px 6px rgba(38,37,30,0.18)",
-  ];
-  if (spec.variant === "candidate") {
-    base.push("background:#f2f1ed", `color:${spec.color}`, `border:2px dashed ${spec.color}`);
-  } else {
-    base.push(`background:${spec.color}`, `color:${spec.textColor}`, "border:2px solid #fff");
-  }
-  el.style.cssText = base.join(";");
-  el.textContent = spec.label;
-  return el;
-}
-
 function createMap(container: HTMLElement, options: MapOptions): MapHandle {
   const gm = gmaps();
   if (!gm) throw new Error("google sdk not loaded");
@@ -145,6 +122,8 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
     mapId: "DEMO_MAP_ID", // AdvancedMarkerElement 는 mapId 필요 — Phase 3 은 데모 ID 사용
     disableDefaultUI: false,
   });
+  // 지도 빈 곳 탭 → 열린 모바일 툴팁 모두 닫기.
+  map.addListener("click", () => closeAllMarkerTips());
   let markers: GoogleMarker[] = [];
 
   return {
@@ -159,17 +138,18 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
     },
     addMarkers(specs: MarkerSpec[]) {
       specs.forEach((spec) => {
+        const el = buildMarkerElement(spec);
         const marker = new gm.marker.AdvancedMarkerElement({
           position: { lat: spec.lat, lng: spec.lng },
           map,
-          content: renderPinElement(spec),
+          content: el,
         });
-        if (spec.onClick) {
-          (marker as unknown as { addListener: (t: string, fn: () => void) => void }).addListener(
-            "click",
-            spec.onClick,
-          );
-        }
+        // content DOM 클릭으로 토글 + onClick 을 함께 처리(중복 방지). 지도 click 으로 전파 차단.
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (spec.title && isNoHoverDevice()) toggleMarkerTip(el);
+          spec.onClick?.();
+        });
         markers.push(marker);
       });
     },

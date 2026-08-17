@@ -252,6 +252,7 @@ export function ScheduleTab({ tripId }: Props) {
         place_lat: it.place_lat!,
         place_lng: it.place_lng!,
         label,
+        title: it.title,
         category: it.category_code,
         variant,
         contextLabel,

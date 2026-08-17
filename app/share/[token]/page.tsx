@@ -180,6 +180,7 @@ function ScheduleSection({ days, isDomestic }: { days: DaySchedule[]; isDomestic
                 place_lat: it.placeLat,
                 place_lng: it.placeLng,
                 label: String(idx + 1),
+                title: it.title,
                 category: it.categoryCode,
                 variant: "main" as const,
               };
@@ -192,6 +193,7 @@ function ScheduleSection({ days, isDomestic }: { days: DaySchedule[]; isDomestic
                 place_lat: number;
                 place_lng: number;
                 label: string;
+                title: string;
                 category: string;
                 variant: "main";
               } => v !== null,

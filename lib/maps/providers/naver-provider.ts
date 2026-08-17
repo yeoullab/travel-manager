@@ -1,4 +1,10 @@
 import type { MapsProvider, MapHandle, MapOptions, MarkerSpec, LatLng } from "../types";
+import {
+  buildMarkerElement,
+  closeAllMarkerTips,
+  isNoHoverDevice,
+  toggleMarkerTip,
+} from "./marker-dom";
 
 declare global {
   interface Window {
@@ -24,6 +30,8 @@ interface NaverBounds {
 }
 interface NaverMarker {
   setMap(m: NaverMapInstance | null): void;
+  /** 렌더된 마커 컨텐츠 DOM — 모바일 탭 툴팁 토글에 사용. */
+  getElement?(): HTMLElement | null;
 }
 
 let loadPromise: Promise<void> | null = null;
@@ -53,19 +61,6 @@ function loadSdk(): Promise<void> {
   return loadPromise;
 }
 
-function renderMarkerHtml(spec: MarkerSpec): string {
-  // 최소 22×22 배지 (짧은 라벨은 원형, 긴 라벨은 알약형으로 확장 — 후보탭 "1-1"/"P-1" 대응).
-  // main: 카테고리색 채움 + 흰 테두리 / candidate: 크림 바탕 + 카테고리색 점선.
-  const base =
-    "min-width:22px;height:22px;padding:0 5px;box-sizing:border-box;border-radius:11px;" +
-    "display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;" +
-    "white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 2px 6px rgba(38,37,30,0.18)";
-  if (spec.variant === "candidate") {
-    return `<div style="background:#f2f1ed;color:${spec.color};border:2px dashed ${spec.color};${base}">${spec.label}</div>`;
-  }
-  return `<div style="background:${spec.color};color:${spec.textColor};border:2px solid #fff;${base}">${spec.label}</div>`;
-}
-
 function createMap(container: HTMLElement, options: MapOptions): MapHandle {
   if (!window.naver?.maps) throw new Error("naver sdk not loaded");
   const ns = window.naver.maps;
@@ -73,6 +68,8 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
     center: new ns.LatLng(options.center.lat, options.center.lng),
     zoom: options.zoom,
   });
+  // 지도 빈 곳 탭 → 열린 모바일 툴팁 모두 닫기.
+  ns.Event.addListener(map, "click", () => closeAllMarkerTips());
   let markers: NaverMarker[] = [];
 
   return {
@@ -87,12 +84,19 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
     },
     addMarkers(specs: MarkerSpec[]) {
       specs.forEach((spec) => {
+        // 검증된 문자열 content 경로 유지 (naver HtmlIcon). 상호작용은 getElement() 로 재획득해 배선.
         const marker = new ns.Marker({
           position: new ns.LatLng(spec.lat, spec.lng),
           map,
-          icon: { content: renderMarkerHtml(spec) },
+          icon: { content: buildMarkerElement(spec).outerHTML },
         });
-        if (spec.onClick) ns.Event.addListener(marker, "click", spec.onClick);
+        ns.Event.addListener(marker, "click", () => {
+          if (spec.title && isNoHoverDevice()) {
+            const node = marker.getElement?.()?.querySelector<HTMLElement>(".tm-marker");
+            if (node) toggleMarkerTip(node);
+          }
+          spec.onClick?.();
+        });
         markers.push(marker);
       });
     },

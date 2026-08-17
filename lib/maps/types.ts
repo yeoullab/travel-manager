@@ -22,6 +22,8 @@ export interface MarkerSpec {
   lat: number;
   lng: number;
   label: string;
+  /** 일정명 — 마커 호버(웹)/탭(모바일) 시 뜨는 툴팁 문구. 빈 문자열이면 툴팁 없음. */
+  title: string;
   /** 카테고리 fill (marker-colors.ts) */
   color: string;
   /** main 배지의 숫자색 — 밝은 배경이면 잉크색 */

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getMapsProvider, providerForTrip } from "@/lib/maps/provider";
 import { markerColorsFor } from "@/lib/maps/marker-colors";
+import { MapLegend } from "@/components/schedule/map-legend";
 import type { MapHandle, MarkerVariant } from "@/lib/maps/types";
 import { cn } from "@/lib/cn";
 
@@ -11,6 +12,8 @@ type MapItem = {
   place_lat: number;
   place_lng: number;
   label: string;
+  /** 일정명 — 마커 호버(웹)/탭(모바일) 시 툴팁으로 노출 */
+  title: string;
   /** schedule_items.category_code */
   category: string;
   variant: MarkerVariant;
@@ -63,6 +66,7 @@ export function MapPanel({ isDomestic, items, onMarkerClick, focusItemId, classN
           lat: it.place_lat,
           lng: it.place_lng,
           label: it.label,
+          title: it.title,
           color: fill,
           textColor,
           variant: it.variant,
@@ -80,14 +84,19 @@ export function MapPanel({ isDomestic, items, onMarkerClick, focusItemId, classN
     handleRef.current.setCenter({ lat: item.place_lat, lng: item.place_lng });
   }, [focusItemId, items, ready]);
 
+  const legendCategories = useMemo(
+    () => Array.from(new Set(items.map((it) => it.category))),
+    [items],
+  );
+
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "border-border-primary bg-surface-200 mt-3 h-[240px] w-full overflow-hidden rounded-[10px] border",
-        className,
-      )}
-      aria-label="지도"
-    />
+    <div className={cn("relative mt-3 h-[240px] w-full", className)}>
+      <div
+        ref={containerRef}
+        className="border-border-primary bg-surface-200 h-full w-full overflow-hidden rounded-[10px] border"
+        aria-label="지도"
+      />
+      <MapLegend categories={legendCategories} />
+    </div>
   );
 }
