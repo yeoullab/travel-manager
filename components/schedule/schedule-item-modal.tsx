@@ -183,7 +183,11 @@ export function ScheduleItemModal({
 
   function pickCategory(code: ScheduleCategory) {
     setCategoryCode(code);
-    setStage(code === "other" ? "other_form" : "place_search");
+    // 직접 입력(수기 주소) 데이터를 가진 채 카테고리를 바꾸면 manual_place 로 복귀해야
+    // 기존 주소가 저장 조건으로 인정된다. 그 외 비-기타는 place_search.
+    if (code === "other") setStage("other_form");
+    else if (!place && addressManual.trim()) setStage("manual_place");
+    else setStage("place_search");
     if (code === "lodging") {
       setLodgingStartDayId(currentDayId ?? "");
       setLodgingEndDayId(currentDayId ?? "");
@@ -191,10 +195,9 @@ export function ScheduleItemModal({
   }
 
   function backToCategory() {
+    // 카테고리만 다시 고르는 액션 — 이미 입력한 장소·제목·주소는 유지한다.
+    // (초기화하면 편집 모드에서 카테고리 변경 시 장소를 재검색하기 전까지 저장이 영구 비활성.)
     setStage("category_select");
-    setPlace(null);
-    setTitle("");
-    setAddressManual("");
   }
 
   function switchToManual() {
