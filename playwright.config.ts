@@ -48,6 +48,7 @@ export default defineConfig({
         "lodging-range-and-bulk-move.spec.ts",
         "schedule-layout-and-selection.spec.ts",
         "settings-categories.spec.ts",
+        "candidate-flow.spec.ts",
       ],
     },
     {
