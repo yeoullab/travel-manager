@@ -58,16 +58,14 @@ export function isNoHoverDevice(): boolean {
 
 /**
  * 마커 탭 처리 (naver·google 공통).
- * - 모바일(호버 없음) + 일정명 있음 → 툴팁만 토글하고 `onClick`(리스트 포커스 스크롤)은 **억제**.
- *   지도 영역을 고정해 탭 시 페이지가 크게 튀지 않게 한다.
- * - 그 외(데스크톱 클릭 등) → 기존 `onClick` 실행(리스트로 스크롤).
+ * - 모바일(호버 없음) + 일정명 있음 → 툴팁 토글 **그리고** `onClick` 실행.
+ * - 데스크톱 → 툴팁은 CSS 호버가 담당하고 `onClick` 만 실행.
+ * `onClick`(리스트 포커스 스크롤)은 리스트 컨테이너 안에서만 스크롤해야
+ * 지도·탭 영역이 고정된다 — scroll-item-into-list 참고.
  * @param tipEl 툴팁을 토글할 `.tm-marker` 요소 (provider 별로 획득처가 다름)
  */
 export function handleMarkerTap(tipEl: HTMLElement | null | undefined, spec: MarkerSpec): void {
-  if (spec.title && isNoHoverDevice()) {
-    if (tipEl) toggleMarkerTip(tipEl);
-    return;
-  }
+  if (spec.title && isNoHoverDevice() && tipEl) toggleMarkerTip(tipEl);
   spec.onClick?.();
 }
 

@@ -25,6 +25,7 @@ import { useResizableHeight } from "@/lib/hooks/use-resizable-height";
 import { useTripDetail } from "@/lib/trip/use-trip-detail";
 import { useTripDays } from "@/lib/trip/use-trip-days";
 import { useScheduleList, type ScheduleItem } from "@/lib/schedule/use-schedule-list";
+import { scrollItemIntoList } from "@/lib/schedule/scroll-item-into-list";
 import { useCreateScheduleItem } from "@/lib/schedule/use-create-schedule-item";
 import { useUpdateScheduleItem } from "@/lib/schedule/use-update-schedule-item";
 import { useDeleteScheduleItem } from "@/lib/schedule/use-delete-schedule-item";
@@ -110,7 +111,8 @@ export function ScheduleTab({ tripId }: Props) {
     (id: string, contextLabel?: string) => {
       if (contextLabel) showToast(contextLabel);
       const el = scheduleRefs.current[id];
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // 지도·탭 영역은 고정한 채 리스트 컨테이너만 스크롤한다.
+      if (el) scrollItemIntoList(el);
     },
     [showToast],
   );

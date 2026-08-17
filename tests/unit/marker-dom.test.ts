@@ -99,13 +99,22 @@ describe("handleMarkerTap", () => {
     window.matchMedia = realMatchMedia;
   });
 
-  it("모바일 탭: 툴팁만 열고 onClick(포커스 스크롤)은 억제한다", () => {
+  it("모바일 탭: 툴팁을 열고 onClick(리스트 포커스 스크롤)도 실행한다", () => {
     setHover(true); // (hover:none) = 모바일
     const onClick = vi.fn();
     const el = buildMarkerElement(spec());
     handleMarkerTap(el, spec({ onClick }));
     expect(el.classList.contains("tm-open")).toBe(true);
-    expect(onClick).not.toHaveBeenCalled();
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("모바일 탭: title 이 없으면 툴팁 없이 onClick 만 실행한다", () => {
+    setHover(true);
+    const onClick = vi.fn();
+    const el = buildMarkerElement(spec({ title: "" }));
+    handleMarkerTap(el, spec({ title: "", onClick }));
+    expect(el.classList.contains("tm-open")).toBe(false);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it("데스크톱 클릭: onClick(리스트 스크롤)을 실행한다", () => {
