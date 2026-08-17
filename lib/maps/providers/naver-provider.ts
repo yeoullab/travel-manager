@@ -54,11 +54,12 @@ function loadSdk(): Promise<void> {
 }
 
 function renderMarkerHtml(spec: MarkerSpec): string {
-  // 22×22 원형 배지. main: 카테고리색 채움 + 흰 테두리 / candidate: 크림 바탕 + 카테고리색 점선.
+  // 최소 22×22 배지 (짧은 라벨은 원형, 긴 라벨은 알약형으로 확장 — 후보탭 "1-1"/"P-1" 대응).
+  // main: 카테고리색 채움 + 흰 테두리 / candidate: 크림 바탕 + 카테고리색 점선.
   const base =
-    "width:22px;height:22px;border-radius:50%;display:flex;align-items:center;" +
-    "justify-content:center;font-weight:600;font-size:11px;" +
-    "font-variant-numeric:tabular-nums;box-shadow:0 2px 6px rgba(38,37,30,0.18)";
+    "min-width:22px;height:22px;padding:0 5px;box-sizing:border-box;border-radius:11px;" +
+    "display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;" +
+    "white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 2px 6px rgba(38,37,30,0.18)";
   if (spec.variant === "candidate") {
     return `<div style="background:#f2f1ed;color:${spec.color};border:2px dashed ${spec.color};${base}">${spec.label}</div>`;
   }

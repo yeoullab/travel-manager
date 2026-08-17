@@ -215,11 +215,12 @@ export function ScheduleTab({ tripId }: Props) {
     };
     const entries: Entry[] = [];
     if (view === "candidates") {
-      // 후보 탭 지도: 풀 + 모든 일자 후보, 그룹별 1..N (스펙 §6)
+      // 후보 탭 지도: 풀 + 모든 일자 후보. 그룹이 섞이므로 라벨에 소속을 접두(스펙 §6 + 소속 구분).
+      // 풀 = "P-N", 일자 후보 = "{day}-N". CandidatePanel 배지와 동일 라벨.
       poolItems.forEach((it, idx) =>
         entries.push({
           it,
-          label: String(idx + 1),
+          label: `P-${idx + 1}`,
           variant: "candidate",
           contextLabel: `전체 풀 후보 ${idx + 1}`,
         }),
@@ -228,7 +229,7 @@ export function ScheduleTab({ tripId }: Props) {
         (candidatesByDay[d.id] ?? []).forEach((it, idx) =>
           entries.push({
             it,
-            label: String(idx + 1),
+            label: `${d.day_number}-${idx + 1}`,
             variant: "candidate",
             contextLabel: `Day ${d.day_number} 후보 ${idx + 1}`,
           }),

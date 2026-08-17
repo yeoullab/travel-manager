@@ -110,15 +110,19 @@ function renderPinElement(spec: MarkerSpec): HTMLElement {
   // Naver 렌더러와 동일 규칙: main 카테고리색 채움 / candidate 크림 바탕 + 카테고리색 점선.
   const el = document.createElement("div");
   const base = [
-    "width:22px",
+    // 최소 22×22 (짧은 라벨 원형, 긴 라벨 알약형 — 후보탭 "1-1"/"P-1" 대응).
+    "min-width:22px",
     "height:22px",
-    "border-radius:50%",
+    "padding:0 5px",
+    "box-sizing:border-box",
+    "border-radius:11px",
     "display:flex",
     "align-items:center",
     "justify-content:center",
     "font-weight:600",
     "font-size:11px",
     "cursor:pointer",
+    "white-space:nowrap",
     "font-variant-numeric:tabular-nums",
     "box-shadow:0 2px 6px rgba(38,37,30,0.18)",
   ];

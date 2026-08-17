@@ -56,6 +56,7 @@ export function CandidatePanel({
         ) : (
           <CandidateRows
             items={poolItems}
+            labelPrefix="P-"
             isDomestic={isDomestic}
             onTapItem={onTapItem}
             onTapNumber={onTapNumber}
@@ -71,6 +72,7 @@ export function CandidatePanel({
           </h3>
           <CandidateRows
             items={candidatesByDay[d.id] ?? []}
+            labelPrefix={`${d.day_number}-`}
             isDomestic={isDomestic}
             onTapItem={onTapItem}
             onTapNumber={onTapNumber}
@@ -84,12 +86,15 @@ export function CandidatePanel({
 
 function CandidateRows({
   items,
+  labelPrefix,
   isDomestic,
   onTapItem,
   onTapNumber,
   registerItemRef,
 }: {
   items: ScheduleItem[];
+  /** 지도 마커와 일치하는 라벨 접두 ("P-" | "{day}-"). 소속 구분용. */
+  labelPrefix: string;
   isDomestic: boolean;
   onTapItem: (item: ScheduleItem) => void;
   onTapNumber?: (item: ScheduleItem) => void;
@@ -99,6 +104,7 @@ function CandidateRows({
     <ul className="flex flex-col gap-2">
       {items.map((item, idx) => {
         const { fill } = markerColorsFor(item.category_code);
+        const label = `${labelPrefix}${idx + 1}`;
         return (
           <li
             key={item.id}
@@ -107,7 +113,7 @@ function CandidateRows({
           >
             <button
               type="button"
-              aria-label={`후보 ${idx + 1}번 지도에서 보기`}
+              aria-label={`후보 ${label} 지도에서 보기`}
               className="flex h-11 w-11 shrink-0 items-center justify-center bg-transparent"
               onClick={(e) => {
                 e.stopPropagation();
@@ -115,10 +121,10 @@ function CandidateRows({
               }}
             >
               <span
-                className="flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-dashed bg-transparent text-[11px] font-semibold tabular-nums"
+                className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full border-2 border-dashed bg-transparent px-1 text-[11px] font-semibold tabular-nums"
                 style={{ borderColor: fill, color: fill }}
               >
-                {idx + 1}
+                {label}
               </span>
             </button>
             <div className="min-w-0 flex-1">
