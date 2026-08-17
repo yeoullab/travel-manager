@@ -180,11 +180,21 @@ function ScheduleSection({ days, isDomestic }: { days: DaySchedule[]; isDomestic
                 place_lat: it.placeLat,
                 place_lng: it.placeLng,
                 label: String(idx + 1),
+                category: it.categoryCode,
+                variant: "main" as const,
               };
             })
             .filter(
-              (v): v is { id: string; place_lat: number; place_lng: number; label: string } =>
-                v !== null,
+              (
+                v,
+              ): v is {
+                id: string;
+                place_lat: number;
+                place_lng: number;
+                label: string;
+                category: string;
+                variant: "main";
+              } => v !== null,
             );
           return (
             <section

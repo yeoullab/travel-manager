@@ -16,10 +16,17 @@ export interface PlaceResult {
   externalUrl?: string;
 }
 
+export type MarkerVariant = "main" | "candidate";
+
 export interface MarkerSpec {
   lat: number;
   lng: number;
   label: string;
+  /** 카테고리 fill (marker-colors.ts) */
+  color: string;
+  /** main 배지의 숫자색 — 밝은 배경이면 잉크색 */
+  textColor: string;
+  variant: MarkerVariant;
   onClick?: () => void;
 }
 

@@ -53,11 +53,16 @@ function loadSdk(): Promise<void> {
   return loadPromise;
 }
 
-function renderMarkerHtml(label: string): string {
-  // 22×22 accent-orange (#f54e00) + cream 글자 + 2px 흰 테두리. 카드 번호 (22×22) 와 동일 톤.
-  return `<div style="background:#f54e00;color:#f2f1ed;width:22px;height:22px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;
-    border:2px solid #fff;font-variant-numeric:tabular-nums;box-shadow:0 2px 6px rgba(38,37,30,0.18)">${label}</div>`;
+function renderMarkerHtml(spec: MarkerSpec): string {
+  // 22×22 원형 배지. main: 카테고리색 채움 + 흰 테두리 / candidate: 크림 바탕 + 카테고리색 점선.
+  const base =
+    "width:22px;height:22px;border-radius:50%;display:flex;align-items:center;" +
+    "justify-content:center;font-weight:600;font-size:11px;" +
+    "font-variant-numeric:tabular-nums;box-shadow:0 2px 6px rgba(38,37,30,0.18)";
+  if (spec.variant === "candidate") {
+    return `<div style="background:#f2f1ed;color:${spec.color};border:2px dashed ${spec.color};${base}">${spec.label}</div>`;
+  }
+  return `<div style="background:${spec.color};color:${spec.textColor};border:2px solid #fff;${base}">${spec.label}</div>`;
 }
 
 function createMap(container: HTMLElement, options: MapOptions): MapHandle {
@@ -84,7 +89,7 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
         const marker = new ns.Marker({
           position: new ns.LatLng(spec.lat, spec.lng),
           map,
-          icon: { content: renderMarkerHtml(spec.label) },
+          icon: { content: renderMarkerHtml(spec) },
         });
         if (spec.onClick) ns.Event.addListener(marker, "click", spec.onClick);
         markers.push(marker);

@@ -106,12 +106,10 @@ async function loadSdk(): Promise<void> {
   return loadPromise;
 }
 
-function renderPinElement(label: string): HTMLElement {
-  // Naver provider 의 renderMarkerHtml 과 동일한 22×22 accent-orange (#f54e00) 톤 — 카드 번호와 시각 매칭.
+function renderPinElement(spec: MarkerSpec): HTMLElement {
+  // Naver 렌더러와 동일 규칙: main 카테고리색 채움 / candidate 크림 바탕 + 카테고리색 점선.
   const el = document.createElement("div");
-  el.style.cssText = [
-    "background:#f54e00",
-    "color:#f2f1ed",
+  const base = [
     "width:22px",
     "height:22px",
     "border-radius:50%",
@@ -120,12 +118,17 @@ function renderPinElement(label: string): HTMLElement {
     "justify-content:center",
     "font-weight:600",
     "font-size:11px",
-    "border:2px solid #fff",
     "cursor:pointer",
     "font-variant-numeric:tabular-nums",
     "box-shadow:0 2px 6px rgba(38,37,30,0.18)",
-  ].join(";");
-  el.textContent = label;
+  ];
+  if (spec.variant === "candidate") {
+    base.push("background:#f2f1ed", `color:${spec.color}`, `border:2px dashed ${spec.color}`);
+  } else {
+    base.push(`background:${spec.color}`, `color:${spec.textColor}`, "border:2px solid #fff");
+  }
+  el.style.cssText = base.join(";");
+  el.textContent = spec.label;
   return el;
 }
 
@@ -155,7 +158,7 @@ function createMap(container: HTMLElement, options: MapOptions): MapHandle {
         const marker = new gm.marker.AdvancedMarkerElement({
           position: { lat: spec.lat, lng: spec.lng },
           map,
-          content: renderPinElement(spec.label),
+          content: renderPinElement(spec),
         });
         if (spec.onClick) {
           (marker as unknown as { addListener: (t: string, fn: () => void) => void }).addListener(

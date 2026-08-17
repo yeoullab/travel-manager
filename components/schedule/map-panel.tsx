@@ -2,15 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getMapsProvider, providerForTrip } from "@/lib/maps/provider";
-import type { MapHandle } from "@/lib/maps/types";
+import { markerColorsFor } from "@/lib/maps/marker-colors";
+import type { MapHandle, MarkerVariant } from "@/lib/maps/types";
 import { cn } from "@/lib/cn";
 
-type MapItem = { id: string; place_lat: number; place_lng: number; label: string };
+type MapItem = {
+  id: string;
+  place_lat: number;
+  place_lng: number;
+  label: string;
+  /** schedule_items.category_code */
+  category: string;
+  variant: MarkerVariant;
+  /** 후보 탭에서 중복 번호의 소속을 명시적으로 알릴 문구 */
+  contextLabel?: string;
+};
 
 type Props = {
   isDomestic: boolean;
   items: MapItem[];
-  onMarkerClick?: (itemId: string) => void;
+  onMarkerClick?: (itemId: string, contextLabel?: string) => void;
   focusItemId?: string | null;
   className?: string;
 };
@@ -46,12 +57,18 @@ export function MapPanel({ isDomestic, items, onMarkerClick, focusItemId, classN
     handleRef.current.clearMarkers();
     if (items.length === 0) return;
     handleRef.current.addMarkers(
-      items.map((it) => ({
-        lat: it.place_lat,
-        lng: it.place_lng,
-        label: it.label,
-        onClick: onMarkerClick ? () => onMarkerClick(it.id) : undefined,
-      })),
+      items.map((it) => {
+        const { fill, textColor } = markerColorsFor(it.category);
+        return {
+          lat: it.place_lat,
+          lng: it.place_lng,
+          label: it.label,
+          color: fill,
+          textColor,
+          variant: it.variant,
+          onClick: onMarkerClick ? () => onMarkerClick(it.id, it.contextLabel) : undefined,
+        };
+      }),
     );
     handleRef.current.fitBounds(items.map((it) => ({ lat: it.place_lat, lng: it.place_lng })));
   }, [items, ready, onMarkerClick]);
