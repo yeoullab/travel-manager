@@ -21,6 +21,8 @@ export type ScheduleItemFormValue = {
   // manual_place stage 에서만 채워짐 (place === null 상태로 title/주소만 수동 기입)
   placeAddressManual?: string | null;
   lodgingRange?: { startDayId: string; endDayId: string } | null;
+  /** "후보로 등록" 체크박스 (UI 는 Task 12). schedule-tab handleSubmit 에서 사용. */
+  isCandidate?: boolean;
 };
 
 type FormStage = "category_select" | "other_form" | "place_search" | "manual_place";

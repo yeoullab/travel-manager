@@ -54,6 +54,8 @@ export function ScheduleTab({ tripId }: Props) {
   const router = useRouter();
   const params = useSearchParams();
   const mapOpen = params.get("map") === "open";
+  const [view, setView] = useState<"day" | "candidates">("day");
+  const candidatesOnMap = params.get("candidates") === "1";
 
   const { data: trip } = useTripDetail(tripId);
   const { data: days = [], isLoading: daysLoading } = useTripDays(tripId);
@@ -96,10 +98,14 @@ export function ScheduleTab({ tripId }: Props) {
     if (el) scheduleRefs.current[id] = el;
     else delete scheduleRefs.current[id];
   }, []);
-  const handleMarkerClick = useCallback((id: string) => {
-    const el = scheduleRefs.current[id];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, []);
+  const handleMarkerClick = useCallback(
+    (id: string, contextLabel?: string) => {
+      if (contextLabel) showToast(contextLabel);
+      const el = scheduleRefs.current[id];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    [showToast],
+  );
   const handleNumberTap = useCallback(
     (item: ScheduleItem) => {
       if (item.place_lat == null || item.place_lng == null) {
@@ -107,11 +113,17 @@ export function ScheduleTab({ tripId }: Props) {
         return;
       }
       setFocusMapItemId(item.id);
+      const next = new URLSearchParams(params.toString());
+      let changed = false;
       if (!mapOpen) {
-        const next = new URLSearchParams(params.toString());
         next.set("map", "open");
-        router.push(`/trips/${tripId}?${next.toString()}`);
+        changed = true;
       }
+      if (item.is_candidate && params.get("candidates") !== "1") {
+        next.set("candidates", "1");
+        changed = true;
+      }
+      if (changed) router.push(`/trips/${tripId}?${next.toString()}`);
     },
     [mapOpen, params, router, showToast, tripId],
   );
@@ -139,18 +151,46 @@ export function ScheduleTab({ tripId }: Props) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // 본 일정만 day 별 그룹 (후보·풀 제외) — 기존 번호/이동 로직의 입력
   const itemsByDay = useMemo(() => {
     const grouped: Record<string, ScheduleItem[]> = {};
-    for (const it of items) (grouped[it.trip_day_id] ??= []).push(it);
+    for (const it of items) {
+      if (!it.trip_day_id || it.is_candidate) continue;
+      (grouped[it.trip_day_id] ??= []).push(it);
+    }
     for (const k of Object.keys(grouped)) {
       grouped[k].sort((a, b) => a.sort_order - b.sort_order);
     }
     return grouped;
   }, [items]);
 
+  const candidatesByDay = useMemo(() => {
+    const grouped: Record<string, ScheduleItem[]> = {};
+    for (const it of items) {
+      if (!it.trip_day_id || !it.is_candidate) continue;
+      (grouped[it.trip_day_id] ??= []).push(it);
+    }
+    for (const k of Object.keys(grouped)) {
+      grouped[k].sort((a, b) => a.sort_order - b.sort_order);
+    }
+    return grouped;
+  }, [items]);
+
+  const poolItems = useMemo(
+    () =>
+      items
+        .filter((it) => !it.trip_day_id && it.is_candidate)
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [items],
+  );
+
   const activeDayItems = useMemo(
     () => (activeDayId ? (itemsByDay[activeDayId] ?? []) : []),
     [activeDayId, itemsByDay],
+  );
+  const activeDayCandidates = useMemo(
+    () => (activeDayId ? (candidatesByDay[activeDayId] ?? []) : []),
+    [activeDayId, candidatesByDay],
   );
   const selectedActiveItems = useMemo(
     () => activeDayItems.filter((item) => selectedIds.has(item.id)),
@@ -159,21 +199,67 @@ export function ScheduleTab({ tripId }: Props) {
   const selectedCount = selectedActiveItems.length;
 
   const mapItems = useMemo(() => {
-    return activeDayItems
-      .map((it, idx) => ({ it, label: String(idx + 1) }))
+    type Entry = {
+      it: ScheduleItem;
+      label: string;
+      variant: "main" | "candidate";
+      contextLabel?: string;
+    };
+    const entries: Entry[] = [];
+    if (view === "candidates") {
+      // 후보 탭 지도: 풀 + 모든 일자 후보, 그룹별 1..N (스펙 §6)
+      poolItems.forEach((it, idx) =>
+        entries.push({
+          it,
+          label: String(idx + 1),
+          variant: "candidate",
+          contextLabel: `전체 풀 후보 ${idx + 1}`,
+        }),
+      );
+      for (const d of days) {
+        (candidatesByDay[d.id] ?? []).forEach((it, idx) =>
+          entries.push({
+            it,
+            label: String(idx + 1),
+            variant: "candidate",
+            contextLabel: `Day ${d.day_number} 후보 ${idx + 1}`,
+          }),
+        );
+      }
+    } else {
+      activeDayItems.forEach((it, idx) =>
+        entries.push({ it, label: String(idx + 1), variant: "main" }),
+      );
+      if (candidatesOnMap) {
+        activeDayCandidates.forEach((it, idx) =>
+          entries.push({ it, label: String(idx + 1), variant: "candidate" }),
+        );
+      }
+    }
+    return entries
       .filter(({ it }) => it.place_lat != null && it.place_lng != null)
-      .map(({ it, label }) => ({
+      .map(({ it, label, variant, contextLabel }) => ({
         id: it.id,
         place_lat: it.place_lat!,
         place_lng: it.place_lng!,
         label,
+        category: it.category_code,
+        variant,
+        contextLabel,
       }));
-  }, [activeDayItems]);
+  }, [view, activeDayItems, activeDayCandidates, candidatesOnMap, poolItems, candidatesByDay, days]);
 
   function toggleMap() {
     const next = new URLSearchParams(params.toString());
     if (mapOpen) next.delete("map");
     else next.set("map", "open");
+    router.push(`/trips/${tripId}?${next.toString()}`);
+  }
+
+  function toggleCandidatesOnMap() {
+    const next = new URLSearchParams(params.toString());
+    if (candidatesOnMap) next.delete("candidates");
+    else next.set("candidates", "1");
     router.push(`/trips/${tripId}?${next.toString()}`);
   }
 
@@ -189,6 +275,25 @@ export function ScheduleTab({ tripId }: Props) {
     const activeItem = items.find((i) => i.id === active.id);
     const overItem = items.find((i) => i.id === over.id);
     if (!activeItem || !overItem) return;
+    // 파티션 경계를 넘는 드래그는 무시 (전환은 메뉴 액션으로만 — 스펙 §7)
+    if (activeItem.is_candidate !== overItem.is_candidate) return;
+
+    if (activeItem.is_candidate) {
+      // 일자 후보 파티션 내 재정렬만 허용
+      if (!activeItem.trip_day_id || activeItem.trip_day_id !== overItem.trip_day_id) return;
+      const dayList = (candidatesByDay[activeItem.trip_day_id] ?? []).map((i) => i.id);
+      const fromIdx = dayList.indexOf(activeItem.id);
+      const toIdx = dayList.indexOf(overItem.id);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const nextOrder = [...dayList];
+      nextOrder.splice(fromIdx, 1);
+      nextOrder.splice(toIdx, 0, activeItem.id);
+      reorder.mutate({ tripId, tripDayId: activeItem.trip_day_id, orderedIds: nextOrder });
+      return;
+    }
+
+    // 본 일정: trip_day_id 는 이 시점에 non-null 이어야 한다.
+    if (!activeItem.trip_day_id || !overItem.trip_day_id) return;
 
     if (activeItem.trip_day_id === overItem.trip_day_id) {
       const dayList = (itemsByDay[activeItem.trip_day_id] ?? []).map((i) => i.id);
@@ -242,10 +347,13 @@ export function ScheduleTab({ tripId }: Props) {
   }
 
   function handleSubmit(value: ScheduleItemFormValue) {
-    if (!modal || !activeDayId) return;
+    if (!modal) return;
+    if (view === "day" && !activeDayId) return;
     const base = buildScheduleMutationBase(value);
     if (modal.mode === "create") {
+      const asCandidate = view === "candidates" || Boolean(value.isCandidate);
       if (
+        !asCandidate &&
         value.categoryCode === "lodging" &&
         value.lodgingRange &&
         value.lodgingRange.startDayId &&
@@ -280,10 +388,15 @@ export function ScheduleTab({ tripId }: Props) {
         return;
       }
       createItem.mutate(
-        { ...base, tripId, tripDayId: activeDayId },
+        {
+          ...base,
+          tripId,
+          tripDayId: view === "candidates" ? null : activeDayId,
+          isCandidate: asCandidate,
+        },
         {
           onSuccess: () => {
-            showToast("일정을 추가했어요", "success");
+            showToast(asCandidate ? "후보로 등록했어요" : "일정을 추가했어요", "success");
             closeModal();
           },
           onError: (e) => showToast(`추가 실패: ${e instanceof Error ? e.message : ""}`, "error"),
@@ -381,13 +494,26 @@ export function ScheduleTab({ tripId }: Props) {
   }
 
   const mapPanel = trip ? (
-    <MapPanel
-      isDomestic={trip.is_domestic}
-      items={mapItems}
-      onMarkerClick={handleMarkerClick}
-      focusItemId={focusMapItemId}
-      className="mt-0 h-full"
-    />
+    <div className="flex h-full flex-col">
+      {view === "day" && (
+        <label className="text-ink-700 mb-1 flex shrink-0 items-center gap-1.5 self-end text-[12px]">
+          <input
+            type="checkbox"
+            checked={candidatesOnMap}
+            onChange={toggleCandidatesOnMap}
+            className="accent-ink-900 h-4 w-4"
+          />
+          후보 보기
+        </label>
+      )}
+      <MapPanel
+        isDomestic={trip.is_domestic}
+        items={mapItems}
+        onMarkerClick={handleMarkerClick}
+        focusItemId={focusMapItemId}
+        className="mt-0 min-h-0 flex-1"
+      />
+    </div>
   ) : null;
 
   return (
