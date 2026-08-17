@@ -105,7 +105,13 @@ export function SortableScheduleItem({
               {index}
             </span>
           ) : (
-            <span className="bg-accent-orange text-cream flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums">
+            <span
+              className="flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-white text-[11px] font-semibold tabular-nums"
+              style={{
+                background: markerColorsFor(item.category_code).fill,
+                color: markerColorsFor(item.category_code).textColor,
+              }}
+            >
               {index}
             </span>
           )}

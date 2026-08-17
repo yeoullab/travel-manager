@@ -77,10 +77,6 @@ export function ScheduleItem({
       )}
       onClick={onClick}
     >
-      <div
-        aria-hidden
-        className={cn("absolute top-0 bottom-0 left-0 w-1", categoryColor[category])}
-      />
       {draggable && (
         <span
           aria-label="순서 변경"
@@ -89,7 +85,7 @@ export function ScheduleItem({
           <GripVertical size={16} />
         </span>
       )}
-      <div className="min-w-0 flex-1 pl-2">
+      <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <p className="text-ink-900 truncate text-[15px] font-semibold">{title}</p>
           {time && <span className="text-ink-600 shrink-0 font-mono text-[12px]">{time}</span>}
