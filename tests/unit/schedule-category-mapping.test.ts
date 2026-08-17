@@ -8,6 +8,7 @@ const CATEGORY_CODES = [
   "transport",
   "sightseeing",
   "food",
+  "cafe",
   "lodging",
   "shopping",
   "other",
@@ -16,9 +17,10 @@ const CATEGORY_CODES = [
 const EXPECTED_COLORS: Record<(typeof CATEGORY_CODES)[number], string> = {
   transport: "bg-ti-read",
   sightseeing: "bg-ti-grep",
-  food: "bg-ti-thinking",
+  food: "bg-accent-brown",
+  cafe: "bg-accent-rose",
   lodging: "bg-ti-edit",
-  shopping: "bg-accent-gold",
+  shopping: "bg-accent-yellow",
   other: "bg-ink-400",
 };
 
@@ -26,14 +28,15 @@ const EXPECTED_LABELS: Record<(typeof CATEGORY_CODES)[number], string> = {
   transport: "교통",
   sightseeing: "관광",
   food: "식당",
+  cafe: "카페",
   lodging: "숙소",
   shopping: "쇼핑",
   other: "기타",
 };
 
 describe("schedule category mapping", () => {
-  it("has exactly 6 categories", () => {
-    expect(CATEGORY_CODES).toHaveLength(6);
+  it("has exactly 7 categories", () => {
+    expect(CATEGORY_CODES).toHaveLength(7);
   });
 
   it("each code maps to a Tailwind color token", () => {

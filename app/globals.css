@@ -39,6 +39,9 @@
   /* Accent / Semantic */
   --color-accent-orange: #f54e00;
   --color-accent-gold: #c08532;
+  --color-accent-brown: #a5673f;
+  --color-accent-rose: #e08cab;
+  --color-accent-yellow: #e0b64f;
   --color-error: #cf2d56;
   --color-success: #1f8a65;
 
@@ -78,6 +81,9 @@
 
   --color-accent-orange: var(--color-accent-orange);
   --color-accent-gold: var(--color-accent-gold);
+  --color-accent-brown: var(--color-accent-brown);
+  --color-accent-rose: var(--color-accent-rose);
+  --color-accent-yellow: var(--color-accent-yellow);
   --color-error: var(--color-error);
   --color-success: var(--color-success);
 

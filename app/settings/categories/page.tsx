@@ -20,7 +20,7 @@ const EXPENSE_COLOR_TOKEN: Record<ExpenseCategoryCode, string> = {
  * 13 `/settings/categories` — 카테고리 관리 (V1: 읽기 전용).
  *
  * 일정과 경비는 카테고리 모델이 다르다:
- * - 일정: `categories` DB 테이블 FK (0008 seed 6종, schedule_items.category_code)
+ * - 일정: `categories` DB 테이블 FK (0008 seed + 0023 cafe = 7종, schedule_items.category_code)
  * - 경비: 클라이언트 상수 `EXPENSE_CATEGORIES` + DB CHECK (0010_expenses.sql)
  * V1 은 두 도메인을 분리해 보여주기만 한다. 커스텀 카테고리는 V2 후보.
  */
@@ -80,7 +80,7 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
 function ScheduleSkeleton() {
   return (
     <>
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: 7 }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 px-4 py-3">
           <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-2">

@@ -334,6 +334,7 @@ const SCHEDULE_CATEGORIES: ScheduleCategory[] = [
   "transport",
   "sightseeing",
   "food",
+  "cafe",
   "lodging",
   "shopping",
   "other",

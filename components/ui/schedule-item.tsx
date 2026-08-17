@@ -8,6 +8,7 @@ export type ScheduleCategory =
   | "transport"
   | "sightseeing"
   | "food"
+  | "cafe"
   | "lodging"
   | "shopping"
   | "other";
@@ -15,9 +16,10 @@ export type ScheduleCategory =
 const categoryColor: Record<ScheduleCategory, string> = {
   transport: "bg-ti-read", // soft blue
   sightseeing: "bg-ti-grep", // soft sage
-  food: "bg-ti-thinking", // warm peach
+  food: "bg-accent-brown", // warm brown
+  cafe: "bg-accent-rose", // soft rose
   lodging: "bg-ti-edit", // soft lavender
-  shopping: "bg-accent-gold",
+  shopping: "bg-accent-yellow",
   other: "bg-ink-400",
 };
 
@@ -25,6 +27,7 @@ const categoryLabel: Record<ScheduleCategory, string> = {
   transport: "교통",
   sightseeing: "관광",
   food: "식당",
+  cafe: "카페",
   lodging: "숙소",
   shopping: "쇼핑",
   other: "기타",

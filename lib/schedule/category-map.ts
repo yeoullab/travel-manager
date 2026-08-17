@@ -3,6 +3,7 @@ import type { ScheduleCategory } from "@/lib/types";
 
 const SCHEDULE_TO_EXPENSE_CATEGORY: Record<ScheduleCategory, ExpenseCategoryCode> = {
   food: "food",
+  cafe: "food",
   transport: "transport",
   lodging: "lodging",
   shopping: "shopping",

@@ -34,6 +34,7 @@ export const CATEGORY_FALLBACK_LABEL: Record<ScheduleCategory, string> = {
   transport: "교통",
   sightseeing: "관광",
   food: "식당",
+  cafe: "카페",
   lodging: "숙소",
   shopping: "쇼핑",
   other: "기타",

@@ -64,6 +64,7 @@ export type ScheduleCategory =
   | "transport"
   | "sightseeing"
   | "food"
+  | "cafe"
   | "lodging"
   | "shopping"
   | "other";

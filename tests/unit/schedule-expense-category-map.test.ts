@@ -4,6 +4,7 @@ import { expenseCategoryForScheduleCategory } from "@/lib/schedule/category-map"
 describe("expenseCategoryForScheduleCategory", () => {
   it.each([
     ["food", "food"],
+    ["cafe", "food"],
     ["transport", "transport"],
     ["lodging", "lodging"],
     ["shopping", "shopping"],

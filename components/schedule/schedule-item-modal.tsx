@@ -45,6 +45,7 @@ const CATEGORY_CODES: ScheduleCategory[] = [
   "transport",
   "sightseeing",
   "food",
+  "cafe",
   "lodging",
   "shopping",
   "other",
@@ -54,6 +55,7 @@ const CATEGORY_LABEL: Record<ScheduleCategory, string> = {
   transport: "교통",
   sightseeing: "관광",
   food: "식당",
+  cafe: "카페",
   lodging: "숙소",
   shopping: "쇼핑",
   other: "기타",
@@ -62,9 +64,10 @@ const CATEGORY_LABEL: Record<ScheduleCategory, string> = {
 const CATEGORY_COLOR: Record<ScheduleCategory, string> = {
   transport: "bg-ti-read",
   sightseeing: "bg-ti-grep",
-  food: "bg-ti-thinking",
+  food: "bg-accent-brown",
+  cafe: "bg-accent-rose",
   lodging: "bg-ti-edit",
-  shopping: "bg-accent-gold",
+  shopping: "bg-accent-yellow",
   other: "bg-ink-400",
 };
 

@@ -11,6 +11,8 @@ function mkItem(partial: Partial<ScheduleItem>): ScheduleItem {
   return {
     id: "x",
     trip_day_id: "d",
+    trip_id: "trip-1",
+    is_candidate: false,
     title: "t",
     sort_order: 1,
     time_of_day: null,
@@ -41,7 +43,7 @@ describe("schedule-item-modal — initialStageFor", () => {
   });
 
   it("returns 'place_search' for coordinate-backed non-'other' places", () => {
-    for (const code of ["transport", "sightseeing", "food", "lodging", "shopping"] as const) {
+    for (const code of ["transport", "sightseeing", "food", "cafe", "lodging", "shopping"] as const) {
       expect(
         initialStageFor(
           mkItem({

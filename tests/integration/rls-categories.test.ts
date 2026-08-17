@@ -49,17 +49,18 @@ describe("categories table RLS (0008)", () => {
     expect((data ?? []).length).toBe(0);
   });
 
-  it("authenticated users SELECT all 6 seed categories", async () => {
+  it("authenticated users SELECT all 7 seed categories", async () => {
     const { data, error } = await userC
       .from("categories")
       .select("code, name, sort_order")
       .order("sort_order");
     expect(error).toBeNull();
-    expect(data).toHaveLength(6);
+    expect(data).toHaveLength(7);
     expect(data?.map((c) => c.code)).toEqual([
       "transport",
       "sightseeing",
       "food",
+      "cafe",
       "lodging",
       "shopping",
       "other",
