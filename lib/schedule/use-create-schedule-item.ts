@@ -6,8 +6,10 @@ import { queryKeys } from "@/lib/query/keys";
 import type { ScheduleCategory } from "@/lib/types";
 
 export type CreateScheduleItemInput = {
-  tripId: string; // invalidate 키 용도 (서버엔 미전달)
-  tripDayId: string;
+  tripId: string;
+  /** null 이면 전체 풀 후보 (isCandidate 필수 true) */
+  tripDayId: string | null;
+  isCandidate?: boolean;
   title: string;
   categoryCode: ScheduleCategory;
   timeOfDay?: string | null;
@@ -42,6 +44,8 @@ export function useCreateScheduleItem() {
         p_url: input.url ?? null,
         p_category_code: input.categoryCode,
         p_place_external_url: input.placeExternalUrl ?? null,
+        p_is_candidate: input.isCandidate ?? false,
+        p_trip_id: input.tripId,
       });
       if (error) throw error;
       return data as string;

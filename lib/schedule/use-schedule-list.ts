@@ -14,17 +14,15 @@ export function useScheduleList(tripId: string | null) {
     enabled: Boolean(tripId),
     queryFn: async (): Promise<ScheduleItem[]> => {
       if (!tripId) return [];
-      // schedule_items 는 trip_day_id 만 가지므로 trip_days 와 inner join 으로 tripId 필터.
+      // 0023 이후 schedule_items 는 비정규화 trip_id 를 직접 가진다. 풀 후보(trip_day_id null)는
+      // inner join 으로는 영원히 조회되지 않으므로 trip_id 직접 필터로 전환한다 (스펙 §7).
       const { data, error } = await supabase
         .from("schedule_items")
-        .select("*, trip_days!inner(trip_id)")
-        .eq("trip_days.trip_id", tripId)
+        .select("*")
+        .eq("trip_id", tripId)
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      return ((data ?? []) as Array<ScheduleItem & { trip_days: unknown }>).map((row) => {
-        const { trip_days: _j, ...item } = row;
-        return item as ScheduleItem;
-      });
+      return data ?? [];
     },
     staleTime: 10_000,
   });
