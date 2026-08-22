@@ -34,7 +34,7 @@ export default async function LandingPage() {
         </div>
 
         <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-[0.2em] uppercase">
-          travel-manager · phase 0 mockup
+          travel-manager
         </p>
 
         <h1
@@ -64,7 +64,7 @@ export default async function LandingPage() {
         </div>
 
         <p className="text-ink-500 mt-10 text-[12px] leading-[1.5]">
-          이 페이지는 프로토타입입니다. 실제 데이터는 저장되지 않습니다.
+          구글 계정으로 간편하게 시작하세요.
         </p>
       </div>
     </main>
