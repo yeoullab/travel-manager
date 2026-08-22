@@ -20,4 +20,19 @@ test.describe("로그인 가드", () => {
     await expect(page).toHaveURL(/\/trips/, { timeout: 10_000 });
     await ctx.close();
   });
+
+  test("로그인 안 한 상태로 / 접근 시 랜딩(시작하기)이 보인다", async ({ page }) => {
+    await page.context().clearCookies();
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("button", { name: "시작하기" })).toBeVisible();
+  });
+
+  test("로그인 세션이 있으면 / 에서 /trips로 바로 이동한다", async ({ browser }) => {
+    const ctx = await browser.newContext({ storageState: "tests/e2e/.auth/alice.json" });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/trips/, { timeout: 10_000 });
+    await ctx.close();
+  });
 });

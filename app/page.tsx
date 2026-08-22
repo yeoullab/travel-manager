@@ -1,12 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getServerClient } from "@/lib/supabase/server-client";
 
 /**
  * 01 `/` — 랜딩 (로그인 CTA).
- * Phase 0 목업: 정적 hero + /login 으로 이동.
+ * 이미 로그인한 사용자는 랜딩을 거치지 않고 곧바로 /trips 로 이동한다.
+ * 비로그인 사용자에게만 hero + /login CTA 를 노출한다.
  */
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await getServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) redirect("/trips");
+
   return (
     <main
       className="flex flex-col items-center justify-center px-6 pt-16 pb-20"
