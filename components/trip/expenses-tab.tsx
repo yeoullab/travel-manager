@@ -23,6 +23,7 @@ import { useDeleteExpense } from "@/lib/expense/use-delete-expense";
 import {
   EXPENSE_CATEGORIES,
   EXPENSE_CATEGORY_LABEL,
+  EXPENSE_CATEGORY_COLOR,
   type ExpenseCategoryCode,
 } from "@/lib/expense/constants";
 import { expenseCategoryForScheduleCategory } from "@/lib/schedule/category-map";
@@ -210,7 +211,14 @@ export function ExpensesTab({ tripId }: Props) {
             <ul className="flex flex-col gap-1">
               {Object.entries(categoryTotals).map(([cat, byCurr]) => (
                 <li key={cat} className="flex items-baseline justify-between gap-3">
-                  <span className="text-ink-800 text-[13px]">
+                  <span className="text-ink-800 inline-flex items-center gap-1.5 text-[13px]">
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+                        EXPENSE_CATEGORY_COLOR[cat as ExpenseCategoryCode] ?? "bg-ink-400",
+                      )}
+                    />
                     {EXPENSE_CATEGORY_LABEL[cat as ExpenseCategoryCode] ?? cat}
                   </span>
                   <span className="text-ink-700 font-mono text-[12px] tabular-nums">
@@ -242,10 +250,19 @@ export function ExpensesTab({ tripId }: Props) {
               aria-checked={active}
               onClick={() => setFilter(c.key)}
               className={cn(
-                "h-8 shrink-0 rounded-full px-3 text-[12px] font-medium transition-colors",
+                "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-colors",
                 active ? "bg-ink-900 text-cream" : "bg-surface-400 text-ink-700 hover:text-ink-900",
               )}
             >
+              {c.key !== "all" && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+                    EXPENSE_CATEGORY_COLOR[c.key as ExpenseCategoryCode],
+                  )}
+                />
+              )}
               {c.label}
             </button>
           );
@@ -542,12 +559,19 @@ function ExpenseSheet({
                   aria-checked={active}
                   onClick={() => update("categoryCode", c.code)}
                   className={cn(
-                    "h-9 rounded-full px-3 text-[13px] font-medium transition-colors",
+                    "inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-colors",
                     active
                       ? "bg-ink-900 text-cream"
                       : "bg-surface-400 text-ink-700 hover:text-ink-900",
                   )}
                 >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+                      EXPENSE_CATEGORY_COLOR[c.code],
+                    )}
+                  />
                   {c.label}
                 </button>
               );

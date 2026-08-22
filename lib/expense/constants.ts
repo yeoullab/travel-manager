@@ -15,3 +15,14 @@ export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategoryCode, string> =
   Object.fromEntries(
     EXPENSE_CATEGORIES.map((c) => [c.code, c.label]),
   ) as Record<ExpenseCategoryCode, string>;
+
+// 일정 카테고리 색상(components/ui/schedule-item.tsx categoryColor)과 동일한 bg-* 토큰.
+export const EXPENSE_CATEGORY_COLOR: Record<ExpenseCategoryCode, string> = {
+  transport: "bg-ti-read",
+  sightseeing: "bg-ti-grep",
+  food: "bg-accent-brown",
+  cafe: "bg-accent-rose",
+  lodging: "bg-ti-edit",
+  shopping: "bg-accent-yellow",
+  other: "bg-ink-400",
+};

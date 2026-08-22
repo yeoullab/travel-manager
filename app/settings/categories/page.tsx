@@ -5,18 +5,7 @@ import { AppBar } from "@/components/ui/app-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoryRow } from "@/components/settings/category-row";
 import { useCategories, CATEGORY_FALLBACK_LABEL } from "@/lib/category/use-categories";
-import { EXPENSE_CATEGORIES, type ExpenseCategoryCode } from "@/lib/expense/constants";
-
-// 일정 카테고리(0008 seed + 0023 cafe)와 색상을 동일하게 맞춘다.
-const EXPENSE_COLOR_TOKEN: Record<ExpenseCategoryCode, string> = {
-  transport: "bg-ti-read",
-  sightseeing: "bg-ti-grep",
-  food: "bg-accent-brown",
-  cafe: "bg-accent-rose",
-  lodging: "bg-ti-edit",
-  shopping: "bg-accent-yellow",
-  other: "bg-ink-400",
-};
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_COLOR } from "@/lib/expense/constants";
 
 /**
  * 13 `/settings/categories` — 카테고리 관리 (V1: 읽기 전용).
@@ -55,7 +44,7 @@ export default function CategoriesPage() {
           {EXPENSE_CATEGORIES.map((c) => (
             <CategoryRow
               key={c.code}
-              colorToken={EXPENSE_COLOR_TOKEN[c.code] ?? "bg-ink-400"}
+              colorToken={EXPENSE_CATEGORY_COLOR[c.code] ?? "bg-ink-400"}
               name={c.label}
               code={c.code}
             />

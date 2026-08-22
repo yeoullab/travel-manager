@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
+import { EXPENSE_CATEGORY_COLOR } from "@/lib/expense/constants";
 
 export type ExpenseCategory =
   | "transport"
@@ -80,7 +81,14 @@ export function ExpenseRow({
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="bg-surface-500 text-ink-700 rounded-full px-2 py-0.5 text-[11px]">
+          <span className="text-ink-700 inline-flex shrink-0 items-center gap-1.5 text-[11px]">
+            <span
+              aria-hidden
+              className={cn(
+                "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+                EXPENSE_CATEGORY_COLOR[category],
+              )}
+            />
             {categoryLabel[category]}
           </span>
           <p className="text-ink-900 truncate text-[15px] font-medium">{title}</p>
