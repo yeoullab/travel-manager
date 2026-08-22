@@ -352,11 +352,12 @@ const SCHEDULE_CATEGORIES: ScheduleCategory[] = [
   "other",
 ];
 const EXPENSE_CATEGORY_SET: ExpenseCategory[] = [
-  "food",
   "transport",
+  "sightseeing",
+  "food",
+  "cafe",
   "lodging",
   "shopping",
-  "activity",
   "other",
 ];
 

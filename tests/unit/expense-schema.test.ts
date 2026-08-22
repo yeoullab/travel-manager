@@ -44,12 +44,21 @@ describe("expenseCurrencySchema", () => {
 });
 
 describe("expenseCategorySchema", () => {
-  it("accepts all 6 known codes", () => {
-    for (const code of ["food", "transport", "lodging", "shopping", "activity", "other"]) {
+  it("accepts all 7 known codes (일정 카테고리와 동일)", () => {
+    for (const code of [
+      "transport",
+      "sightseeing",
+      "food",
+      "cafe",
+      "lodging",
+      "shopping",
+      "other",
+    ]) {
       expect(expenseCategorySchema.safeParse(code).success).toBe(true);
     }
   });
-  it("rejects unknown codes", () => {
+  it("rejects unknown or retired codes", () => {
+    expect(expenseCategorySchema.safeParse("activity").success).toBe(false);
     expect(expenseCategorySchema.safeParse("unknown").success).toBe(false);
     expect(expenseCategorySchema.safeParse("").success).toBe(false);
   });

@@ -625,7 +625,7 @@ export default function DesignPage() {
 
         <div className="mt-6">
           <p className="text-ink-600 mb-3 text-[11px] font-medium tracking-wider uppercase">
-            ExpenseRow (6 카테고리 · 통화 3종)
+            ExpenseRow (7 카테고리 · 통화 3종)
           </p>
           <div className="bg-surface-100 border-border-primary overflow-hidden rounded-[16px] border">
             <ExpenseRow
@@ -658,7 +658,7 @@ export default function DesignPage() {
               memo="가족 선물"
             />
             <ExpenseRow
-              category="activity"
+              category="sightseeing"
               title="공항철도"
               amount={9300}
               currency="KRW"

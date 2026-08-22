@@ -86,12 +86,14 @@ export type ScheduleItem = {
   updatedAt: ISODateTime;
 };
 
+// 경비 카테고리는 일정 카테고리(ScheduleCategory)와 코드·라벨·색상을 동일하게 맞춘다.
 export type ExpenseCategory =
-  | "food"
   | "transport"
+  | "sightseeing"
+  | "food"
+  | "cafe"
   | "lodging"
   | "shopping"
-  | "activity"
   | "other";
 
 export type Expense = {

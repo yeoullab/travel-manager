@@ -1,9 +1,11 @@
+// 일정 카테고리(categories 테이블 / ScheduleCategory)와 코드·라벨·순서를 동일하게 유지한다.
 export const EXPENSE_CATEGORIES = [
-  { code: "food", label: "식비" },
   { code: "transport", label: "교통" },
-  { code: "lodging", label: "숙박" },
+  { code: "sightseeing", label: "관광" },
+  { code: "food", label: "식당" },
+  { code: "cafe", label: "카페" },
+  { code: "lodging", label: "숙소" },
   { code: "shopping", label: "쇼핑" },
-  { code: "activity", label: "관광" },
   { code: "other", label: "기타" },
 ] as const;
 

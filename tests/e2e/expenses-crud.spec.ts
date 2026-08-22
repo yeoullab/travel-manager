@@ -53,8 +53,8 @@ test.describe("경비 CRUD (Spec §6.5)", () => {
 
     // 통화별 총계 카드: JPY 와 KRW 두 통화가 모두 보여야 함
     await expect(page.getByText(/총 경비/i).first()).toBeVisible();
-    // 카테고리별 섹션에 "식비" (food 라벨) 존재 확인
-    await expect(page.getByText("식비").first()).toBeVisible();
+    // 카테고리별 섹션에 "식당" (food 라벨, 일정과 동일) 존재 확인
+    await expect(page.getByText("식당").first()).toBeVisible();
   });
 
   test("경비 편집 + 카테고리 필터 동작", async ({ page }) => {
@@ -68,8 +68,8 @@ test.describe("경비 CRUD (Spec §6.5)", () => {
     await page.getByRole("button", { name: "저장" }).click();
     await expect(page.getByText("Dinner (edited)")).toBeVisible({ timeout: 5_000 });
 
-    // 필터: 식사 선택 → Dinner(edited) 만 보임 (Snack 도 food 이므로 둘 다 보일 수 있음, 존재만 체크)
-    await page.getByRole("radio", { name: "식비", exact: true }).click();
+    // 필터: 식당(food) 선택 → Dinner(edited) 만 보임 (Snack 도 food 이므로 둘 다 보일 수 있음, 존재만 체크)
+    await page.getByRole("radio", { name: "식당", exact: true }).click();
     await expect(page.getByText("Dinner (edited)")).toBeVisible();
 
     // 필터 해제

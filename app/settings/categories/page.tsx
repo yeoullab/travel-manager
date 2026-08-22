@@ -7,21 +7,23 @@ import { CategoryRow } from "@/components/settings/category-row";
 import { useCategories, CATEGORY_FALLBACK_LABEL } from "@/lib/category/use-categories";
 import { EXPENSE_CATEGORIES, type ExpenseCategoryCode } from "@/lib/expense/constants";
 
+// 일정 카테고리(0008 seed + 0023 cafe)와 색상을 동일하게 맞춘다.
 const EXPENSE_COLOR_TOKEN: Record<ExpenseCategoryCode, string> = {
-  food: "bg-ti-thinking",
   transport: "bg-ti-read",
+  sightseeing: "bg-ti-grep",
+  food: "bg-accent-brown",
+  cafe: "bg-accent-rose",
   lodging: "bg-ti-edit",
-  shopping: "bg-accent-gold",
-  activity: "bg-ti-grep",
+  shopping: "bg-accent-yellow",
   other: "bg-ink-400",
 };
 
 /**
  * 13 `/settings/categories` — 카테고리 관리 (V1: 읽기 전용).
  *
- * 일정과 경비는 카테고리 모델이 다르다:
+ * 일정과 경비는 카테고리 값·색상은 동일하되(0025 정렬), 저장 모델이 다르다:
  * - 일정: `categories` DB 테이블 FK (0008 seed + 0023 cafe = 7종, schedule_items.category_code)
- * - 경비: 클라이언트 상수 `EXPENSE_CATEGORIES` + DB CHECK (0010_expenses.sql)
+ * - 경비: 클라이언트 상수 `EXPENSE_CATEGORIES` + DB CHECK (0010 + 0025_expense_categories_align.sql)
  * V1 은 두 도메인을 분리해 보여주기만 한다. 커스텀 카테고리는 V2 후보.
  */
 export default function CategoriesPage() {

@@ -3,12 +3,12 @@ import { expenseCategoryForScheduleCategory } from "@/lib/schedule/category-map"
 
 describe("expenseCategoryForScheduleCategory", () => {
   it.each([
-    ["food", "food"],
-    ["cafe", "food"],
     ["transport", "transport"],
+    ["sightseeing", "sightseeing"],
+    ["food", "food"],
+    ["cafe", "cafe"],
     ["lodging", "lodging"],
     ["shopping", "shopping"],
-    ["sightseeing", "activity"],
     ["other", "other"],
   ] as const)("maps %s to %s", (schedule, expense) => {
     expect(expenseCategoryForScheduleCategory(schedule)).toBe(expense);

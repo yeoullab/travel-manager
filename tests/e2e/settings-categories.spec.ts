@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-// 사용자 alice (storageState alice.json) 로 settings → categories 진입 + 7+6 카테고리 노출 확인.
-test("settings → 카테고리 관리 → 일정 7종 + 경비 6종 노출", async ({ page }) => {
+// 사용자 alice (storageState alice.json) 로 settings → categories 진입 + 7+7 카테고리 노출 확인.
+test("settings → 카테고리 관리 → 일정 7종 + 경비 7종 노출", async ({ page }) => {
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "설정" })).toBeVisible();
 
@@ -20,7 +20,7 @@ test("settings → 카테고리 관리 → 일정 7종 + 경비 6종 노출", as
   // 경비 섹션 — nth(1) section for expense items
   const expenseSection = page.locator("section").nth(1);
   await expect(page.getByRole("heading", { name: "경비 카테고리" })).toBeVisible();
-  for (const label of ["식비", "교통", "숙박", "쇼핑", "관광", "기타"]) {
+  for (const label of ["교통", "관광", "식당", "카페", "숙소", "쇼핑", "기타"]) {
     await expect(expenseSection.getByText(label, { exact: true })).toBeVisible();
   }
 });

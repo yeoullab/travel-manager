@@ -1,14 +1,22 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
-export type ExpenseCategory = "food" | "transport" | "lodging" | "shopping" | "activity" | "other";
+export type ExpenseCategory =
+  | "transport"
+  | "sightseeing"
+  | "food"
+  | "cafe"
+  | "lodging"
+  | "shopping"
+  | "other";
 
 const categoryLabel: Record<ExpenseCategory, string> = {
-  food: "식비",
   transport: "교통",
-  lodging: "숙박",
+  sightseeing: "관광",
+  food: "식당",
+  cafe: "카페",
+  lodging: "숙소",
   shopping: "쇼핑",
-  activity: "관광",
   other: "기타",
 };
 
